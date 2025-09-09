@@ -1,0 +1,374 @@
+
+{
+  "localeCode": "en-US",
+  "header": {
+    "title": "GemX Analyzer",
+    "subtitle": "Harnessing the power of Gemini to provide deep insights into your software projects. Paste your documentation, and let our AI deliver a structured analysis on viability, improvements, and next steps."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "newAnalysis": "New Analysis",
+    "kanban": "Kanban",
+    "history": "History"
+  },
+  "actions": {
+    "analyzeProject": "Analyze Project",
+    "analyzing": "Analyzing",
+    "uploadFile": "Upload File",
+    "showExample": "Show me an example",
+    "exitExample": "Exit Example Mode",
+    "createKanbanBoard": "Create Kanban Board",
+    "backToAnalysis": "Back to Analysis",
+    "view": "View",
+    "load": "Load",
+    "showMore": "Show More"
+  },
+  "input": {
+    "title": "New Project Analysis",
+    "subtitle": "Paste your project documentation, code snippets, or any relevant text below.",
+    "placeholder": "For example: paste your README.md, architecture diagrams description, release notes, or even pieces of code...",
+    "analysisType": {
+      "title": "Select Analysis Type"
+    },
+    "exampleMode": {
+      "notice": "You are in example mode. The text below is for demonstration purposes only."
+    }
+  },
+  "analysisTypes": {
+    "GENERAL": {
+      "label": "General Viability",
+      "description": "Overall assessment of project health, viability, and ROI."
+    },
+    "SECURITY": {
+      "label": "Security Audit",
+      "description": "Identify potential vulnerabilities and security best practices."
+    },
+    "SCALABILITY": {
+      "label": "Scalability Review",
+      "description": "Analyze architecture for performance bottlenecks."
+    },
+    "CODE_QUALITY": {
+      "label": "Code Quality",
+      "description": "Evaluate maintainability, structure, and best practices."
+    }
+  },
+  "results": {
+    "title": "Analysis for: {projectName}",
+    "summary": {
+      "title": "Executive Summary"
+    },
+    "viability": {
+      "title": "Project Viability",
+      "scoreLabel": "Score",
+      "assessmentLabel": "Assessment",
+      "scoreEvolution": "Score Evolution"
+    },
+    "roi": {
+      "title": "ROI & Effort Analysis",
+      "assessmentLabel": "Assessment",
+      "effortLabel": "Estimated Effort",
+      "gainsLabel": "Potential Gains"
+    },
+    "strengths": {
+      "title": "Key Strengths"
+    },
+    "improvements": {
+      "title": "Suggested Improvements",
+      "impact": "Impact",
+      "businessImpact": "Business Impact"
+    },
+    "nextSteps": {
+      "title": "Next Steps",
+      "shortTerm": "Short-Term",
+      "longTerm": "Long-Term"
+    },
+    "maturity": {
+      "title": "Project Maturity"
+    },
+    "exampleModeNotice": "You are viewing an example analysis. To analyze your own project, start a new analysis.",
+    "usageMetadata": {
+      "ariaLabel": "Analysis Token Usage",
+      "total": "Total",
+      "tokens": "tokens"
+    }
+  },
+  "maturityLevels": {
+    "PROTOTYPE": "Prototype",
+    "MVP": "MVP",
+    "PRODUCTION": "Production",
+    "OPTIMIZED": "Optimized"
+  },
+  "feedback": {
+    "question": "Was this analysis helpful?",
+    "thanks": "Thank you for your feedback!",
+    "useful": "Useful",
+    "notUseful": "Not useful"
+  },
+  "common": {
+    "priority": "Priority",
+    "difficulty": "Difficulty",
+    "description": "Description"
+  },
+  "priority": {
+    "High": "High",
+    "Medium": "Medium",
+    "Low": "Low"
+  },
+  "difficulty": {
+    "High": "High",
+    "Medium": "Medium",
+    "Low": "Low"
+  },
+  "effort": {
+    "High": "High",
+    "Medium": "Medium",
+    "Low": "Low"
+  },
+  "kanban": {
+    "title": "Kanban Board",
+    "subtitle": "Organize improvements and next steps into a workflow.",
+    "columns": {
+      "backlog": "Backlog",
+      "todo": "To Do",
+      "inProgress": "In Progress",
+      "done": "Done"
+    }
+  },
+  "history": {
+    "title": "Analysis History",
+    "exampleMode": "Example Mode",
+    "compareInstruction": "Select two analyses of the same type to compare their evolution.",
+    "typeLabel": "Type",
+    "dateLabel": "Date",
+    "deleteAriaLabel": "Delete history item",
+    "scoreTrendTitle": "Viability Score Trend",
+    "tokenUsageTitle": "Token Usage Trend",
+    "empty": {
+      "title": "No History Yet",
+      "subtitle": "Your past analyses will be stored here for future reference."
+    },
+    "clear": "Clear History",
+    "compare": "Compare Selected"
+  },
+  "evolution": {
+    "title": "Evolution Analysis",
+    "subtitle": "Comparing two analyses for {projectName} ({analysisType})",
+    "summary": "Evolution Summary",
+    "metrics": {
+      "viabilityScore": "Viability Score",
+      "strengths": "Strengths",
+      "improvements": "Improvements"
+    },
+    "usageAriaLabel": "Comparison Token Usage Information",
+    "comparisonCost": "Comparison Cost",
+    "breakdown": {
+      "title": "Improvements Breakdown",
+      "achievements": "Achievements",
+      "noResolved": "No resolved improvements identified.",
+      "newChallenges": "New Challenges",
+      "noNew": "No new challenges identified.",
+      "technicalDebt": "Technical Debt",
+      "noPersistent": "No persistent technical debt found."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "monthlyTokenLimit": "Monthly Token Usage Limit",
+    "limitDescription": "Set a monthly token limit to manage costs. Set to 0 for unlimited.",
+    "currentUsage": "Current Usage",
+    "usageForMonth": "Usage for {month}",
+    "resetUsage": "Reset Current Usage",
+    "disclaimer": "This application communicates with the Google Gemini API. Standard API costs may apply based on your usage.",
+    "saveAndClose": "Save & Close",
+    "tokenLimitError": "Limit cannot exceed {limit}."
+  },
+  "profile": {
+    "title": "User Profile",
+    "nameLabel": "Your Name",
+    "namePlaceholder": "Enter your name...",
+    "apiKeyLabel": "Gemini API Key",
+    "apiKeyPlaceholder": "Paste your API key here...",
+    "apiKeyNotice": "Your API key is required to make requests. It is stored securely in your browser and is never sent to our servers.",
+    "save": "Save",
+    "notificationSuccess": "Profile updated successfully!"
+  },
+  "tokenUsage": {
+    "title": "Token Usage Warning",
+    "usageText": "You have consumed {consumed} of {limit} tokens ({percentage}%).",
+    "monthlyUsage": "Monthly Usage"
+  },
+  "loader": {
+    "message": "Analyzing context...",
+    "subMessage": "This might take a moment.",
+    "ariaLabel": "Analysis in progress",
+    "steps": [
+      "Analyzing project structure...",
+      "Identifying key strengths...",
+      "Formulating improvement suggestions...",
+      "Calculating viability score...",
+      "Finalizing report..."
+    ]
+  },
+  "notifications": {
+    "error": {
+      "emptyContext": "Project context cannot be empty.",
+      "analysisFailed": "The analysis failed. Please try again.",
+      "compareSelection": "Please select exactly two history items to compare.",
+      "compareFailed": "The comparison failed. Please try again.",
+      "missingApiKey": "Your Gemini API key is missing. Please add it to your profile to proceed."
+    }
+  },
+  "confirmations": {
+    "clearHistory": "Are you sure you want to clear the entire analysis history? This action cannot be undone."
+  },
+  "network": {
+    "offline": "You are currently offline."
+  },
+  "auth": {
+    "logout": "Log out"
+  },
+  "landing": {
+    "cta": "Start Analyzing Now",
+    "featuresTitle": "Powerful Analysis Capabilities",
+    "featuresSubtitle": "Go beyond simple linting. Get deep, actionable insights into your project's core.",
+    "dynamicPhrases": [
+      "Unlock Your Project's Potential",
+      "From Code to Clarity",
+      "AI-Powered Project Insights"
+    ],
+    "featureDetails": {
+      "GENERAL": "Provides a 360-degree view of your project. It assesses the overall health, identifies strengths and weaknesses, calculates a viability score, and performs a high-level ROI analysis. It's the perfect starting point to understand where your project stands and its potential for success.",
+      "SECURITY": "Performs a specialized audit focused on security. It scans for common vulnerabilities (like injection flaws, broken authentication), checks for best practice adherence, and suggests concrete mitigation strategies. This analysis helps you proactively secure your application against threats.",
+      "SCALABILITY": "Examines the project's architecture and design for its ability to handle growth. It identifies potential performance bottlenecks, evaluates database schemas, and suggests strategies for horizontal and vertical scaling. Ensure your application is ready to grow with your user base.",
+      "CODE_QUALITY": "Dives deep into your codebase to evaluate its quality and maintainability. It analyzes code structure, complexity, adherence to coding standards (like DRY, SOLID), and suggests refactoring opportunities. A clean codebase is crucial for long-term development and team productivity."
+    }
+  },
+  "dashboard": {
+    "scoreEvolution": "Score Evolution Trend",
+    "kpi": {
+      "totalAnalyses": "Total Analyses",
+      "totalAnalyses_description": "Number of reports generated",
+      "averageScore": "Average Score",
+      "averageScore_description": "Viability score across all projects",
+      "commonType": "Most Common Type",
+      "commonType_description": "Most frequent analysis type",
+      "tokensThisMonth": "Tokens This Month",
+      "tokensThisMonth_description": "API usage in the current month"
+    },
+    "projects": {
+      "title": "Your Projects",
+      "subtitle": "Recent analyses for your projects.",
+      "analysisCount": "{count, plural, one {# analysis} other {# analyses}}"
+    },
+    "emptyState": {
+      "cta": "Start Your First Analysis",
+      "title": "Welcome to GemX Analyzer!",
+      "subtitle": "You haven't analyzed any projects yet. Click the button above to begin and see your dashboard populate with valuable insights.",
+      "kpi_total_description": "Tracks your report count",
+      "kpi_score_description": "Aggregates viability scores",
+      "kpi_type_description": "Highlights your focus areas",
+      "kpi_tokens_description": "Monitors your API usage"
+    }
+  },
+  "export": {
+    "json": "Export JSON",
+    "log": "Export Log",
+    "jsonAriaLabel": "Export analysis as a JSON file",
+    "logAriaLabel": "Export analysis as a text log file",
+    "logContent": {
+      "mainTitle": "Project Analysis Report"
+    }
+  },
+  "example": {
+    "projectContext": "The project context from the `constants` file would be here.",
+    "kortex": {
+      "projectName": "Kortex Dashboard",
+      "summary": "Kortex is a robust, production-ready DevOps monitoring dashboard that has successfully transitioned from mock data to real-time API integrations. Its architecture is modern, leveraging Next.js 15 and TypeScript, with a focus on resilience and real-time updates via WebSockets. The project demonstrates a high level of technical maturity, strong developer experience, and a clear roadmap, indicating excellent viability for continued development and enterprise adoption.",
+      "strengths": [
+        "**Production-Ready Architecture:** Successfully desmocked, with real-time data from GitHub, Azure, and Kubernetes.",
+        "**Resilient & Performant:** Implements WebSockets, auto-reconnection, and graceful fallbacks for API unavailability.",
+        "**Excellent Developer Experience:** 100% TypeScript with strict typing, a complete mock API server, and hot reloading.",
+        "**High Code Quality:** Modular architecture, zero compilation errors, and adherence to modern best practices.",
+        "**Clear and Ambitious Roadmap:** Well-defined future goals, including multi-cloud support and advanced analytics."
+      ],
+      "improvements": {
+        "i1": {
+          "title": "Implement Authentication and Authorization",
+          "description": "The current version lacks a security layer to control access. Implementing a robust authentication (e.g., OAuth 2.0) and authorization system is critical before exposing sensitive DevOps data.",
+          "businessImpact": "Prevents unauthorized access to critical infrastructure data, ensuring security and compliance."
+        },
+        "i2": {
+          "title": "Expand Monitoring with Production APIs",
+          "description": "The dashboard is connected to several sources but needs integration with production APIs like StatusRafa and Kosmos to provide comprehensive, real-world value.",
+          "businessImpact": "Unlocks the core business value of the dashboard by providing a single pane of glass for all critical systems."
+        },
+        "i3": {
+          "title": "Develop an Advanced Alerting System",
+          "description": "The dashboard monitors data but doesn't yet proactively notify users of anomalies. An alerting system (e.g., email, Slack notifications) is needed for critical events.",
+          "businessImpact": "Reduces system downtime and incident response time by proactively alerting engineers to issues."
+        }
+      },
+      "nextSteps": {
+        "shortTerm": {
+          "s1": {
+            "title": "Integrate with a User Management Service",
+            "description": "Choose and implement a service like Auth0, Firebase Auth, or a custom solution to handle user identities and roles."
+          },
+          "s2": {
+            "title": "Add API Keys and Secrets Management",
+            "description": "Securely store and manage API keys for production services using a vault or environment variable management system."
+          }
+        },
+        "longTerm": {
+          "l1": {
+            "title": "Build a Configurable Alerting Engine",
+            "description": "Design a system where users can define custom alert rules, thresholds, and notification channels."
+          },
+          "l2": {
+            "title": "Explore Multi-Cloud Integration (AWS, GCP)",
+            "description": "Develop a strategy and architecture to extend monitoring capabilities to other major cloud providers beyond the current stack."
+          }
+        }
+      },
+      "viability": {
+        "assessment": "The project has extremely high viability. It solves a clear business need, is built on a modern and scalable tech stack, and has a well-defined plan for growth. The transition from mock to real data is a major de-risking event."
+      },
+      "roi": {
+        "assessment": "The potential ROI is significant. By centralizing monitoring and providing real-time insights, Kortex can drastically reduce engineering time spent on diagnostics, improve system uptime, and accelerate incident response.",
+        "gains": {
+          "g1": "Reduced Mean Time to Resolution (MTTR) for incidents.",
+          "g2": "Increased developer productivity by centralizing data.",
+          "g3": "Improved decision-making with a holistic view of system health.",
+          "g4": "Proactive issue detection before they impact users."
+        }
+      },
+      "maturity": {
+        "assessment": "The project is at a 'Production' level. It has a stable core, real data integration, and robust error handling. It's ready for initial user adoption, with clear steps outlined to reach a fully optimized state."
+      }
+    },
+    "history": {
+      "kortex": {
+        "h1": {
+          "assessment": "Viability dropped slightly due to the discovery of complexities in API integration, but the project remains on a positive trajectory. Now considered a strong MVP."
+        },
+        "h2": {
+          "assessment": "The project shows strong potential with a solid architecture, though it still relies on mock data. The core features are well-defined, making it a viable MVP."
+        },
+        "h3": {
+          "summary": "This is a specialized security analysis of the Kortex prototype. It focuses on identifying potential vulnerabilities in the planned architecture and dependencies.",
+          "assessment": "The planned architecture has some security gaps that need to be addressed before production. Viability is contingent on implementing proper authentication and data handling."
+        },
+        "h4": {
+          "projectName": "Kortex Prototype",
+          "assessment": "The project is in its early stages but shows promise. The core concept is solid, but significant work is needed to move beyond the prototype phase."
+        }
+      },
+      "orion": {
+        "projectName": "Orion UI Kit",
+        "summary": "Analysis of the Orion UI Kit, a component library. It focuses on code quality, reusability, and documentation.",
+        "assessment": "The component library is well-structured and documented, showing high viability for adoption within the organization.",
+        "maturityAssessment": "The library is highly optimized, with excellent code quality, comprehensive test coverage, and a streamlined contribution process."
+      }
+    }
+  }
+}
