@@ -17,7 +17,7 @@ If you discover a security vulnerability in GemxAnalyzer:
 - **Do NOT disclose it publicly** or via any public forum (including Discord).
 - Please report it through one of these private channels:
   - [GitHub Security Advisories](https://github.com/kubex-ecosystem/gemx/analyzer/security/advisories)
-  - Or email: [maintainer@github.com/kubex-ecosystem/gemx/ghbex] (replace this with your actual security contact email)
+  - Or email: [maintainer@github.com/kubex-ecosystem/ghbex] (replace this with your actual security contact email)
 
 Include as much detail as possible, such as:
 

@@ -14,7 +14,7 @@
 
 ## 🎯 Por que o GemxAnalyzer?
 
-O GemxAnalyzer revoluciona a forma como você interage com modelos de IA, transformando ideias vagas em prompts estruturados e eficazes.
+O GemxAnalyzer transforma a forma como você interage com modelos de IA, transformando ideias vagas em prompts estruturados e eficazes.
 
 ### Antes do GemxAnalyzer
 
