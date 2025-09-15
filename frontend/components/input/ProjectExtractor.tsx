@@ -353,8 +353,7 @@ export default function ProjectExtractor({ projectFile, projectName, description
 
                 {/* Detail: File Content (Right Panel - 8/12 columns) */}
                 <div
-                  className="col-span-8 flex flex-col bg-white dark:bg-gray-900"
-                  style={{ overflowY: 'auto' }}
+                  className="col-span-8 flex flex-col bg-white dark:bg-gray-900 overflow-y-auto"
                 >
                   {selectedFile ? (
                     <>
@@ -380,8 +379,7 @@ export default function ProjectExtractor({ projectFile, projectName, description
 
                       {/* File Content with Animation */}
                       <div
-                        className="flex-1 overflow-hidden"
-                        style={{ overflowY: 'auto' }}
+                        className="flex-1 overflow-hidden overflow-y-auto"
                       >
                         <AnimatePresence mode="wait">
                           <motion.div
@@ -392,8 +390,7 @@ export default function ProjectExtractor({ projectFile, projectName, description
                             transition={{ duration: 0.2 }}
                           >
                             <pre
-                              className="p-4 text-sm font-mono bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-auto whitespace-pre-wrap leading-relaxed"
-                              style={{ overflowY: 'auto' }}
+                              className="p-4 text-sm font-mono bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 overflow-auto whitespace-pre-wrap leading-relaxed overflow-y-auto"
                             >
                               {selectedFile.content}
                             </pre>

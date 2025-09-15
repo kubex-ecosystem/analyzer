@@ -129,6 +129,52 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
   const { addNotification } = useNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Safety constants for preventing memory issues
+  const DANGEROUS_FOLDERS = [
+    'node_modules',
+    '.git',
+    'dist',
+    'build',
+    'out',
+    'target',
+    'bin',
+    'obj',
+    'Debug',
+    'Release',
+    '.next',
+    '.nuxt',
+    '.vscode',
+    '.idea',
+    'coverage',
+    '.nyc_output',
+    'tmp',
+    'temp',
+    'cache',
+    '.cache',
+    'logs',
+    'log',
+    '.DS_Store',
+    'Thumbs.db',
+    '__pycache__',
+    '.pytest_cache',
+    'vendor',
+    'public/build',
+    'static/build',
+    'assets/build',
+    'embedded/guiweb',
+    'docs-site',
+    'storybook-static',
+    '.expo',
+    '.metro',
+    'android/build',
+    'ios/build',
+    'web-build'
+  ];
+
+  const MAX_FILE_SIZE = 1024 * 1024; // 1MB per file
+  const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total
+  const MAX_FILES = 1000; // Maximum number of files
+
   // State
   const [isExtracting, setIsExtracting] = useState(false);
   const [isCreatingArchive, setIsCreatingArchive] = useState(false);
@@ -140,6 +186,50 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
     language: '',
     search: ''
   });
+  const [previewFiles, setPreviewFiles] = useState<{ file: File; path: string; shouldInclude: boolean }[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+
+  // Utility functions for safety checks
+  const isDangerousPath = (path: string): boolean => {
+    const normalizedPath = path.toLowerCase();
+    return DANGEROUS_FOLDERS.some(folder => 
+      normalizedPath.includes(`/${folder.toLowerCase()}/`) || 
+      normalizedPath.includes(`\\${folder.toLowerCase()}\\`) ||
+      normalizedPath.endsWith(`/${folder.toLowerCase()}`) ||
+      normalizedPath.endsWith(`\\${folder.toLowerCase()}`) ||
+      normalizedPath.startsWith(`${folder.toLowerCase()}/`) ||
+      normalizedPath.startsWith(`${folder.toLowerCase()}\\`)
+    );
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const shouldIncludeFile = (file: File, path: string): { include: boolean; reason?: string } => {
+    // Check if path is dangerous
+    if (isDangerousPath(path)) {
+      return { include: false, reason: 'Dangerous folder detected' };
+    }
+
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return { include: false, reason: `File too large (${formatFileSize(file.size)})` };
+    }
+
+    // Check file extensions that are typically not needed
+    const dangerousExtensions = ['.exe', '.dll', '.so', '.dylib', '.bin', '.img', '.iso', '.tar', '.gz', '.zip', '.rar'];
+    const extension = path.toLowerCase().split('.').pop();
+    if (extension && dangerousExtensions.includes(`.${extension}`)) {
+      return { include: false, reason: 'Binary/archive file' };
+    }
+
+    return { include: true };
+  };
 
   // Lazy load lookatni-core
   const loadLookAtniCore = useCallback(async (): Promise<LookAtniCore> => {
@@ -166,22 +256,80 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
     }
   }, []);
 
-  // Handle folder/file selection
+  // Handle folder/file selection with preview
   const handleFileSelection = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
+    // First, analyze all files and show preview
+    const fileAnalysis: { file: File; path: string; shouldInclude: boolean; reason?: string; size: number }[] = [];
+    let totalSize = 0;
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const relativePath = file.webkitRelativePath || file.name;
+      const analysis = shouldIncludeFile(file, relativePath);
+      
+      fileAnalysis.push({
+        file,
+        path: relativePath,
+        shouldInclude: analysis.include,
+        reason: analysis.reason,
+        size: file.size
+      });
+
+      if (analysis.include) {
+        totalSize += file.size;
+      }
+    }
+
+    const includedFiles = fileAnalysis.filter(f => f.shouldInclude);
+    const excludedFiles = fileAnalysis.filter(f => !f.shouldInclude);
+
+    // Safety checks
+    if (includedFiles.length > MAX_FILES) {
+      addNotification({
+        type: 'error',
+        message: `Too many files selected (${includedFiles.length}). Maximum allowed: ${MAX_FILES}`
+      });
+      return;
+    }
+
+    if (totalSize > MAX_TOTAL_SIZE) {
+      addNotification({
+        type: 'error',
+        message: `Total file size too large (${formatFileSize(totalSize)}). Maximum allowed: ${formatFileSize(MAX_TOTAL_SIZE)}`
+      });
+      return;
+    }
+
+    // Show preview if there are exclusions or if it's a large project
+    if (excludedFiles.length > 0 || includedFiles.length > 100 || totalSize > 10 * 1024 * 1024) {
+      setPreviewFiles(fileAnalysis);
+      setShowPreview(true);
+      addNotification({
+        type: 'info',
+        message: `Found ${includedFiles.length} files to process (${excludedFiles.length} excluded). Review the preview before continuing.`
+      });
+      return;
+    }
+
+    // If no issues, proceed directly
+    await processSelectedFiles(includedFiles.map(f => ({ file: f.file, path: f.path })));
+  }, [addNotification]);
+
+  // Process the actual files after preview confirmation
+  const processSelectedFiles = async (filesToProcess: { file: File; path: string }[]) => {
     setIsExtracting(true);
+    setShowPreview(false);
 
     try {
       // Create a virtual filesystem from selected files
       const fileData = new Map<string, File>();
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const relativePath = file.webkitRelativePath || file.name;
-        fileData.set(relativePath, file);
-      }
+      filesToProcess.forEach(({ file, path }) => {
+        fileData.set(path, file);
+      });
 
       // Extract project data directly in browser
       const project = await extractProjectFromFiles(fileData);
@@ -206,7 +354,7 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
     } finally {
       setIsExtracting(false);
     }
-  }, [addNotification, onFilesExtracted]);
+  };
 
   // Extract project from FileList (browser-native)
   const extractProjectFromFiles = async (fileData: Map<string, File>): Promise<ExtractedProject> => {
