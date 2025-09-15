@@ -1,3 +1,5 @@
+// Package transport sets up HTTP routes and handlers for the Analyzer Gateway,
+// including merged Repository Intelligence endpoints.
 package transport
 
 import (
