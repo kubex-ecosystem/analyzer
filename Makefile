@@ -58,6 +58,8 @@ test-gw:
 .PHONY: clean
 clean:
 	@$(call log,"Cleaning build artifacts...")
+	@rm -rf $(ROOT_DIR)frontend/dist
+	@rm -rf $(ROOT_DIR)frontend/node_modules
 	@rm -rf $(DIST_DIR)
 	@$(call log_success,"Clean completed")
 
@@ -65,14 +67,14 @@ clean:
 .PHONY: build-frontend
 build-frontend:
 	@$(call log,"Building frontend...")
-	@cd frontend && npm run build
+	@cd frontend && npm run build:static
 	@$(call log_success,"Frontend built")
 
 # Install frontend dependencies
 .PHONY: install-frontend
 install-frontend:
 	@$(call log,"Installing frontend dependencies...")
-	@cd frontend && npm install
+	@cd frontend && npm i --no-fund --no-audit --loglevel=error
 	@$(call log_success,"Frontend dependencies installed")
 
 # Run frontend in development mode
@@ -89,7 +91,10 @@ dev:
 	@go run ./cmd/gw &
 	@sleep 2
 	@echo "Starting frontend..."
-	@cd frontend && npm run dev
+	@cd frontend || exit 1
+	@npm run dev &
+	@echo "Development environment running. Press Ctrl+C to stop."
+	@wait || exit 1
 
 # Go module management
 .PHONY: tidy
@@ -102,7 +107,7 @@ tidy:
 .PHONY: test
 test:
 	@$(call log,"Running Go tests...")
-	@go test ./...
+	@go test --bench -v ./...
 	@$(call log_success,"Tests completed")
 
 # All-in-one build
