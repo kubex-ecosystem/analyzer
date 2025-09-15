@@ -1,5 +1,5 @@
-// Package providers defines interfaces and types for AI providers
-package providers
+// Package types defines interfaces and types for AI providers
+package types
 
 import "context"
 
@@ -14,9 +14,11 @@ type ServerConfig struct {
 }
 
 type DefaultsConfig struct {
-	TenantID string `yaml:"tenant_id"`
-	UserID   string `yaml:"user_id"`
-	Byok     string `yaml:"byok"`
+	TenantID                   string    `yaml:"tenant_id"`
+	UserID                     string    `yaml:"user_id"`
+	Byok                       string    `yaml:"byok"`
+	NotificationProvider       *Provider `yaml:"notification_provider"`
+	NotificationTimeoutSeconds int       `yaml:"notification_timeout_seconds"`
 }
 
 type ToolCall struct {
@@ -44,6 +46,7 @@ type Provider interface {
 	Name() string
 	Chat(ctx context.Context, req ChatRequest) (<-chan ChatChunk, error)
 	Available() error
+	Notify(ctx context.Context, event NotificationEvent) error
 }
 
 // ChatRequest represents a chat completion request

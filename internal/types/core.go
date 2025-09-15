@@ -180,3 +180,19 @@ type VisibilityItem struct {
 	KPI    string `json:"kpi"`
 	Effort string `json:"effort"`
 }
+
+// AnalysisJob represents a scheduled or running repository analysis job
+type AnalysisJob struct {
+	ID           string                 `json:"id"`
+	RepoURL      string                 `json:"repo_url"`
+	AnalysisType string                 `json:"analysis_type"`
+	Status       string                 `json:"status"` // "scheduled", "running", "completed", "failed"
+	Progress     float64                `json:"progress"`
+	CreatedAt    time.Time              `json:"created_at"`
+	StartedAt    *time.Time             `json:"started_at,omitempty"`
+	CompletedAt  *time.Time             `json:"completed_at,omitempty"`
+	Error        string                 `json:"error,omitempty"`
+	Results      map[string]interface{} `json:"results,omitempty"`
+	ScheduledBy  string                 `json:"scheduled_by,omitempty"`
+	Metadata     map[string]interface{} `json:"metadata,omitempty"`
+}

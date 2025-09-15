@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
 // anthropicProvider implements the Provider interface for Anthropic Claude
@@ -299,6 +299,11 @@ func (p *anthropicProvider) Chat(ctx context.Context, req providers.ChatRequest)
 	}()
 
 	return responseChan, nil
+}
+
+func (p *anthropicProvider) Notify(ctx context.Context, event providers.NotificationEvent) error {
+	// Implement notification logic here
+	return nil
 }
 
 func (p *anthropicProvider) Close() error {

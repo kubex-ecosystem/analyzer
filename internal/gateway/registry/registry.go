@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 	"gopkg.in/yaml.v3"
 )
 
@@ -123,6 +123,13 @@ func (r *Registry) Chat(ctx context.Context, req providers.ChatRequest) (<-chan 
 		return nil, fmt.Errorf("provider '%s' not found", req.Provider)
 	}
 	return p.Chat(ctx, req)
+}
+func (r *Registry) Notify(ctx context.Context, event providers.NotificationEvent) error {
+	p := r.ResolveProvider(event.Type)
+	if p == nil {
+		return fmt.Errorf("provider '%s' not found", event.Type)
+	}
+	return p.Notify(ctx, event)
 }
 
 // /v1/chat/completions — SSE endpoints

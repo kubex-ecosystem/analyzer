@@ -297,7 +297,7 @@ func (j *JiraClient) GetIssues(ctx context.Context, project string, since time.T
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("Jira API error: %d", resp.StatusCode)
+		return nil, fmt.Errorf("jira API error: %d", resp.StatusCode)
 	}
 
 	var response JiraSearchResponse
@@ -326,7 +326,7 @@ func (j *JiraClient) GetIssues(ctx context.Context, project string, since time.T
 	return issues, nil
 }
 
-// Jira API response types
+// JiraSearchResponse API response types
 type JiraSearchResponse struct {
 	Issues []JiraIssue `json:"issues"`
 }
@@ -466,7 +466,7 @@ func (w *WakaTimeClient) GetCodingTime(ctx context.Context, user, repo string, s
 	}, nil
 }
 
-// WakaTime API response types
+// WakaTimeSummariesResponse API response types
 type WakaTimeSummariesResponse struct {
 	Data []WakaTimeDaySummary `json:"data"`
 }

@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
 // groqProvider implements the Provider interface for Groq's ultra-fast inference
@@ -57,6 +57,11 @@ func (p *groqProvider) Available() error {
 	if p.apiKey == "" {
 		return errors.New("groq API key not configured")
 	}
+	return nil
+}
+
+func (p *groqProvider) Notify(ctx context.Context, event providers.NotificationEvent) error {
+	// Implement notification logic here
 	return nil
 }
 

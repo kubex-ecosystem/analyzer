@@ -15,7 +15,7 @@ O **analyzer-gw** é um gateway HTTP ultra-enxuto que abstrai múltiplos provedo
 
 ### 1. Configure providers
 
-Edite `config/providers.yml`:
+Edite `config/config.example.yml`:
 
 ```yaml
 providers:
@@ -123,7 +123,7 @@ internal/gateway/
 │   └── openai.go         # OpenAI provider
 └── transport/             # HTTP transport layer
     └── http.go           # SSE endpoints
-config/providers.yml       # Provider configuration
+config/config.example.yml       # Provider configuration
 ```
 
 ## 🔧 Build & Deploy

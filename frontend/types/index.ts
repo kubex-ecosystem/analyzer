@@ -34,9 +34,9 @@ export enum MaturityLevel {
 export type NotificationType = 'success' | 'error' | 'info';
 
 export enum DataSourceType {
-    Manual = 'MANUAL',
-    GitHub = 'GITHUB',
-    Jira = 'JIRA',
+  Manual = 'MANUAL',
+  GitHub = 'GITHUB',
+  Jira = 'JIRA',
 }
 
 export enum ViewType {
@@ -82,9 +82,9 @@ export interface ProjectMaturity {
 }
 
 export interface UsageMetadata {
-    promptTokenCount: number;
-    candidatesTokenCount: number;
-    totalTokenCount: number;
+  promptTokenCount: number;
+  candidatesTokenCount: number;
+  totalTokenCount: number;
 }
 
 export interface ProjectAnalysis {
@@ -104,32 +104,33 @@ export interface ProjectAnalysis {
 }
 
 export interface KeyMetrics {
-    previousScore: number;
-    currentScore: number;
-    scoreChange: number;
-    previousStrengths: number;
-    currentStrengths: number;
-    previousImprovements: number;
-    currentImprovements: number;
+  previousScore: number;
+  currentScore: number;
+  scoreChange: number;
+  previousStrengths: number;
+  currentStrengths: number;
+  previousImprovements: number;
+  currentImprovements: number;
 }
 
 export interface EvolutionAnalysis {
-    projectName: string;
-    analysisType: AnalysisType;
-    evolutionSummary: string;
-    keyMetrics: KeyMetrics;
-    resolvedImprovements: Improvement[];
-    newImprovements: Improvement[];
-    persistentImprovements: Improvement[];
-    usageMetadata?: UsageMetadata;
+  projectName: string;
+  analysisType: AnalysisType;
+  evolutionSummary: string;
+  keyMetrics: KeyMetrics;
+  resolvedImprovements: Improvement[];
+  newImprovements: Improvement[];
+  persistentImprovements: Improvement[];
+  usageMetadata?: UsageMetadata;
 }
 
 
 // Interfaces for App state
 export interface ProjectFile {
-    id: number;
-    name: string;
-    content: string;
+  id: number;
+  name: string;
+  content: string;
+  isFragment?: boolean;
 }
 
 export interface HistoryItem {
@@ -149,58 +150,58 @@ export interface Notification {
 }
 
 export interface AppSettings {
-    saveHistory: boolean;
-    theme: Theme;
-    tokenLimit: number;
-    userApiKey?: string;
-    // Integration settings
-    githubPat?: string;
-    jiraInstanceUrl?: string;
-    jiraUserEmail?: string;
-    jiraApiToken?: string;
+  saveHistory: boolean;
+  theme: Theme;
+  tokenLimit: number;
+  userApiKey?: string;
+  // Integration settings
+  githubPat?: string;
+  jiraInstanceUrl?: string;
+  jiraUserEmail?: string;
+  jiraApiToken?: string;
 }
 
 export interface UsageTracking {
-    totalTokens: number;
-    monthlyTokens: number;
+  totalTokens: number;
+  monthlyTokens: number;
 }
 
 export interface UserProfile {
-    name: string;
-    email?: string;
-    avatar?: string;
+  name: string;
+  email?: string;
+  avatar?: string;
 }
 
 // Kanban types
 export type KanbanColumnId = 'backlog' | 'todo' | 'inProgress' | 'done';
 
 export interface KanbanCard {
-    id: string;
-    title: string;
-    description: string;
-    priority: Priority;
-    difficulty: Difficulty;
-    tags: string[];
-    notes: string;
+  id: string;
+  title: string;
+  description: string;
+  priority: Priority;
+  difficulty: Difficulty;
+  tags: string[];
+  notes: string;
 }
 
 export interface KanbanColumn {
-    id: KanbanColumnId;
-    title: string;
-    cards: KanbanCard[];
+  id: KanbanColumnId;
+  title: string;
+  cards: KanbanCard[];
 }
 
 export interface KanbanState {
-    projectName: string;
-    columns: {
-        [key in KanbanColumnId]: KanbanColumn;
-    };
+  projectName: string;
+  columns: {
+    [key in KanbanColumnId]: KanbanColumn;
+  };
 }
 
 // Interfaces for Chat
 export interface ChatMessage {
-    role: 'user' | 'model';
-    parts: { text: string }[];
+  role: 'user' | 'model';
+  parts: { text: string }[];
 }
 
 export type AllChatHistories = Record<number, ChatMessage[]>;

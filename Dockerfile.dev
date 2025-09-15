@@ -33,4 +33,4 @@ USER developer
 EXPOSE 8080 2345
 
 # Default command for development
-CMD ["go", "run", "./cmd/gw"]
+CMD ["go", "run", "./cmd/main.go", "gateway", "serve", "&", "bash"]

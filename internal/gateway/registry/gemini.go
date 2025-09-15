@@ -9,7 +9,7 @@ import (
 	"time"
 
 	genai "github.com/google/generative-ai-go/genai"
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 	"google.golang.org/api/option"
 )
 
@@ -203,6 +203,11 @@ func (g *geminiProvider) Chat(ctx context.Context, req providers.ChatRequest) (<
 	}()
 
 	return ch, nil
+}
+
+func (g *geminiProvider) Notify(ctx context.Context, event providers.NotificationEvent) error {
+	// Implement notification logic here
+	return nil
 }
 
 // toGeminiContents converts generic messages to Gemini SDK format

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
 // openaiProvider implements the Provider interface for OpenAI-compatible APIs
@@ -148,6 +148,11 @@ func (o *openaiProvider) Chat(ctx context.Context, req providers.ChatRequest) (<
 	}()
 
 	return ch, nil
+}
+
+func (o *openaiProvider) Notify(ctx context.Context, event providers.NotificationEvent) error {
+	// Implement notification logic here
+	return nil
 }
 
 // toOpenAIMessages converts generic messages to OpenAI format

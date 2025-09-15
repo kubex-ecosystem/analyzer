@@ -1,12 +1,12 @@
-version: '3.8'
+name: 'Kubex GemX Analyzer Production Environment'
 
 services:
-  analyzer-gw:
+  gemx-analyzer:
     build:
       context: .
       dockerfile: Dockerfile
-    image: analyzer-gw:latest
-    container_name: analyzer-gw
+    image: gemx-analyzer:latest
+    container_name: gemx-analyzer
     ports:
       - "8080:8080"
     environment:
@@ -21,7 +21,7 @@ services:
       - analyzer-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/status"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3

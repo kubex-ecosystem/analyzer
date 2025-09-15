@@ -6,8 +6,8 @@ import (
 
 	"github.com/kubex-ecosystem/analyzer/internal/advise"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
 type httpHandlersSSE struct {

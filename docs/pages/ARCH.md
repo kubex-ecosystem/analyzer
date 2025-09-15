@@ -2,7 +2,7 @@
 # Arquitetura
 
 * `internal/providers/*` — adapters finos por vendor
-* `internal/registry` — carrega `providers.yml`, resolve provider
+* `internal/registry` — carrega `config.example.yml`, resolve provider
 * `internal/transport` — HTTP/SSE, state sync, auth passthrough
 * `cmd/gw` — main do gateway
 * `cmd/gemx` — CLI

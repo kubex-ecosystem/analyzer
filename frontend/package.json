@@ -35,6 +35,8 @@
     "serve": "vite preview --port 4173 --host"
   },
   "dependencies": {
+    "lookatni-core": "^1.2.0",
+    "lookatni-file-markers": "^1.2.0",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
