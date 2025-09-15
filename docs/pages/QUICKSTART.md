@@ -9,7 +9,7 @@ export GEMINI_API_KEY=...
 export ANTHROPIC_API_KEY=...
 ```
 
-Edite `config/providers.yml`:
+Edite `config/config.example.yml`:
 
 ```yaml
 providers:

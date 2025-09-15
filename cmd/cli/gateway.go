@@ -36,7 +36,7 @@ Features:
   analyzer gateway serve
 
   # Start with custom config and address
-  analyzer gateway serve --addr :8080 --config ./config/providers.yml
+  analyzer gateway serve --addr :8080 --config ./config/config.example.yml
 
   # Start with debug mode and CORS enabled
   analyzer gateway serve --debug --cors`,
@@ -59,7 +59,7 @@ Features:
 
 	// Add flags to serve command
 	serveCmd.Flags().StringVarP(&addr, "addr", "a", getEnv("ADDR", ":8080"), "Server address")
-	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "config/providers.yml"), "Providers config file")
+	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "config/config.example.yml"), "Providers config file")
 	serveCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 	serveCmd.Flags().BoolVar(&enableCORS, "cors", true, "Enable CORS headers")
 

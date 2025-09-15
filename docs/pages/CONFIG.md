@@ -1,7 +1,7 @@
 
 # Config
 
-## providers.yml
+## config.example.yml
 
 ```yaml
 providers:
@@ -15,7 +15,7 @@ providers:
 ## Variáveis de ambiente
 
 * `OPENAI_API_KEY`, `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`
-* `PROVIDERS_CFG` (default `config/providers.yml`)
+* `PROVIDERS_CFG` (default `config/config.example.yml`)
 * `ADDR` (default `:8080`)
 * `GOBE_BASE_URL` (opcional; habilita `/v1/auth/*` passthrough)
 
