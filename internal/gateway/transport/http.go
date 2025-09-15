@@ -1,5 +1,4 @@
 // Package transport provides HTTP transport layer for the gateway.package transport
-
 package transport
 
 import (
