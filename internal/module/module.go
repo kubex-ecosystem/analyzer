@@ -30,11 +30,8 @@ func (m *Analyzer) Usage() string {
 }
 func (m *Analyzer) Examples() []string {
 	return []string{
-		"Analyzer start",
-		"Analyzer start -p 5000 -d '127.0.0.1'",
-		"Analyzer ask --prompt \"What is Go?\" --provider gemini",
-		"Analyzer generate --ideas \"API,REST,tutorial\" --purpose \"Learning\"",
-		"Analyzer chat --provider claude",
+		"analyzer gateway serve -p '8080' -b '127.0.0.1' -f './config.yaml'",
+		"analyzer gui web -f './config.yaml'",
 	}
 }
 func (m *Analyzer) Active() bool {
@@ -64,7 +61,7 @@ func (m *Analyzer) Command() *cobra.Command {
 	// rtCmd.AddCommand(cc.StartCmd())
 	// rtCmd.AddCommand(cc.AskCmd())
 	// rtCmd.AddCommand(cc.ChatCmd())
-	// rtCmd.AddCommand(cc.GenerateCmd())
+	rtCmd.AddCommand(cc.GatewayCmds())
 
 	// Add more commands as needed
 	rtCmd.AddCommand(vs.CliCommand())

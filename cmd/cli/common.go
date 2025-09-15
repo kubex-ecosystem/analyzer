@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"fmt"
 	"math/rand"
 	"os"
 	"strings"
@@ -9,18 +10,13 @@ import (
 
 var banners = []string{
 	`
-  ______                                            __     
- /      \                                          |  \    
-|  ▓▓▓▓▓▓\ ______   ______  ______ ____   ______  _| ▓▓_   
-| ▓▓ __\▓▓/      \ /      \|      \    \ /      \|   ▓▓ \  
-| ▓▓|    \  ▓▓▓▓▓▓\  ▓▓▓▓▓▓\ ▓▓▓▓▓▓\▓▓▓▓\  ▓▓▓▓▓▓\\▓▓▓▓▓▓  
-| ▓▓ \▓▓▓▓ ▓▓   \▓▓ ▓▓  | ▓▓ ▓▓ | ▓▓ | ▓▓ ▓▓  | ▓▓ | ▓▓ __ 
-| ▓▓__| ▓▓ ▓▓     | ▓▓__/ ▓▓ ▓▓ | ▓▓ | ▓▓ ▓▓__/ ▓▓ | ▓▓|  \
- \▓▓    ▓▓ ▓▓      \▓▓    ▓▓ ▓▓ | ▓▓ | ▓▓ ▓▓    ▓▓  \▓▓  ▓▓
-  \▓▓▓▓▓▓ \▓▓       \▓▓▓▓▓▓ \▓▓  \▓▓  \▓▓ ▓▓▓▓▓▓▓    \▓▓▓▓ 
-                                        | ▓▓               
-                                        | ▓▓               
-                                         \▓▓               
+                                        %sGemX%s
+      __      ____  _____      __      _____    ____  ____ ________ _________ _______
+     /  \    |_   \|_   _|    /  \    |_   _|  |_  _||_  _|  __   _|_   ___  |_   __ \
+    / /\ \     |   \ | |     / /\ \     | |      \ \  / / |_/  / /   | |_  \_| | |__) |
+   / ____ \    | |\ \| |    / ____ \    | |   _   \ \/ /     .'.' _  |  _|  _  |  __ /
+ _/ /    \ \_ _| |_\   |_ _/ /    \ \_ _| |__/ |  _|  |_   _/ /__/ |_| |___/ |_| |  \ \_
+|____|  |____|_____|\____|____|  |____|________| |______| |________|_________|____| |___|
 `,
 }
 
@@ -39,7 +35,7 @@ func GetDescriptions(descriptionArg []string, _ bool) map[string]string {
 
 	bannerRandLen := len(banners)
 	bannerRandIndex := rand.Intn(bannerRandLen)
-	banner = banners[bannerRandIndex]
+	banner = fmt.Sprintf(banners[bannerRandIndex], "", "\033[0m")
 
 	return map[string]string{"banner": banner, "description": description}
 }
