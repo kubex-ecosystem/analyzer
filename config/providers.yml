@@ -17,13 +17,13 @@ providers:
     key_env: ANTHROPIC_API_KEY
     default_model: claude-3-5-sonnet-20241022
 
-  # Future providers (uncomment when implemented)
-  # groq:
-  #   type: groq
-  #   base_url: https://api.groq.com
-  #   key_env: GROQ_API_KEY
-  #   default_model: llama-3.1-70b-versatile
+  groq:
+    type: groq
+    base_url: https://api.groq.com
+    key_env: GROQ_API_KEY
+    default_model: llama-3.1-70b-versatile
 
+  # Future providers (uncomment when implemented)
   # openrouter:
   #   type: openrouter
   #   base_url: https://openrouter.ai/api

@@ -70,8 +70,16 @@ func Load(path string) (*Registry, error) {
 			}
 			r.providers[name] = p
 		case "groq":
-			// TODO: Implement Groq provider
-			return nil, fmt.Errorf("groq provider not yet implemented")
+			key := os.Getenv(pc.KeyEnv)
+			if key == "" {
+				fmt.Printf("Warning: Skipping Groq provider '%s' - no API key found in %s\n", name, pc.KeyEnv)
+				continue
+			}
+			p, err := NewGroqProvider(name, pc.BaseURL, key, pc.DefaultModel)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create Groq provider %s: %w", name, err)
+			}
+			r.providers[name] = p
 		case "openrouter":
 			// TODO: Implement OpenRouter provider
 			return nil, fmt.Errorf("openrouter provider not yet implemented")
