@@ -1,13 +1,13 @@
-version: '3.8'
+name: 'Kubex GemX Analyzer Development Environment'
 
 services:
-  analyzer-gw-dev:
+  gemx-analyzer-dev:
     build:
       context: .
       dockerfile: Dockerfile.dev
       target: development
-    image: analyzer-gw:dev
-    container_name: analyzer-gw-dev
+    image: gemx-analyzer:dev
+    container_name: gemx-analyzer-dev
     ports:
       - "8080:8080"
       - "2345:2345" # Delve debugger port
@@ -23,7 +23,7 @@ services:
     networks:
       - analyzer-dev-network
     working_dir: /app
-    command: ["go", "run", "./cmd/gw"]
+    command: ["go", "run", "./cmd/main.go"]
     restart: unless-stopped
 
   frontend-dev:

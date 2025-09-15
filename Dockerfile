@@ -8,7 +8,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 
 # Install dependencies (including dev dependencies for build)
-RUN npm ci --no-fund --no-audit
+RUN npm ci --no-fund --no-audit --loglevel=error
 
 # Copy frontend source
 COPY frontend/ ./
@@ -27,18 +27,20 @@ WORKDIR /app
 # Copy go mod files
 COPY go.mod go.sum ./
 
-# Download dependencies
 RUN go mod download
 
 # Copy source code
 COPY . .
 
+# Download dependencies
+RUN go mod tidy
+
 # Build the gateway binary
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -trimpath \
     -ldflags="-s -w -X main.version=$(git describe --tags --always --dirty)" \
-    -o analyzer-gw \
-    ./cmd/gw
+    -o dist/analyzer_linux_amd64 \
+    ./cmd
 
 # Stage 3: Final runtime image
 FROM alpine:3.19
@@ -58,7 +60,7 @@ RUN addgroup -g 1001 analyzer && \
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=backend-builder /app/analyzer-gw .
+COPY --from=backend-builder /app/analyzer_linux_amd64 .
 
 # Copy frontend assets from builder
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
@@ -80,4 +82,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/v1/status || exit 1
 
 # Set entrypoint
-ENTRYPOINT ["./analyzer-gw"]
+ENTRYPOINT ["./analyzer_linux_amd64", "gateway", "serve", "--config", "./config/config.yaml"]

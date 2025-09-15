@@ -1,12 +1,12 @@
-version: '3.8'
+name: 'Kubex GemX Analyzer Production Environment'
 
 services:
-  analyzer-gw:
+  gemx-analyzer:
     build:
       context: .
       dockerfile: Dockerfile
-    image: analyzer-gw:latest
-    container_name: analyzer-gw
+    image: gemx-analyzer:latest
+    container_name: gemx-analyzer
     ports:
       - "8080:8080"
     environment:
