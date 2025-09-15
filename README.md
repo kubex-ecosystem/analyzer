@@ -16,7 +16,7 @@
 
 ## **Table of Contents**
 
-1. [🎯 Why GemxAnalyzer?](#-why-grompt)
+1. [🎯 Why GemxAnalyzer?](#-why-gemxanalyzer)
 2. [✨ Key Features](#-key-features)
 3. [🚀 Quick Start](#-quick-start)
 4. [🖥️ CLI Commands](#️-cli-commands)
