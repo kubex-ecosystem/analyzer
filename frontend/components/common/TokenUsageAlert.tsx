@@ -10,7 +10,7 @@ interface TokenUsageAlertProps {
 }
 
 const TokenUsageAlert: React.FC<TokenUsageAlertProps> = ({ limit, consumed }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const { locale } = useLanguage();
 
   if (limit <= 0) {

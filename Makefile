@@ -1,51 +1,14 @@
-# Description: Makefile for building and installing a Go application
+# Description: Makefile for Analyzer Gateway
 # Author: Rafael Mori
 # Copyright (c) 2025 Rafael Mori
 # License: MIT License
 
-# Define the application name and root directory
+# Define directories and binary names
 ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-TARGET_MANIFEST = $(ROOT_DIR)internal/module/info/manifest.json
-APP_NAME := $(shell jq -r '.name' < $(TARGET_MANIFEST))
-_RUN_PRE_SCRIPTS := $(shell echo "true")
-_RUN_POST_SCRIPTS := $(shell echo "true")
+GATEWAY_BINARY := $(ROOT_DIR)dist/analyzer-gw
+DIST_DIR := $(ROOT_DIR)dist
 
-ifeq ($(APP_NAME),)
-APP_NAME := $(shell  echo $(basename $(CURDIR)) | tr '[:upper:]' '[:lower:]')
-endif
-ORGANIZATION := $(shell jq -r '.organization' < $(TARGET_MANIFEST))
-ifeq ($(ORGANIZATION),)
-ORGANIZATION := $(shell git config --get user.name | tr '[:upper:]' '[:lower:]')
-endif
-ifeq ($(ORGANIZATION),)
-ORGANIZATION := $(shell git config --get user.email | cut -d '@' -f 1 | tr '[:upper:]' '[:lower:]')
-endif
-ifeq ($(ORGANIZATION),)
-ORGANIZATION := $(shell echo $(USER) | tr '[:upper:]' '[:lower:]')
-endif
-REPOSITORY := $(shell jq -r '.repository' < $(TARGET_MANIFEST))
-ifeq ($(REPOSITORY),)
-REPOSITORY := $(shell git config --get remote.origin.url)
-endif
-ifeq ($(REPOSITORY),)
-REPOSITORY := $(shell git config --get remote.upstream.url)
-endif
-ifeq ($(REPOSITORY),)
-REPOSITORY := $(printf 'https://github.com/%s/%s.git' $(ORGANIZATION) $(APP_NAME))
-endif
-DESCRIPTION := $(shell jq -r '.description' < $(TARGET_MANIFEST))
-ifeq ($(DESCRIPTION),)
-DESCRIPTION := $(shell git log -1 --pretty=%B | head -n 1)
-endif
-BINARY_NAME := $(shell jq -r '.bin' < $(TARGET_MANIFEST))
-ifeq ($(BINARY_NAME),)
-BINARY_NAME := $(ROOT_DIR)dist/$(APP_NAME)
-else
-BINARY_NAME := $(ROOT_DIR)dist/$(BINARY_NAME)
-endif
-CMD_DIR := $(ROOT_DIR)cmd
-
-# Define the color codes
+# Define color codes
 COLOR_GREEN := \033[32m
 COLOR_YELLOW := \033[33m
 COLOR_RED := \033[31m
@@ -54,128 +17,104 @@ COLOR_RESET := \033[0m
 
 # Logging Functions
 log = @printf "%b%s%b %s\n" "$(COLOR_BLUE)" "[LOG]" "$(COLOR_RESET)" "$(1)"
-log_info = @printf "%b%s%b %s\n" "$(COLOR_BLUE)" "[INFO]" "$(COLOR_RESET)" "$(1)"
 log_success = @printf "%b%s%b %s\n" "$(COLOR_GREEN)" "[SUCCESS]" "$(COLOR_RESET)" "$(1)"
 log_warning = @printf "%b%s%b %s\n" "$(COLOR_YELLOW)" "[WARNING]" "$(COLOR_RESET)" "$(1)"
-log_break = @printf "%b%s%b\n" "$(COLOR_BLUE)" "[INFO]" "$(COLOR_RESET)"
-log_error = @printf "%b%s%b %s\n" "$(COLOR_RED)" "[ERROR]" "$(COLOR_RESET)" "$(1)"
 
-ARGUMENTS := $(MAKECMDGOALS)
-INSTALL_SCRIPT = $(ROOT_DIR)support/main.sh
-CMD_STR := $(strip $(firstword $(ARGUMENTS)))
-ARGS := $(filter-out $(strip $(CMD_STR)), $(ARGUMENTS))
-
-# Default target: help
-.DEFAULT_GOAL := help
-
-# Build the binary using the install script.
-build:
-	@bash $(INSTALL_SCRIPT) build $(ARGS)
-	$(shell exit 0)
-
-build-dev:
-	@bash $(INSTALL_SCRIPT) build-dev $(ARGS)
-	$(shell exit 0)
-
-# Install the binary and configure the environment.
-install:
-	@bash $(INSTALL_SCRIPT) install $(ARGS)
-	$(shell exit 0)
-
-# Uninstall the binary and clean up.
-uninstall:
-	@bash $(INSTALL_SCRIPT) uninstall $(ARGS)
-	$(shell exit 0)
-
-# Clean up build artifacts.
-clean:
-	@bash $(INSTALL_SCRIPT) clean $(ARGS)
-	$(shell exit 0)
-
-# Run tests.
-test:
-	@bash $(INSTALL_SCRIPT) test $(ARGS)
-	$(shell exit 0)
-
-optimize-images:
-	@bash $(INSTALL_SCRIPT) optimize-images $(ARGS)
-	$(shell exit 0)
-
-# Platform-specific targets (prevent wildcard capture)
-linux:
-	@echo "Process finished for platform: linux"
-
-amd64:
-	@echo "Process finished for architecture: amd64"
-
-windows:
-	@echo "Process finished for platform: windows"
-
-darwin:
-	@echo "Process finished for platform: darwin"
-
-arm64:
-	@echo "Process finished for architecture: arm64"
-
-armv6l:
-	@echo "Process finished for architecture: armv6l"
-
-386:
-	@echo "Process finished for architecture: 386"
-
-all:
-	@echo "Process finished for all platforms and architectures"
-
-build-docs:
-	@echo "Building documentation..."
-	@bash $(INSTALL_SCRIPT) build-docs $(ARGS)
-	$(shell exit 0)
-
-serve-docs:
-	@echo "Starting documentation server..."
-	@bash $(INSTALL_SCRIPT) serve-docs $(ARGS)
-
-pub-docs:
-	@echo "Publishing documentation..."
-	@bash $(INSTALL_SCRIPT) pub-docs $(ARGS)
-	$(shell exit 0)
-
-## Run dynamic commands with arguments calling the install script.
-%:
-	@:
-	$(call log_info, Running command: $(CMD_STR))
-	$(call log_info, Args: $(ARGS))
-	@bash $(INSTALL_SCRIPT) $(CMD_STR) $(ARGS)
-	$(shell exit 0)
-
-# Display help message
+# Default target
+.PHONY: help
 help:
-	$(call log, $(APP_NAME) Build System Help)
-	$(call log_break)
-	$(call log, Available targets:)
-	$(call log,   make build      - Build the binary using install script)
-	$(call log,   make install    - Install the binary and configure environment)
-	$(call log,   make docs       - Start API documentation server)
-	$(call log,   make build-docs - Build documentation server binary)
-	$(call log,   make clean      - Clean up build artifacts)
-	$(call log,   make test       - Run tests)
-	$(call log,   make help       - Display this help message)
-	$(call log_break)
-	$(call log, Documentation:)
-	$(call log,   make docs       - Starts beautiful API documentation at http://localhost:8080/docs)
-	$(call log,   ./start-docs.sh - Alternative way to start documentation server)
-	$(call log_break)
-	$(call log, Usage with arguments:)
-	$(call log,   make install ARGS='--custom-arg value' - Pass custom arguments to the install script)
-	$(call log_break)
-	$(call log, Example:)
-	$(call log,   make install ARGS='--prefix /usr/local')
-	$(call log_break)
-	$(call log, Description:)
-	$(call log,   $(DESCRIPTION))
-	$(call log_break)
-	$(call log, For more information, visit:)
-	$(call log,  $(REPOSITORY))
-	$(call log_break)
-	$(call log_success, End of help message)
-	$(shell exit 0)
+	@echo "Available commands:"
+	@echo "  build-gw     - Build the gateway binary"
+	@echo "  run-gw       - Run the gateway server"
+	@echo "  test-gw      - Test the gateway"
+	@echo "  clean        - Clean build artifacts"
+	@echo "  build-frontend - Build the frontend"
+
+# Create dist directory if it doesn't exist
+$(DIST_DIR):
+	@mkdir -p $(DIST_DIR)
+
+# Build the gateway binary
+.PHONY: build-gw
+build-gw: $(DIST_DIR)
+	@$(call log,"Building gateway binary...")
+	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o $(GATEWAY_BINARY) ./cmd/gw
+	@$(call log_success,"Gateway binary built: $(GATEWAY_BINARY)")
+
+# Run the gateway server
+.PHONY: run-gw
+run-gw:
+	@$(call log,"Starting gateway server...")
+	@go run ./cmd/gw
+
+# Test the gateway
+.PHONY: test-gw
+test-gw:
+	@$(call log,"Testing gateway...")
+	@chmod +x ./test_gateway.sh
+	@./test_gateway.sh
+
+# Clean build artifacts
+.PHONY: clean
+clean:
+	@$(call log,"Cleaning build artifacts...")
+	@rm -rf $(DIST_DIR)
+	@$(call log_success,"Clean completed")
+
+# Build frontend
+.PHONY: build-frontend
+build-frontend:
+	@$(call log,"Building frontend...")
+	@cd frontend && npm run build
+	@$(call log_success,"Frontend built")
+
+# Install frontend dependencies
+.PHONY: install-frontend
+install-frontend:
+	@$(call log,"Installing frontend dependencies...")
+	@cd frontend && npm install
+	@$(call log_success,"Frontend dependencies installed")
+
+# Run frontend in development mode
+.PHONY: dev-frontend
+dev-frontend:
+	@$(call log,"Starting frontend in development mode...")
+	@cd frontend && npm run dev
+
+# Run both gateway and frontend in development
+.PHONY: dev
+dev:
+	@$(call log,"Starting development environment...")
+	@echo "Starting gateway in background..."
+	@go run ./cmd/gw &
+	@sleep 2
+	@echo "Starting frontend..."
+	@cd frontend && npm run dev
+
+# Go module management
+.PHONY: tidy
+tidy:
+	@$(call log,"Tidying Go modules...")
+	@go mod tidy
+	@$(call log_success,"Go modules tidied")
+
+# Run Go tests
+.PHONY: test
+test:
+	@$(call log,"Running Go tests...")
+	@go test ./...
+	@$(call log_success,"Tests completed")
+
+# All-in-one build
+.PHONY: build-all
+build-all: build-gw build-frontend
+	@$(call log_success,"All components built")
+
+# Docker build (future)
+.PHONY: docker-build
+docker-build:
+	@$(call log,"Building Docker image...")
+	@docker build -t analyzer-gw .
+	@$(call log_success,"Docker image built")
+
+.DEFAULT_GOAL := help

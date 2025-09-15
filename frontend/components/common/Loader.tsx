@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from '../../hooks/useTranslation';
 
 const Loader: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, isLoading } = useTranslation('common');
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
-  const loadingSteps: string[] = t('loader.steps') as any || [];
+  const loadingSteps: string[] = !isLoading ? (t('loader.steps') as any || []) : [];
 
   useEffect(() => {
     if (loadingSteps.length > 0) {
@@ -17,6 +17,8 @@ const Loader: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [loadingSteps.length]);
+
+  if (isLoading) return null; // Or a minimal spinner
 
   return (
     <motion.div

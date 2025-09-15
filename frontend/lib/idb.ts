@@ -90,3 +90,25 @@ export async function set(key: string, value: any): Promise<void> {
     };
   });
 }
+
+/**
+ * Clears all key-value pairs from the object store.
+ * @returns {Promise<void>} A promise that resolves when the operation is complete.
+ */
+export async function clear(): Promise<void> {
+  const db = await createDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.clear();
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = () => {
+      console.error('Error clearing IndexedDB store:', request.error);
+      reject(request.error);
+    };
+  });
+}

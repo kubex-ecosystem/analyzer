@@ -23,38 +23,43 @@ const colorMap = {
 const features: AnalysisFeature[] = [
     { 
         icon: FileText, 
-        titleKey: 'analysisTypes.GENERAL.label',
-        descriptionKey: 'analysisTypes.GENERAL.description',
+        titleKey: 'input:analysisTypes.GENERAL.label',
+        descriptionKey: 'input:analysisTypes.GENERAL.description',
         detailKey: 'landing.featureDetails.GENERAL',
         color: 'blue',
     },
     { 
         icon: ShieldCheck, 
-        titleKey: 'analysisTypes.SECURITY.label',
-        descriptionKey: 'analysisTypes.SECURITY.description',
+        titleKey: 'input:analysisTypes.SECURITY.label',
+        descriptionKey: 'input:analysisTypes.SECURITY.description',
         detailKey: 'landing.featureDetails.SECURITY',
         color: 'red',
     },
     { 
         icon: Layers3,
-        titleKey: 'analysisTypes.SCALABILITY.label',
-        descriptionKey: 'analysisTypes.SCALABILITY.description',
+        titleKey: 'input:analysisTypes.SCALABILITY.label',
+        descriptionKey: 'input:analysisTypes.SCALABILITY.description',
         detailKey: 'landing.featureDetails.SCALABILITY',
         color: 'purple',
     },
     { 
         icon: CodeXml, 
-        titleKey: 'analysisTypes.CODE_QUALITY.label',
-        descriptionKey: 'analysisTypes.CODE_QUALITY.description',
+        titleKey: 'input:analysisTypes.CODE_QUALITY.label',
+        descriptionKey: 'input:analysisTypes.CODE_QUALITY.description',
         detailKey: 'landing.featureDetails.CODE_QUALITY',
         color: 'teal',
     }
 ];
 
 const FeatureCard: React.FC<{ feature: AnalysisFeature, onClick: () => void }> = ({ feature, onClick }) => {
-    const { t } = useTranslation();
+    const { t, isLoading } = useTranslation(['landing', 'input']);
     const Icon = feature.icon;
     const styles = colorMap[feature.color];
+    
+    if (isLoading) {
+        return <div className="bg-gradient-to-br from-gray-800 to-gray-900/50 border border-gray-700 p-6 rounded-xl h-[164px] animate-pulse"></div>;
+    }
+
     return (
         <button 
             onClick={onClick}
@@ -73,19 +78,24 @@ const FeatureCard: React.FC<{ feature: AnalysisFeature, onClick: () => void }> =
 
 
 const LandingPage: React.FC = () => {
-    const { t } = useTranslation();
+    const { t, isLoading } = useTranslation(['landing', 'common']);
     const { login } = useAuth();
     const [selectedFeature, setSelectedFeature] = useState<AnalysisFeature | null>(null);
     const [dynamicTitle, setDynamicTitle] = useState('');
 
     useEffect(() => {
-        const titles = t('landing.dynamicPhrases') as unknown as string[];
-        if (Array.isArray(titles) && titles.length > 0) {
-            const randomIndex = Math.floor(Math.random() * titles.length);
-            setDynamicTitle(titles[randomIndex]);
+        if (!isLoading) {
+            const titles = t('landing.dynamicPhrases') as unknown as string[];
+            if (Array.isArray(titles) && titles.length > 0) {
+                const randomIndex = Math.floor(Math.random() * titles.length);
+                setDynamicTitle(titles[randomIndex]);
+            }
         }
-    }, [t]);
+    }, [t, isLoading]);
 
+    if (isLoading) {
+      return <div className="bg-gray-900 text-white min-h-screen"></div>;
+    }
 
   return (
     <div className="bg-gray-900 text-white min-h-screen font-sans selection:bg-purple-500/30">

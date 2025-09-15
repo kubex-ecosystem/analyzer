@@ -1,3 +1,4 @@
+import { AppSettings, UserProfile } from '../types';
 
 export const initialProjectContext = `# LookAtni Code - Gerado automaticamente
 # Data: 2025-09-09T01:43:34.950Z
@@ -168,3 +169,20 @@ graph TD
 - **Development**: Mock API server for local development
 - **Production**: Integration with StatusRafa MCP and Kosmos backends
 `;
+
+export const defaultSettings: AppSettings = {
+    saveHistory: true,
+    theme: 'dark',
+    tokenLimit: 1000000,
+    userApiKey: '',
+    githubPat: '',
+    jiraInstanceUrl: '',
+    jiraUserEmail: '',
+    jiraApiToken: '',
+};
+
+export const defaultUserProfile: UserProfile = {
+    name: 'GemX User',
+    email: '',
+    avatar: '',
+};

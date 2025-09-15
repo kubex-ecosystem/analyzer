@@ -9,35 +9,37 @@ interface DashboardEmptyStateProps {
 }
 
 const HeroBanner: React.FC<{ onNavigate: (view: ViewType | 'history') => void }> = ({ onNavigate }) => {
-    const { t } = useTranslation();
+    const { t, isLoading } = useTranslation(['dashboard', 'common', 'landing']);
     const [dynamicTitle, setDynamicTitle] = useState('');
 
     useEffect(() => {
-        const titles = t('landing.dynamicPhrases') as unknown as string[];
-        if (Array.isArray(titles) && titles.length > 0) {
-            const randomIndex = Math.floor(Math.random() * titles.length);
-            setDynamicTitle(titles[randomIndex]);
+        if (!isLoading) {
+            const titles = t('landing.dynamicPhrases') as unknown as string[];
+            if (Array.isArray(titles) && titles.length > 0) {
+                const randomIndex = Math.floor(Math.random() * titles.length);
+                setDynamicTitle(titles[randomIndex]);
+            }
         }
-    }, [t]);
+    }, [t, isLoading]);
     
     return (
         <div className="text-center p-8 bg-gray-900/30 rounded-xl border border-gray-800">
             <div className="inline-flex items-center justify-center gap-3 group h-16 md:h-20">
                 <BarChart3 className="w-10 h-10 md:w-12 md:h-12 text-blue-400 transition-transform duration-300 group-hover:rotate-12" />
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                  {dynamicTitle}
+                  {isLoading ? '...' : dynamicTitle}
                 </h1>
                 <Sparkles className="w-10 h-10 md:w-12 md:h-12 text-purple-400 transition-transform duration-300 group-hover:-rotate-12" />
             </div>
             <p className="text-gray-400 mt-4 max-w-3xl mx-auto text-lg md:text-xl">
-                {t('header.subtitle')}
+                {isLoading ? '...' : t('header.subtitle')}
             </p>
             <div className="mt-8">
                 <button
-                    onClick={() => onNavigate('input')}
+                    onClick={() => onNavigate(ViewType.Input)}
                     className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold text-lg hover:shadow-2xl hover:shadow-blue-500/30 hover:scale-105 transition-all duration-300"
                 >
-                    <span>{t('dashboard.emptyState.cta')}</span>
+                    <span>{isLoading ? '...' : t('dashboard.emptyState.cta')}</span>
                 </button>
             </div>
         </div>
@@ -73,7 +75,16 @@ const InfoCard: React.FC<{ icon: React.ReactNode; title: string; description: st
 
 
 const DashboardEmptyState: React.FC<DashboardEmptyStateProps> = ({ onNavigate }) => {
-    const { t } = useTranslation();
+    const { t, isLoading } = useTranslation(['dashboard', 'common', 'landing']);
+    
+    if (isLoading) {
+        return (
+            <div className="space-y-12 animate-pulse">
+                <div className="h-64 bg-gray-900/30 rounded-xl border border-gray-800"></div>
+                <div className="h-96 bg-gray-900/30 p-6 rounded-xl border border-gray-800"></div>
+            </div>
+        );
+    }
   
     return (
         <motion.div

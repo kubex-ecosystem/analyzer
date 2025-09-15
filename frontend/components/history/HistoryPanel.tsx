@@ -4,6 +4,8 @@ import { History, X, Trash2, FileUp, Info, GitCompareArrows, BarChart3, Zap, Loa
 import { HistoryItem, AnalysisType } from '../../types';
 import Sparkline from '../common/Sparkline';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 interface HistoryPanelProps {
   isOpen: boolean;
@@ -22,13 +24,15 @@ const ITEMS_PER_PAGE = 10;
 const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, onLoad, onDelete, onClear, onCompare, isExampleView, deletingHistoryId }) => {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'settings', 'input']);
+  const { locale } = useLanguage();
+  const { showConfirmation } = useConfirmation();
 
   const typeLabels: Record<AnalysisType, string> = {
-    [AnalysisType.General]: t('analysisTypes.GENERAL.label'),
-    [AnalysisType.Security]: t('analysisTypes.SECURITY.label'),
-    [AnalysisType.Scalability]: t('analysisTypes.SCALABILITY.label'),
-    [AnalysisType.CodeQuality]: t('analysisTypes.CODE_QUALITY.label')
+    [AnalysisType.General]: t('input:analysisTypes.GENERAL.label'),
+    [AnalysisType.Security]: t('input:analysisTypes.SECURITY.label'),
+    [AnalysisType.Scalability]: t('input:analysisTypes.SCALABILITY.label'),
+    [AnalysisType.CodeQuality]: t('input:analysisTypes.CODE_QUALITY.label')
   };
 
   useEffect(() => {
@@ -39,6 +43,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
   }, [isOpen]);
 
   const handleSelect = (id: number) => {
+    if (isExampleView) return;
     setSelectedIds(prev => {
       if (prev.includes(id)) {
         return prev.filter(i => i !== id);
@@ -47,6 +52,15 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
         return [...prev, id];
       }
       return prev; // No more than 2 selections
+    });
+  };
+
+  const handleConfirmClear = () => {
+    showConfirmation({
+        title: t('history:clearConfirm.title'),
+        message: t('history:clearConfirm.message'),
+        confirmText: t('common.delete'),
+        onConfirm: onClear,
     });
   };
   
@@ -140,7 +154,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
                   {historyToShow.map((item) => {
                     const isSelected = selectedIds.includes(item.id);
                     const isDeleting = deletingHistoryId === item.id;
-                    const isSelectionDisabled = selectedIds.length >= 2 && !isSelected;
+                    const isSelectionDisabled = (selectedIds.length >= 2 && !isSelected) || isExampleView;
                     const isDisabled = isDeleting || isSelectionDisabled;
 
                     return(
@@ -151,7 +165,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -10 }}
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                      className={`p-3 rounded-lg border flex items-start gap-3 transition-all duration-200 ${isSelected ? 'bg-blue-900/50 border-blue-600' : 'bg-gray-900/50 border-gray-700'} ${isDisabled ? 'opacity-50' : ''}`}
+                      className={`p-3 rounded-lg border flex items-start gap-3 transition-all duration-200 ${isSelected ? 'bg-blue-900/50 border-blue-600' : 'bg-gray-900/50 border-gray-700'} ${isExampleView ? 'opacity-70' : ''}`}
                     >
                       <input
                           type="checkbox"
@@ -175,14 +189,14 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
                             </div>
                             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                                 <button 
-                                disabled={isDeleting}
+                                disabled={isDeleting || isExampleView}
                                 onClick={(e) => { e.stopPropagation(); onLoad(item); }}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-300 bg-blue-900/50 border border-blue-700 rounded-md hover:bg-blue-800/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
                                 <FileUp className="w-3.5 h-3.5" /> {t('actions.load')}
                                 </button>
                                 <button
-                                disabled={isDeleting}
+                                disabled={isDeleting || isExampleView}
                                 onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
                                 className="p-2 w-8 h-8 flex items-center justify-center text-red-400 bg-red-900/30 border border-red-800/50 rounded-md hover:bg-red-900/50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                                 aria-label={t('history.deleteAriaLabel')}
@@ -205,7 +219,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
                                 <Zap className="w-4 h-4 text-purple-400 shrink-0" />
                                 <Sparkline data={item.sparkline.tokenData} stroke="rgb(192 132 252)" />
                                 <span className="font-semibold text-white w-12 text-right">
-                                    {item.analysis.usageMetadata?.totalTokenCount.toLocaleString(t('localeCode')) || 'N/A'}
+                                    {item.analysis.usageMetadata?.totalTokenCount.toLocaleString(locale) || 'N/A'}
                                 </span>
                             </div>
                         </div>
@@ -236,15 +250,15 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ isOpen, onClose, history, o
              {/* Footer */}
             <div className="p-4 border-t border-gray-700 shrink-0 flex justify-between items-center">
                 <button
-                    onClick={onClear}
-                    disabled={history.length === 0}
+                    onClick={handleConfirmClear}
+                    disabled={history.length === 0 || isExampleView}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-400 bg-red-900/50 border border-red-700 rounded-md hover:bg-red-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <Trash2 className="w-3.5 h-3.5" /> {t('history.clear')}
                 </button>
                 <button
                     onClick={() => onCompare(selectedIds)}
-                    disabled={!comparableItems}
+                    disabled={!comparableItems || isExampleView}
                     className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <GitCompareArrows className="w-4 h-4" /> {t('history.compare')}

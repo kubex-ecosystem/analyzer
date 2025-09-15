@@ -17,7 +17,7 @@ const colorMap = {
 };
 
 const FeatureDetailModal: React.FC<FeatureDetailModalProps> = ({ feature, onClose }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['landing', 'input']);
 
   return (
     <AnimatePresence>
@@ -49,9 +49,7 @@ const FeatureDetailModal: React.FC<FeatureDetailModalProps> = ({ feature, onClos
                   <p className="text-gray-400">{t(feature.descriptionKey)}</p>
                 </div>
               </div>
-              <button
-                title={t('close')}
-                onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-700 transition-colors absolute top-4 right-4">
+              <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-700 transition-colors absolute top-4 right-4">
                 <X className="w-6 h-6" />
               </button>
             </div>

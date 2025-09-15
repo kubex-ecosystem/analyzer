@@ -1,6 +1,8 @@
 export const parseJsonResponse = <T>(responseText: string, schemaType: string): T => {
     try {
-        // As per documentation, response.text is the correct way to get the content, which might need cleaning.
+        if (!responseText) {
+            throw new Error(`Received empty response from API when expecting ${schemaType}.`);
+        }
         const cleanedJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
         return JSON.parse(cleanedJson) as T;
     } catch (error) {
@@ -14,9 +16,11 @@ export const handleGeminiError = (error: any) => {
     console.error("Gemini API Error:", error);
     const message = error.toString();
 
-    // FIX: Updated API key error message to avoid prompting user for input.
+    if (message.includes("API_KEY_EMPTY")) {
+        throw new Error("The API key field cannot be empty. Please enter a valid key.");
+    }
     if (message.includes("API key not valid")) {
-        throw new Error("Your Gemini API key is invalid. Please check it in your profile.");
+        throw new Error("The Gemini API key is invalid. Please check your key and try again.");
     }
     if (message.includes("Billing") || message.includes("billing")) {
         throw new Error("There seems to be a billing issue with your Google Cloud project for the Gemini API.");

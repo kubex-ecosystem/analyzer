@@ -110,8 +110,8 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         onwarn: (warning, warn) => {
           // Suppress "use client" warnings from framer-motion
-          if (warning.code === 'MODULE_LEVEL_DIRECTIVE' && 
-              warning.message.includes('use client')) {
+          if (warning.code === 'MODULE_LEVEL_DIRECTIVE' &&
+            warning.message.includes('use client')) {
             return;
           }
           warn(warning);

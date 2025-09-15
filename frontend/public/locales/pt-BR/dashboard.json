@@ -1,0 +1,33 @@
+{
+  "dashboard": {
+    "scoreEvolution": "Tendência da Evolução da Pontuação",
+    "kpi": {
+      "totalAnalyses": "Total de Análises",
+      "totalAnalyses_description": "Número de relatórios gerados",
+      "averageScore": "Pontuação Média",
+      "averageScore_description": "Pontuação de viabilidade entre todos os projetos",
+      "commonType": "Tipo Mais Comum",
+      "commonType_description": "Tipo de análise mais frequente",
+      "tokensThisMonth": "Tokens Este Mês",
+      "tokensThisMonth_description": "Uso da API no mês atual"
+    },
+    "projects": {
+      "title": "Seus Projetos",
+      "subtitle": "Análises recentes para seus projetos.",
+      "analysisCount": "{count, plural, one {# análise} other {# análises}}",
+      "allProjects": "Todos os Projetos",
+      "selectProject": "Selecione um Projeto",
+      "analysesFor": "Análises para {projectName}",
+      "recentAnalyses": "Análises Recentes"
+    },
+    "emptyState": {
+      "cta": "Comece Sua Primeira Análise",
+      "title": "Bem-vindo ao Analisador GemX!",
+      "subtitle": "Você ainda não analisou nenhum projeto. Clique no botão acima para começar e ver seu painel ser preenchido com insights valiosos.",
+      "kpi_total_description": "Rastreia sua contagem de relatórios",
+      "kpi_score_description": "Agrega pontuações de viabilidade",
+      "kpi_type_description": "Destaca suas áreas de foco",
+      "kpi_tokens_description": "Monitora seu uso da API"
+    }
+  }
+}

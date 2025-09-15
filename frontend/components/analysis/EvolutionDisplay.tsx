@@ -11,7 +11,7 @@ interface EvolutionDisplayProps {
 }
 
 const ImprovementCard: React.FC<{ improvement: Improvement; type: 'resolved' | 'new' | 'persistent' }> = ({ improvement, type }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['analysis', 'common']);
   const typeConfig = {
     resolved: {
       icon: <Check className="w-5 h-5 text-green-400" />,
@@ -57,7 +57,7 @@ const ImprovementCard: React.FC<{ improvement: Improvement; type: 'resolved' | '
 
 const EvolutionDisplay: React.FC<EvolutionDisplayProps> = ({ analysis, onNavigate }) => {
   const { keyMetrics: km } = analysis;
-  const { t } = useTranslation();
+  const { t } = useTranslation(['analysis', 'common', 'input']);
 
   const typeLabels: Record<AnalysisType, string> = {
     [AnalysisType.General]: t('analysisTypes.GENERAL.label'),

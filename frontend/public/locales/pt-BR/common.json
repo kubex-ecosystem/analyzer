@@ -1,0 +1,145 @@
+{
+  "header": {
+    "title": "Analisador GemX",
+    "subtitle": "Transforme a documentação do seu projeto em insights acionáveis com análise orientada por IA."
+  },
+  "navigation": {
+    "dashboard": "Painel",
+    "newAnalysis": "Nova Análise",
+    "currentAnalysis": "Análise Atual",
+    "kanban": "Kanban",
+    "history": "Histórico",
+    "chat": "Chat"
+  },
+  "actions": {
+    "analyzeProject": "Analisar Projeto",
+    "analyzing": "Analisando",
+    "uploadFile": "Carregar Arquivo",
+    "showExample": "Mostre-me um exemplo",
+    "exitExample": "Sair do Modo Exemplo",
+    "load": "Carregar",
+    "showMore": "Mostrar Mais",
+    "view": "Ver",
+    "createKanbanBoard": "Criar Quadro Kanban",
+    "viewKanbanBoard": "Ver Quadro Kanban"
+  },
+  "common": {
+    "title": "Título",
+    "description": "Descrição",
+    "priority": "Prioridade",
+    "difficulty": "Dificuldade",
+    "delete": "Excluir",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "connect": "Conectar",
+    "notConnected": "Não Conectado"
+  },
+  "priority": {
+    "Low": "Baixa",
+    "Medium": "Média",
+    "High": "Alta"
+  },
+  "difficulty": {
+    "Low": "Baixa",
+    "Medium": "Média",
+    "High": "Alta"
+  },
+  "effort": {
+    "Low": "Baixo",
+    "Medium": "Médio",
+    "High": "Alto"
+  },
+  "tokenUsage": {
+    "title": "Aviso de Uso de Tokens",
+    "usageText": "Você usou {percentage}% do seu limite mensal de tokens ({consumed} / {limit}).",
+    "monthlyUsage": "Uso Mensal de Tokens"
+  },
+  "profile": {
+    "title": "Perfil do Usuário",
+    "nameLabel": "Seu Nome",
+    "namePlaceholder": "ex: Alex Silva",
+    "emailLabel": "E-mail",
+    "emailPlaceholder": "ex: alex.silva@example.com",
+    "avatar": {
+      "label": "Foto de Perfil",
+      "change": "Alterar"
+    },
+    "social": {
+      "title": "Logins Sociais",
+      "google": "Conectar com Google"
+    },
+    "save": "Salvar Perfil"
+  },
+  "auth": {
+    "logout": "Sair"
+  },
+  "history": {
+    "title": "Histórico de Análises",
+    "exampleMode": "Modo de Exemplo",
+    "compareInstruction": "Selecione duas análises do mesmo tipo para comparar sua evolução.",
+    "typeLabel": "Tipo",
+    "dateLabel": "Data",
+    "deleteAriaLabel": "Excluir item do histórico",
+    "scoreTrendTitle": "Tendência da Pontuação de Viabilidade",
+    "tokenUsageTitle": "Tendência de Uso de Tokens",
+    "empty": {
+      "title": "Nenhum Histórico Encontrado",
+      "subtitle": "Suas análises concluídas aparecerão aqui."
+    },
+    "clear": "Limpar Histórico",
+    "clearConfirm": {
+      "title": "Limpar todo o histórico?",
+      "message": "Tem certeza de que deseja excluir permanentemente todo o histórico de análises? Esta ação não pode ser desfeita."
+    },
+    "compare": "Comparar Selecionados"
+  },
+  "notifications": {
+    "analysisSuccess": "Análise concluída com sucesso!",
+    "analysisError": "A análise falhou. Por favor, tente novamente.",
+    "comparisonSuccess": "Comparação gerada com sucesso!",
+    "comparisonError": "A comparação falhou. Por favor, tente novamente.",
+    "fileLoaded": "Arquivo '{fileName}' carregado na área de texto.",
+    "exampleLoaded": "A análise de exemplo foi carregada.",
+    "historyDeleted": "Item do histórico excluído.",
+    "historyCleared": "O histórico de análises foi limpo.",
+    "settingsSaved": "Configurações salvas com sucesso!",
+    "profileSaved": "Perfil atualizado com sucesso!",
+    "noAnalysisForChat": "Você deve carregar uma análise antes de iniciar um chat.",
+    "chatError": "Ocorreu um erro durante a sessão de chat.",
+    "emptyRepoUrl": "Por favor, insira a URL de um repositório GitHub.",
+    "noGithubPat": "Token de Acesso Pessoal do GitHub não encontrado. Por favor, configure-o em Configurações > Integrações.",
+    "repoDataFetched": "Dados do repositório buscados com sucesso!",
+    "repoImportSuccess": "Conteúdo do repositório importado com sucesso!",
+    "repoImportError": "Falha ao importar o conteúdo do repositório.",
+    "emptyJiraKey": "Por favor, insira uma chave de projeto do Jira.",
+    "noJiraCredentials": "Credenciais do Jira não encontradas. Por favor, configure-as em Configurações > Integrações.",
+    "jiraDataFetched": "Dados do projeto Jira buscados com sucesso (simulado)!",
+    "apiKeyTestSuccess": "Conexão com a Chave de API bem-sucedida!",
+    "apiKeyTestFailure": "O teste da Chave de API falhou. Por favor, verifique a chave e tente novamente.",
+    "apiKeyTestEmpty": "A Chave de API não pode estar vazia. Por favor, insira uma chave para testar.",
+    "emptyContext": "O contexto do projeto está vazio. Adicione um ou mais arquivos antes de analisar.",
+    "exportSuccess": "Dados exportados com sucesso!",
+    "exportError": "Falha ao exportar os dados. Veja o console para detalhes.",
+    "importSuccess": "Dados importados com sucesso! A aplicação será recarregada.",
+    "importError": "Falha ao importar os dados. O arquivo pode estar corrompido ou ser inválido.",
+    "importAborted": "Operação de importação foi cancelada."
+  },
+  "network": {
+    "online": "Online",
+    "offline": "Você está offline no momento."
+  },
+  "loader": {
+    "ariaLabel": "Análise em progresso",
+    "message": "Analisando seu projeto...",
+    "subMessage": "Isso pode levar um momento.",
+    "steps": [
+      "Analisando o contexto do projeto...",
+      "Identificando componentes-chave da arquitetura...",
+      "Avaliando pontos fortes e fracos potenciais...",
+      "Calculando pontuação de viabilidade...",
+      "Formulando próximos passos acionáveis...",
+      "Finalizando o relatório..."
+    ]
+  }
+}

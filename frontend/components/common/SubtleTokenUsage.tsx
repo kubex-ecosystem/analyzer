@@ -9,7 +9,7 @@ interface SubtleTokenUsageProps {
 }
 
 const SubtleTokenUsage: React.FC<SubtleTokenUsageProps> = ({ limit, consumed }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
   const { locale } = useLanguage();
 
   if (limit <= 0) {

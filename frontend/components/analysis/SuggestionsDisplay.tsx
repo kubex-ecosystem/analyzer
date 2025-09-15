@@ -1,11 +1,12 @@
 import { AnimatePresence, motion, Variants } from 'framer-motion';
-import { ArrowRight, BarChart, Briefcase, Calculator, CheckCircle, Download, FileText, Info, Lightbulb, LineChart, ListChecks, Star, Target, ThumbsDown, ThumbsUp, TrendingUp, Zap } from 'lucide-react';
+import { ArrowRight, BarChart, Briefcase, Calculator, CheckCircle, Download, FileText, Info, Lightbulb, LineChart, ListChecks, Star, Target, ThumbsDown, ThumbsUp, TrendingUp, X, Zap } from 'lucide-react';
 import * as React from 'react';
 import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import { HistoryItem, Priority, ProjectAnalysis } from '../../types';
+import { HistoryItem, KanbanState, Priority, ProjectAnalysis } from '../../types';
 import DifficultyMeter from '../common/DifficultyMeter';
 import MaturityKpiCard from '../common/MaturityKpiCard';
 import Sparkline from '../common/Sparkline';
@@ -16,6 +17,8 @@ interface SuggestionsDisplayProps {
   isExample: boolean;
   history?: HistoryItem[];
   onNavigateToKanban: () => void;
+  onExitExample: () => void;
+  kanbanState: KanbanState | null;
 }
 
 const cardVariants: Variants = {
@@ -91,9 +94,10 @@ const InfoCard: React.FC<{ icon: React.ReactNode; title: string; children: React
   </motion.div>
 );
 
-const SuggestionsDisplay: React.FC<SuggestionsDisplayProps> = ({ analysis, isExample, history, onNavigateToKanban }) => {
+const SuggestionsDisplay: React.FC<SuggestionsDisplayProps> = ({ analysis, isExample, history, onNavigateToKanban, onExitExample, kanbanState }) => {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
-  const { t } = useTranslation();
+  const { t } = useTranslation(['analysis', 'common']);
+  const { locale } = useLanguage();
 
   const scoreHistory = useMemo(() => {
     if (!history || isExample) return [];
@@ -106,6 +110,7 @@ const SuggestionsDisplay: React.FC<SuggestionsDisplayProps> = ({ analysis, isExa
       .map(item => item.analysis.viability.score);
   }, [history, analysis, isExample]);
 
+  const kanbanForProjectExists = !isExample && kanbanState?.projectName === analysis.projectName;
 
   const handleFeedback = (vote: 'up' | 'down') => {
     setFeedback(vote);
@@ -200,13 +205,22 @@ const SuggestionsDisplay: React.FC<SuggestionsDisplayProps> = ({ analysis, isExa
       <div className="mt-12">
         {isExample && (
           <motion.div
-            className="mb-8 p-4 bg-purple-900/50 border border-purple-700 text-purple-300 rounded-lg flex items-center gap-3"
+            className="mb-8 p-4 bg-purple-900/50 border border-purple-700 text-purple-300 rounded-lg flex items-center justify-between gap-3"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Info className="w-5 h-5 shrink-0" />
-            <p className="text-sm font-medium">{t('results.exampleModeNotice')}</p>
+            <div className="flex items-center gap-3">
+              <Info className="w-5 h-5 shrink-0" />
+              <p className="text-sm font-medium">{t('results.exampleModeNotice')}</p>
+            </div>
+            <button
+              onClick={onExitExample}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-200 bg-purple-800/50 border border-purple-600 rounded-md hover:bg-purple-700/50 transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+              {t('actions.exitExample')}
+            </button>
           </motion.div>
         )}
 
@@ -228,7 +242,7 @@ const SuggestionsDisplay: React.FC<SuggestionsDisplayProps> = ({ analysis, isExa
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-teal-500 text-white rounded-lg font-semibold hover:shadow-2xl hover:shadow-purple-500/20 hover:scale-105 transition-all duration-300"
               >
                 <ListChecks className="w-5 h-5 transition-transform duration-300 group-hover:rotate-6" />
-                {t('actions.createKanbanBoard')}
+                {kanbanForProjectExists ? t('actions.viewKanbanBoard') : t('actions.createKanbanBoard')}
               </button>
               <button onClick={handleExportJson} className={exportButtonClass} aria-label={t('export.jsonAriaLabel')}>
                 <Download className="w-4 h-4" />
@@ -249,7 +263,7 @@ const SuggestionsDisplay: React.FC<SuggestionsDisplayProps> = ({ analysis, isExa
                   <div className="absolute -inset-px rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md" aria-hidden="true"></div>
                   <Calculator className="w-4 h-4 text-gray-500 shrink-0" />
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 z-10">
-                    <span><strong>{t('results.usageMetadata.total')}:</strong> {analysis.usageMetadata.totalTokenCount.toLocaleString('pt-BR')} {t('results.usageMetadata.tokens')}</span>
+                    <span><strong>{t('results.usageMetadata.total')}:</strong> {analysis.usageMetadata.totalTokenCount.toLocaleString(locale)} {t('results.usageMetadata.tokens')}</span>
                   </div>
                 </motion.div>
               )}

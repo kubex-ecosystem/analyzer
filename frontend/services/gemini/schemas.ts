@@ -1,4 +1,3 @@
-
 import { Type } from "@google/genai";
 import { 
     AnalysisType,
@@ -6,7 +5,6 @@ import {
     Difficulty,
     Effort,
     MaturityLevel
-// FIX: Corrected import path for types to point to the index file inside the types directory.
 } from '../../types';
 
 // Schemas for JSON response

@@ -7,7 +7,7 @@ interface DifficultyMeterProps {
 }
 
 const DifficultyMeter: React.FC<DifficultyMeterProps> = ({ difficulty }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('common');
 
   const config: Record<Difficulty, { colorClass: string; activeBars: number }> = {
     [Difficulty.Low]: { colorClass: 'bg-green-500', activeBars: 1 },

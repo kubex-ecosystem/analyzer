@@ -1,0 +1,17 @@
+{
+  "kanban": {
+    "title": "Quadro Kanban",
+    "projectHeader": "Projeto",
+    "addCard": "Adicionar Novo Card",
+    "editCard": "Editar Card",
+    "originalDescription": "Descrição Original (Gerada por IA)",
+    "notes": "Anotações",
+    "notesPlaceholder": "Adicione suas notas de implementação ou comentários aqui...",
+    "deleteConfirm": {
+      "title": "Excluir Card?",
+      "message": "Tem certeza de que deseja excluir permanentemente este card? Esta ação não pode ser desfeita.",
+      "confirm": "Excluir"
+    },
+    "exampleModeNotice": "Você está no modo de exemplo. As alterações não serão salvas."
+  }
+}

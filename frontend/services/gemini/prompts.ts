@@ -1,47 +1,63 @@
-
 import { 
     AnalysisType, 
     HistoryItem,
     Priority,
-    MaturityLevel
-// FIX: Corrected import path for types to point to the index file inside the types directory.
+    MaturityLevel,
+    Difficulty,
+    Effort
 } from '../../types';
 
 export const getAnalysisPrompt = (projectContext: string, analysisType: AnalysisType, locale: 'pt-BR' | 'en-US'): string => {
     const language = locale === 'pt-BR' ? 'Portuguese (Brazil)' : 'English (US)';
-    const typeDescriptions: Record<AnalysisType, string> = {
-        [AnalysisType.General]: "a comprehensive overview, including strengths, weaknesses, viability, and potential ROI.",
-        [AnalysisType.Security]: "potential security vulnerabilities, risks, and best practices for mitigation.",
-        [AnalysisType.Scalability]: "bottlenecks, architecture limitations, and strategies for improving scalability and performance under load.",
-        [AnalysisType.CodeQuality]: "code structure, maintainability, adherence to best practices, and suggestions for refactoring.",
+    
+    const typeSpecificInstructions: Record<AnalysisType, string> = {
+        [AnalysisType.General]: "Provide a holistic overview. Assess the project's goals, current state, and future potential. Your evaluation should be balanced, covering technology, process, and business value.",
+        [AnalysisType.Security]: "Adopt the mindset of a security engineer. Analyze the context for potential vulnerabilities based on OWASP Top 10 principles. Focus on authentication, data handling, dependencies, and infrastructure security. Suggestions must be concrete and actionable.",
+        [AnalysisType.Scalability]: "Act as a performance and scalability expert. Identify potential bottlenecks in the architecture, data access patterns, and infrastructure. Consider caching strategies, database performance, load balancing, and asynchronous processing.",
+        [AnalysisType.CodeQuality]: "Think like a lead developer focused on maintainability. Evaluate code structure, adherence to design patterns (like SOLID), complexity, and clarity. Suggest specific refactoring opportunities and best practices.",
     };
-    const analysisFocus = typeDescriptions[analysisType];
+
+    const analysisFocus = typeSpecificInstructions[analysisType];
 
     return `
-      You are a world-class senior software architect and project management consultant. Your task is to analyze a software project based on the provided context.
-      The user has requested a "${analysisType}" analysis, which should focus on ${analysisFocus}.
+      You are a world-class senior software architect and project management consultant with 20 years of experience. Your task is to analyze a software project based on the provided context, following a structured, step-by-step thinking process.
 
-      The response language MUST be ${language}.
+      **Your Thought Process:**
+      1.  **Deconstruct Context:** First, thoroughly read and understand all the provided project documentation. Identify the core technologies, goals, and current status of the project.
+      2.  **Apply Specific Lens:** Based on the requested analysis type, apply the corresponding expert lens to the context.
+      3.  **Formulate Insights:** Generate strengths, weaknesses, and actionable recommendations based on your expert evaluation.
+      4.  **Structure Response:** Finally, construct the JSON response, ensuring every field is populated with insightful and relevant information, strictly adhering to the schema.
+
+      **Requested Analysis Type:** "${analysisType}"
+      **Your Focus for this Analysis:** ${analysisFocus}
       
-      **Crucial Instruction**: For any fields that expect an enum value (like 'priority', 'difficulty', 'estimatedEffort', 'level'), you MUST use one of the following exact string values. Do not translate these values, even if the response language is not English.
-      - Priority/Difficulty/Effort values: ${Object.values(Priority).join(', ')}
+      **Response Language:** The entire JSON response, including all string values, MUST be in ${language}.
+      
+      **Crucial Schema Instructions**: 
+      For any fields that expect an enum value (like 'priority', 'difficulty', 'estimatedEffort', 'level'), you MUST use one of the following exact string values. These enum values are universal and MUST NOT be translated.
+      - Priority values: ${Object.values(Priority).join(', ')}
+      - Difficulty values: ${Object.values(Difficulty).join(', ')}
+      - Effort values: ${Object.values(Effort).join(', ')}
       - Maturity Level values: ${Object.values(MaturityLevel).join(', ')}
 
-      Project Context:
+      **Project Context to Analyze:**
       \`\`\`
       ${projectContext}
       \`\`\`
 
-      Analyze the project context thoroughly and provide a detailed, insightful, and actionable report.
-      - **Summary**: A concise executive summary of your findings.
-      - **Strengths**: A list of key positive aspects.
-      - **Improvements**: A prioritized list of areas for improvement. For each, provide a clear title, description, priority, difficulty, and its business impact.
-      - **Next Steps**: Concrete short-term and long-term actions.
-      - **Viability**: An overall viability score from 1 (very low) to 10 (excellent) and a justification.
-      - **ROI Analysis**: An assessment of the a potential return on investment for implementing the suggested improvements, including potential gains and estimated effort.
-      - **Maturity Level**: Assess the project's current maturity based on the context. The level must be one of the specified enum values. Provide a brief justification in the assessment.
+      **Your Mandate:**
+      Produce a detailed, insightful, and actionable report.
+      - **projectName**: Extract the project name from the context.
+      - **analysisType**: Must be "${analysisType}".
+      - **summary**: A concise executive summary of your key findings.
+      - **strengths**: A list of key positive aspects directly observed from the context.
+      - **improvements**: A prioritized list of areas for improvement. Each must have a clear title, description, priority, difficulty, and tangible business impact.
+      - **nextSteps**: Concrete short-term and long-term actions.
+      - **viability**: An overall viability score from 1 (very low) to 10 (excellent) with a strong justification based on the analysis.
+      - **roiAnalysis**: An assessment of the potential return on investment, including potential gains and estimated effort.
+      - **maturity**: Assess the project's current maturity level with justification.
 
-      Your response MUST be a valid JSON object that strictly adheres to the provided schema. Do not include any text, notes, or explanations outside of the JSON structure.
+      Your response MUST be a single, valid JSON object that strictly adheres to the provided schema. Do not include any text, notes, or explanations outside of the JSON structure.
     `;
 };
 

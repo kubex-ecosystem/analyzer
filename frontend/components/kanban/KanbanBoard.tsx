@@ -1,174 +1,239 @@
-import React, { useState, DragEvent } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { KanbanState, KanbanColumnId, KanbanCardData, Priority } from '../../types';
+import React, { useState, useRef } from 'react';
+import { motion, PanInfo } from 'framer-motion';
+import { KanbanSquare, Plus } from 'lucide-react';
+import { KanbanState, KanbanCard, KanbanColumnId, Priority, Difficulty, KanbanColumn } from '../../types';
+import KanbanCardComponent from './KanbanCardComponent';
+import EditCardModal from './EditCardModal';
 import { useTranslation } from '../../hooks/useTranslation';
-import DifficultyMeter from '../common/DifficultyMeter';
-import { LayoutGrid, ArrowLeft } from 'lucide-react';
 
 interface KanbanBoardProps {
   initialState: KanbanState;
-  projectName: string;
-  onBackToAnalysis: () => void;
+  onStateChange: (state: KanbanState) => void;
+  isExample?: boolean;
 }
 
-const PriorityTag: React.FC<{ priority: Priority }> = ({ priority }) => {
-    const { t } = useTranslation();
-    const priorityConfig: Record<Priority, { classes: string }> = {
-        [Priority.High]: { classes: 'bg-red-900/80 text-red-300' },
-        [Priority.Medium]: { classes: 'bg-yellow-900/80 text-yellow-300' },
-        [Priority.Low]: { classes: 'bg-blue-900/80 text-blue-300' },
-    };
-    const config = priorityConfig[priority];
-    const label = t(`priority.${priority}`);
-    return <span className={`px-2 py-0.5 rounded-full font-mono text-xs ${config.classes}`}>{label}</span>;
-};
+const DropIndicator = () => (
+    <div className="my-1 h-1 w-full bg-blue-500 rounded-full" />
+);
 
-const Card: React.FC<{ card: KanbanCardData; onDragStart: (e: DragEvent<HTMLDivElement>) => void }> = ({ card, onDragStart }) => {
-    return (
-        <motion.div
-            layout
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-        >
-            <div
-                draggable="true"
-                onDragStart={onDragStart}
-                className="bg-gray-800 border border-gray-700 p-3 rounded-lg cursor-grab active:cursor-grabbing hover:border-blue-500/50 transition-colors"
-            >
-                <p className="font-semibold text-gray-200 text-sm leading-snug">{card.title}</p>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                    {card.priority && <PriorityTag priority={card.priority} />}
-                    <DifficultyMeter difficulty={card.difficulty} />
-                </div>
-            </div>
-        </motion.div>
-    );
-};
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialState, onStateChange, isExample = false }) => {
+  const { t } = useTranslation(['kanban', 'common']);
+  const [boardState, setBoardState] = useState(initialState);
+  const [editingCard, setEditingCard] = useState<KanbanCard | null>(null);
+  const [targetColumn, setTargetColumn] = useState<KanbanColumnId | null>(null);
 
+  const [draggedCard, setDraggedCard] = useState<{ card: KanbanCard, sourceColumnId: KanbanColumnId } | null>(null);
+  const [dropIndicator, setDropIndicator] = useState<{ columnId: KanbanColumnId; index: number } | null>(null);
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ initialState, projectName, onBackToAnalysis }) => {
-    const [boardState, setBoardState] = useState(initialState);
-    const [draggedCardInfo, setDraggedCardInfo] = useState<{ cardId: string; sourceColumnId: KanbanColumnId } | null>(null);
-    const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(null);
-    const { t } = useTranslation();
+  const columnRefs = {
+    backlog: useRef<HTMLDivElement>(null),
+    todo: useRef<HTMLDivElement>(null),
+    inProgress: useRef<HTMLDivElement>(null),
+    done: useRef<HTMLDivElement>(null),
+  };
+  
+  const { projectName, columns } = boardState;
 
-    const handleDragStart = (card: KanbanCardData, sourceColumnId: KanbanColumnId) => {
-        setDraggedCardInfo({ cardId: card.id, sourceColumnId });
-    };
+  const updateAndPersistState = (newState: KanbanState) => {
+    setBoardState(newState); // Always update local state for immediate feedback
+    if (!isExample) {
+      onStateChange(newState); // Only persist changes if not in example mode
+    }
+  };
 
-    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-        e.preventDefault();
-    };
+  const handleDragStart = (card: KanbanCard, sourceColumnId: KanbanColumnId) => {
+    setDraggedCard({ card, sourceColumnId });
+  };
 
-    const handleDragEnter = (targetColumnId: KanbanColumnId) => {
-        if (targetColumnId !== draggedCardInfo?.sourceColumnId) {
-            setDragOverColumn(targetColumnId);
+  const handleDrag = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    if (!draggedCard) return;
+
+    const { point } = info;
+    let dropColumnId: KanbanColumnId | null = null;
+
+    for (const [id, ref] of Object.entries(columnRefs)) {
+        if (ref.current) {
+            const rect = ref.current.getBoundingClientRect();
+            if (point.x > rect.left && point.x < rect.right && point.y > rect.top && point.y < rect.bottom) {
+                dropColumnId = id as KanbanColumnId;
+                break;
+            }
         }
-    };
-    
-    const handleDragLeave = () => {
-        setDragOverColumn(null);
-    };
+    }
 
-    const handleDrop = (targetColumnId: KanbanColumnId) => {
-        if (!draggedCardInfo) return;
-    
-        const { cardId, sourceColumnId } = draggedCardInfo;
-    
-        if (sourceColumnId === targetColumnId) {
-            setDraggedCardInfo(null);
-            setDragOverColumn(null);
-            return;
-        }
-    
-        setBoardState(prevState => {
-            const newSourceCards = [...prevState[sourceColumnId].cards];
-            const cardIndex = newSourceCards.findIndex(c => c.id === cardId);
-            
-            if (cardIndex === -1) return prevState;
+    if (dropColumnId) {
+        const columnEl = columnRefs[dropColumnId].current!;
+        const cards = Array.from(columnEl.querySelectorAll('[data-kanban-card="true"]')) as HTMLElement[];
+        
+        let closest = { offset: Number.NEGATIVE_INFINITY, index: cards.length };
 
-            const [movedCard] = newSourceCards.splice(cardIndex, 1);
-            
-            const newTargetCards = [...prevState[targetColumnId].cards, movedCard];
-            
-            return {
-                ...prevState,
-                [sourceColumnId]: { ...prevState[sourceColumnId], cards: newSourceCards },
-                [targetColumnId]: { ...prevState[targetColumnId], cards: newTargetCards },
-            };
+        cards.forEach((card, index) => {
+            const box = card.getBoundingClientRect();
+            const offset = point.y - (box.top + box.height / 2);
+            if (offset < 0 && offset > closest.offset) {
+                closest = { offset, index };
+            }
         });
+        setDropIndicator({ columnId: dropColumnId, index: closest.index });
+    } else {
+        setDropIndicator(null);
+    }
+  };
+  
+  const handleDragEnd = () => {
+    if (!draggedCard || !dropIndicator) {
+      setDraggedCard(null);
+      setDropIndicator(null);
+      return;
+    }
 
-        setDraggedCardInfo(null);
-        setDragOverColumn(null);
-    };
+    const { card, sourceColumnId } = draggedCard;
+    const { columnId: destColumnId, index: destIndex } = dropIndicator;
+    
+    const newColumns = JSON.parse(JSON.stringify(boardState.columns));
+    
+    const sourceCards = newColumns[sourceColumnId].cards;
+    const sourceIndex = sourceCards.findIndex((c: KanbanCard) => c.id === card.id);
+    
+    if (sourceIndex > -1) {
+      const [removedCard] = sourceCards.splice(sourceIndex, 1);
+      
+      let adjustedDestIndex = destIndex;
+      if (sourceColumnId === destColumnId && sourceIndex < destIndex) {
+        adjustedDestIndex--;
+      }
+      
+      const destCards = newColumns[destColumnId].cards;
+      destCards.splice(adjustedDestIndex, 0, removedCard);
+      
+      updateAndPersistState({ ...boardState, columns: newColumns });
+    }
+    
+    setDraggedCard(null);
+    setDropIndicator(null);
+  };
 
-    return (
+  const handleUpdateCard = (updatedCard: KanbanCard) => {
+    const newColumns = { ...columns };
+    for (const columnId in newColumns) {
+      const col = newColumns[columnId as KanbanColumnId];
+      const cardIndex = col.cards.findIndex(c => c.id === updatedCard.id);
+      if (cardIndex > -1) {
+        col.cards[cardIndex] = updatedCard;
+        updateAndPersistState({ ...boardState, columns: newColumns });
+        setEditingCard(null);
+        return;
+      }
+    }
+  };
+
+  const handleAddCard = (newCard: Omit<KanbanCard, 'id'>) => {
+    if (!targetColumn) return;
+    const cardWithId: KanbanCard = { ...newCard, id: `card-${Date.now()}` };
+    const newColumns = { ...columns };
+    newColumns[targetColumn].cards.unshift(cardWithId);
+    updateAndPersistState({ ...boardState, columns: newColumns });
+    setEditingCard(null);
+    setTargetColumn(null);
+  };
+  
+  const handleSaveCard = (card: KanbanCard | Omit<KanbanCard, 'id'>) => {
+    if ('id' in card && card.id) {
+      handleUpdateCard(card);
+    } else {
+      handleAddCard(card);
+    }
+  };
+
+  const handleDeleteCard = (cardId: string) => {
+    const newColumns = { ...columns };
+    for (const columnId in newColumns) {
+        const col = newColumns[columnId as KanbanColumnId];
+        col.cards = col.cards.filter(c => c.id !== cardId);
+    }
+    updateAndPersistState({ ...boardState, columns: newColumns });
+    setEditingCard(null);
+  };
+  
+  const handleOpenAddModal = (columnId: KanbanColumnId) => {
+    setTargetColumn(columnId);
+    setEditingCard({
+        id: '', // Temporary, indicates a new card
+        title: '',
+        description: '',
+        priority: Priority.Medium,
+        difficulty: Difficulty.Medium,
+        tags: [],
+        notes: '',
+    });
+  };
+
+  return (
+    <>
+      <div className="space-y-8">
         <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
         >
-             <motion.div 
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="flex items-center justify-between"
-            >
-                <div>
-                    <div className="flex items-center gap-3">
-                        <LayoutGrid className="w-8 h-8 text-teal-400"/>
-                        <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-teal-400">
-                             {t('kanban.title')}
-                        </h2>
-                    </div>
-                    <p className="text-gray-400 mt-1">{t('kanban.subtitle')}</p>
-                </div>
-                <button
-                    onClick={onBackToAnalysis}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-300 rounded-lg hover:bg-gray-700/50 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    {t('actions.backToAnalysis')}
-                </button>
-            </motion.div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {(Object.keys(initialState) as KanbanColumnId[]).map(columnId => {
-                    const column = boardState[columnId];
-                    return (
-                        <div
-                            key={columnId}
-                            onDrop={() => handleDrop(columnId)}
-                            onDragOver={handleDragOver}
-                            onDragEnter={() => handleDragEnter(columnId)}
-                            onDragLeave={handleDragLeave}
-                            className={`p-4 rounded-xl bg-gray-900/30 border border-gray-800 transition-colors duration-300 ${dragOverColumn === columnId ? 'bg-blue-900/20 border-blue-700' : ''}`}
-                        >
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-semibold text-white">{column.title}</h3>
-                                <span className="text-sm font-mono bg-gray-700/50 text-gray-300 px-2 py-1 rounded-md">
-                                    {column.cards.length}
-                                </span>
-                            </div>
-                            <div className="space-y-3 min-h-[200px]">
-                                <AnimatePresence>
-                                    {column.cards.map(card => (
-                                        <Card
-                                            key={card.id}
-                                            card={card}
-                                            onDragStart={(e) => handleDragStart(card, columnId)}
-                                        />
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-                        </div>
-                    );
-                })}
+          <div className="flex items-baseline gap-3">
+            <KanbanSquare className="w-8 h-8 text-purple-400" />
+            <div>
+              <h1 className="text-3xl font-bold text-white">{t('kanban.title')}</h1>
+              {projectName && <p className="text-lg text-gray-400">{t('kanban.projectHeader')}: {projectName}</p>}
             </div>
+          </div>
         </motion.div>
-    );
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
+          {Object.values(columns).map((column) => {
+            const isDropTargetColumn = dropIndicator?.columnId === column.id;
+            return (
+              <div 
+                key={column.id}
+                ref={columnRefs[column.id]}
+                className={`bg-gray-800/50 border border-gray-700 rounded-xl flex flex-col h-full transition-colors duration-300 ${isDropTargetColumn ? 'bg-blue-900/30 border-blue-500' : ''}`}
+              >
+                <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                  <h3 className="font-semibold text-white">{column.title}</h3>
+                  <span className="text-sm font-mono bg-gray-700/80 text-gray-300 px-2 py-0.5 rounded-md">{column.cards.length}</span>
+                </div>
+                <div className="p-4 space-y-3 flex-grow min-h-[200px]">
+                  {column.cards.map((card, index) => (
+                    <React.Fragment key={card.id}>
+                      {isDropTargetColumn && dropIndicator.index === index && <DropIndicator />}
+                      <KanbanCardComponent 
+                        card={card} 
+                        onEdit={() => setEditingCard(card)} 
+                        onDragStart={() => handleDragStart(card, column.id)}
+                        onDrag={handleDrag}
+                        onDragEnd={handleDragEnd}
+                      />
+                    </React.Fragment>
+                  ))}
+                  {isDropTargetColumn && dropIndicator.index === column.cards.length && <DropIndicator />}
+                  <button 
+                    onClick={() => handleOpenAddModal(column.id)}
+                    className="w-full flex items-center justify-center gap-2 p-2 text-sm text-gray-400 border-2 border-dashed border-gray-600 rounded-lg hover:bg-gray-700/50 hover:text-white hover:border-solid hover:border-gray-500 transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    {t('kanban.addCard')}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <EditCardModal 
+        isOpen={!!editingCard}
+        onClose={() => setEditingCard(null)}
+        card={editingCard}
+        onSave={handleSaveCard}
+        onDelete={handleDeleteCard}
+        isExample={isExample}
+      />
+    </>
+  );
 };
 
 export default KanbanBoard;

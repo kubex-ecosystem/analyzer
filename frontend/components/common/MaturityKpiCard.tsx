@@ -16,7 +16,7 @@ const maturityConfig: Record<MaturityLevel, { labelKey: string; color: string; w
 };
 
 const MaturityKpiCard: React.FC<MaturityKpiCardProps> = ({ maturity }) => {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['analysis', 'common']);
   const config = maturityConfig[maturity.level];
 
   if (!config) {

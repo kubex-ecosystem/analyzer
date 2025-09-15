@@ -1,15 +1,34 @@
 import * as React from 'react';
-import { createRoot } from 'react-dom/client';
-import Root from './App';
+import * as ReactDOM from 'react-dom/client';
+import App from './App';
+
+// const swExceptions = [
+//   '//ai.studio',
+//   'scf.usercontent.goog',
+//   'generativelanguage.googleapis.com'
+// ]
+
+// // Register the service worker for PWA capabilities
+// if ('serviceWorker' in navigator && swExceptions.filter((v, i) => ((window.location || {}).origin || '').indexOf(v) < 0).length == 0) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('/sw.ts')
+//       .then(registration => {
+//         console.log('ServiceWorker registration successful with scope: ', registration.scope);
+//       })
+//       .catch(err => {
+//         console.log('ServiceWorker registration failed: ', err);
+//       });
+//   });
+// }
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   throw new Error("Could not find root element to mount to");
 }
 
-const root = createRoot(rootElement);
+const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <Root />
+    <App />
   </React.StrictMode>
 );
