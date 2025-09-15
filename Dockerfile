@@ -38,7 +38,7 @@ RUN go mod tidy
 # Build the gateway binary
 RUN CGO_ENABLED=0 GOOS=linux go build \
     -trimpath \
-    -ldflags="-s -w -X main.version=$(git describe --tags --always --dirty)" \
+    -ldflags="-s -w -X main.version=dev" \
     -o dist/analyzer_linux_amd64 \
     ./cmd
 
@@ -82,4 +82,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8080/v1/status || exit 1
 
 # Set entrypoint
-ENTRYPOINT ["./analyzer_linux_amd64", "gateway", "serve", "--config", "./config/config.yaml"]
+ENTRYPOINT ["./analyzer_linux_amd64", "gateway", "serve", "--config", "./config/providers.yml"]
