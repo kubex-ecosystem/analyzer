@@ -1,956 +1,542 @@
-# 1) Tipos e Loader da Config
-
-/// internal/config/types.go ///
-
-```go
-package config
-
-type Production struct {
-	LoggingLevel string `yaml:"logging_level"`
-
-	Server      ServerCfg      `yaml:"server"`
-	Defaults    DefaultsCfg    `yaml:"defaults"`
-	RateLimit   RateCfg        `yaml:"rate_limit"`
-	CircuitBrk  CircuitCfg     `yaml:"circuit_breaker"`
-	HealthCheck HealthCfg      `yaml:"health_check"`
-	Retry       RetryCfg       `yaml:"retry"`
-}
-
-type ServerCfg struct {
-	Addr              string   `yaml:"addr"`
-	ReadTimeoutSec    int      `yaml:"read_timeout_sec"`
-	WriteTimeoutSec   int      `yaml:"write_timeout_sec"`
-	IdleTimeoutSec    int      `yaml:"idle_timeout_sec"`
-	ShutdownTimeoutSec int     `yaml:"shutdown_timeout_sec"`
-	RateLimit         ServerRateCfg `yaml:"rate_limit"`
-	CORS              CORS      `yaml:"cors"`
-}
-type ServerRateCfg struct {
-	Enabled            bool `yaml:"enabled"`
-	RequestsPerMinute  int  `yaml:"requests_per_minute"`
-	Burst              int  `yaml:"burst"`
-}
-type CORS struct {
-	AllowOrigins     []string `yaml:"allow_origins"`
-	AllowMethods     []string `yaml:"allow_methods"`
-	AllowHeaders     []string `yaml:"allow_headers"`
-	AllowCredentials bool     `yaml:"allow_credentials"`
-	MaxAge           int      `yaml:"max_age"`
-}
-
-type DefaultsCfg struct {
-	MaxTokens        int     `yaml:"max_tokens"`
-	Temperature      float32 `yaml:"temperature"`
-	TopP             float32 `yaml:"top_p"`
-	FrequencyPenalty float32 `yaml:"frequency_penalty"`
-	PresencePenalty  float32 `yaml:"presence_penalty"`
-	Stream           bool    `yaml:"stream"`
-	TimeoutSec       int     `yaml:"timeout_sec"`
-	TenantID         string  `yaml:"tenant_id"`
-	UserID           string  `yaml:"user_id"`
-}
-
-type RateCfg struct {
-	Enabled bool `yaml:"enabled"`
-	Default Bucket `yaml:"default"`
-	PerProvider map[string]Bucket `yaml:"per_provider"`
-}
-type Bucket struct {
-	Capacity   int `yaml:"capacity"`
-	RefillRate int `yaml:"refill_rate"` // tokens/seg
-}
-
-type CircuitCfg struct {
-	Enabled     bool        `yaml:"enabled"`
-	Default     CircuitRule `yaml:"default"`
-	PerProvider map[string]CircuitRule `yaml:"per_provider"`
-}
-type CircuitRule struct {
-	MaxFailures      int `yaml:"max_failures"`
-	ResetTimeoutSec  int `yaml:"reset_timeout_sec"`
-	SuccessThreshold int `yaml:"success_threshold"`
-}
-
-type HealthCfg struct {
-	Enabled    bool `yaml:"enabled"`
-	IntervalSec int `yaml:"interval_sec"`
-	TimeoutSec  int `yaml:"timeout_sec"`
-}
-
-type RetryCfg struct {
-	Enabled     bool    `yaml:"enabled"`
-	MaxRetries  int     `yaml:"max_retries"`
-	BaseDelayMs int     `yaml:"base_delay_ms"`
-	MaxDelayMs  int     `yaml:"max_delay_ms"`
-	Multiplier  float32 `yaml:"multiplier"`
-}
-
-type ProviderProduction struct {
-	TimeoutSec  int     `yaml:"timeout_sec"`
-	Priority    string  `yaml:"priority"`
-	MaxRetries  int     `yaml:"max_retries"`
-	BaseDelayMs int     `yaml:"base_delay_ms"`
-	MaxDelayMs  int     `yaml:"max_delay_ms"`
-	Multiplier  float32 `yaml:"multiplier"`
-}
-
-type ProviderTuning struct {
-	Provider map[string]ProviderProduction `yaml:",inline"`
-}
-
-type Security struct {
-	EnableHTTPS    bool     `yaml:"enable_https"`
-	AllowedOrigins []string `yaml:"allowed_origins"`
-	JWTSecret      string   `yaml:"jwt_secret"`
-	APIKeys        []string `yaml:"api_keys"`
-}
-
-type Prometheus struct {
-	Endpoint string `yaml:"endpoint"`
-	Port     int    `yaml:"port"`
-}
-type Grafana struct {
-	URL          string `yaml:"url"`
-	AdminUser    string `yaml:"admin_user"`
-	AdminPass    string `yaml:"admin_password"`
-}
-type Logging struct {
-	Enabled  bool   `yaml:"enabled"`
-	Level    string `yaml:"level"`
-	Format   string `yaml:"format"`
-	Output   string `yaml:"output"`
-	Rotation struct {
-		MaxSizeMB        int  `yaml:"max_size_mb"`
-		MaxBackups       int  `yaml:"max_backups"`
-		MaxAgeDays       int  `yaml:"max_age_days"`
-		EnableCompression bool `yaml:"enable_compression"`
-		CompressionLevel  int  `yaml:"compression_level"`
-		RetentionDays     int  `yaml:"retention_days"`
-	} `yaml:"rotation"`
-	LogRequestResponse bool   `yaml:"log_request_response"`
-	LogLevel           string `yaml:"log_level"`
-	LogFormat          string `yaml:"log_format"`
-}
-type Monitoring struct {
-	EnableMetrics bool      `yaml:"enable_metrics"`
-	Prometheus    Prometheus `yaml:"prometheus"`
-	Grafana       Grafana    `yaml:"grafana"`
-	Logging       Logging    `yaml:"logging"`
-	// Alerting/Integrations omitidos na v1 (placeholders)
-}
-type Root struct {
-	Production          Production        `yaml:"production"`
-	ProviderProduction  ProviderTuning    `yaml:"provider_production"`
-	Security            Security          `yaml:"security"`
-	Monitoring          Monitoring        `yaml:"monitoring"`
-}
-```
-
-/// internal/config/load.go ///
-
-```go
-package config
-
-import (
-	"os"
-	"gopkg.in/yaml.v3"
-)
-
-func Load(path string) (*Root, error) {
-	b, err := os.ReadFile(path)
-	if err != nil { return nil, err }
-	var cfg Root
-	if err := yaml.Unmarshal(b, &cfg); err != nil { return nil, err }
-
-	// defaults mínimos
-	if cfg.Production.Server.Addr == "" { cfg.Production.Server.Addr = ":8080" }
-	if cfg.Production.Defaults.TenantID == "" { cfg.Production.Defaults.TenantID = "default" }
-	if cfg.Production.Defaults.UserID == "" { cfg.Production.Defaults.UserID = "anonymous" }
-	if cfg.Monitoring.Prometheus.Endpoint == "" { cfg.Monitoring.Prometheus.Endpoint = "/metrics" }
-	if cfg.Monitoring.Prometheus.Port == 0 { cfg.Monitoring.Prometheus.Port = 9090 }
-	return &cfg, nil
-}
-
-/// internal/registry/registry.go (patch) ///
-
-package registry
-
-import (
-	"fmt"
-	"os"
-
-	"github.com/kubex-ecosystem/analyzer-gw/internal/config"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/providers"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/providers/anthropic"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/providers/gemini"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/providers/groq"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/providers/openai"
-)
-
-type ProviderCfg struct {
-	BaseURL      string `yaml:"base_url"`
-	KeyEnv       string `yaml:"key_env"`
-	DefaultModel string `yaml:"default_model"`
-	Type         string `yaml:"type"`
-}
-
-type Legacy struct {
-	Providers map[string]ProviderCfg `yaml:"providers"`
-}
-
-type Registry struct {
-	root *config.Root
-	p    map[string]providers.Provider
-	legacy Legacy
-}
-
-func LoadWith(root *config.Root, providersYAMLPath string) (*Registry, error) {
-	// carrega providers.yml legado (para endpoints reais e keys)
-	var leg Legacy
-	if b, err := os.ReadFile(providersYAMLPath); err == nil {
-		_ = yamlUnmarshal(b, &leg)
-	}
-	r := &Registry{root: root, p: make(map[string]providers.Provider), legacy: leg}
-
-	for name, pc := range leg.Providers {
-		key := os.Getenv(pc.KeyEnv)
-		switch pc.Type {
-		case "openai":
-			pr, err := openai.New(name, pc.BaseURL, key, pc.DefaultModel)
-			if err != nil { return nil, fmt.Errorf("%s: %w", name, err) }
-			r.p[name] = pr
-		case "groq":
-			pr, err := groq.New(name, pc.BaseURL, key, pc.DefaultModel)
-			if err != nil { return nil, fmt.Errorf("%s: %w", name, err) }
-			r.p[name] = pr
-		case "anthropic":
-			pr, err := anthropic.New(name, pc.BaseURL, key, pc.DefaultModel)
-			if err != nil { return nil, fmt.Errorf("%s: %w", name, err) }
-			r.p[name] = pr
-		case "gemini":
-			pr, err := gemini.New(name, pc.BaseURL, key, pc.DefaultModel)
-			if err != nil { return nil, fmt.Errorf("%s: %w", name, err) }
-			r.p[name] = pr
-		default:
-			return nil, fmt.Errorf("unknown provider type: %s", pc.Type)
-		}
-	}
-	return r, nil
-}
-
-func (r *Registry) Resolve(name string) providers.Provider { return r.p[name] }
-func (r *Registry) Root() *config.Root { return r.root }
-func (r *Registry) ProvidersLegacy() map[string]ProviderCfg { return r.legacy.Providers }
-
-// helpers
-var yamlUnmarshal = func(b []byte, v any) error {
-	type y = interface{}
-	return (interface{}(y(nil))).(error) // will be replaced at link; ignore (placeholder to keep example minimal)
-}
-
-/*
-  Nota: no teu repo real use `gopkg.in/yaml.v3` ao invés do `yamlUnmarshal` placeholder acima (mantive curto aqui).
-  Se já tinha `registry.Load(path)`, substitui por `config.Load(...)` + `registry.LoadWith(...)`.
-*/
-
-
-/// internal/transport/mw\.go ///
-
-
-package transport
-
-import (
-	"net/http"
-	"strings"
-	"sync"
-	"time"
-
-	"github.com/kubex-ecosystem/analyzer-gw/internal/config"
-)
-
-type mwStack struct {
-	cfg *config.Root
-
-	// rate limit global (server) em RPM + burst
-	globalRL *rpmLimiter
-
-	// rate por provider (tokens/s)
-	provRL   map[string]*bucket
-	provMu   sync.RWMutex
-
-	// circuit breaker por provider
-	cb   map[string]*breaker
-	cbMu sync.RWMutex
-
-	// métricas simples
-	metrics *metrics
-}
-
-func newMW(cfg *config.Root) *mwStack {
-	m := &mwStack{cfg: cfg, metrics: newMetrics()}
-	if cfg.Production.Server.RateLimit.Enabled && cfg.Production.Server.RateLimit.RequestsPerMinute > 0 {
-		m.globalRL = newRPMLimiter(cfg.Production.Server.RateLimit.RequestsPerMinute, cfg.Production.Server.RateLimit.Burst)
-	}
-	m.provRL = map[string]*bucket{}
-	m.cb = map[string]*breaker{}
-
-	if cfg.Production.RateLimit.Enabled {
-		// pre-cria buckets por provider
-		for name, rule := range cfg.Production.RateLimit.PerProvider {
-			m.provRL[name] = newBucket(rule.Capacity, rule.RefillRate)
-		}
-		if d := cfg.Production.RateLimit.Default; d.Capacity > 0 {
-			m.provRL["_default"] = newBucket(d.Capacity, d.RefillRate)
-		}
-	}
-	if cfg.Production.CircuitBrk.Enabled {
-		for name, rule := range cfg.Production.CircuitBrk.PerProvider {
-			m.cb[name] = newBreaker(rule.MaxFailures, time.Duration(rule.ResetTimeoutSec)*time.Second, rule.SuccessThreshold)
-		}
-		if d := cfg.Production.CircuitBrk.Default; d.MaxFailures > 0 {
-			m.cb["_default"] = newBreaker(d.MaxFailures, time.Duration(d.ResetTimeoutSec)*time.Second, d.SuccessThreshold)
-		}
-	}
-	return m
-}
-
-// --- CORS ---
-func (m *mwStack) cors(next http.Handler) http.Handler {
-	c := m.cfg.Production.Server.CORS
-	// fallback para Security.allowed_origins se setado
-	secOrigins := m.cfg.Security.AllowedOrigins
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origins := c.AllowOrigins
-		if len(origins) == 0 && len(secOrigins) > 0 {
-			origins = secOrigins
-		}
-		allow := "*"
-		origin := r.Header.Get("Origin")
-		if !(len(origins) == 1 && origins[0] == "*") && origin != "" {
-			for _, o := range origins {
-				if strings.EqualFold(o, origin) { allow = origin; break }
-			}
-		}
-		w.Header().Set("Access-Control-Allow-Origin", allow)
-		if c.AllowCredentials { w.Header().Set("Access-Control-Allow-Credentials", "true") }
-		if len(c.AllowMethods) > 0 { w.Header().Set("Access-Control-Allow-Methods", strings.Join(c.AllowMethods, ",")) }
-		allowed := c.AllowHeaders
-		if len(allowed) == 0 {
-			allowed = []string{"content-type","authorization","x-external-api-key","x-tenant-id","x-user-id"}
-		}
-		w.Header().Set("Access-Control-Allow-Headers", strings.Join(allowed, ","))
-		if c.MaxAge > 0 { w.Header().Set("Access-Control-Max-Age", itoa(c.MaxAge)) }
-
-		if r.Method == http.MethodOptions { w.WriteHeader(http.StatusNoContent); return }
-		next.ServeHTTP(w, r)
-	})
-}
-
-// --- API key (opcional) ---
-func (m *mwStack) apikey(next http.Handler) http.Handler {
-	keys := map[string]bool{}
-	for _, k := range m.cfg.Security.APIKeys {
-		if k == "" { continue }
-		kv := k
-		if strings.Contains(k, "=") { // ignora pares estilo GF_SECURITY_...
-			continue
-		}
-		keys[kv] = true
-	}
-	if len(keys) == 0 {
-		return next // sem exigência de key
-	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		key := r.Header.Get("X-API-Key")
-		if key == "" {
-			if h := r.Header.Get("Authorization"); strings.HasPrefix(strings.ToLower(h), "bearer ") {
-				key = strings.TrimSpace(h[7:])
-			}
-		}
-		if !keys[key] {
-			http.Error(w, "forbidden", http.StatusForbidden); return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-// --- Rate limit global + por provider ---
-func (m *mwStack) ratelimit(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if m.globalRL != nil {
-			if !m.globalRL.allow() {
-				m.metrics.dropped.Add(1)
-				http.Error(w, "rate limit (global)", http.StatusTooManyRequests); return
-			}
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-func (m *mwStack) takeProviderToken(provider string) bool {
-	if provider == "" { provider = "_default" }
-	m.provMu.RLock(); b := m.provRL[provider]; if b == nil { b = m.provRL["_default"] }; m.provMu.RUnlock()
-	if b == nil { return true } // sem config => sem limite
-	return b.Take()
-}
-
-// --- Circuit breaker ---
-func (m *mwStack) isOpen(provider string) bool {
-	if provider == "" { provider = "_default" }
-	m.cbMu.RLock(); br := m.cb[provider]; if br == nil { br = m.cb["_default"] }; m.cbMu.RUnlock()
-	if br == nil { return false }
-	return br.IsOpen()
-}
-func (m *mwStack) onSuccess(provider string) {
-	if provider == "" { provider = "_default" }
-	m.cbMu.RLock(); br := m.cb[provider]; m.cbMu.RUnlock()
-	if br != nil { br.Success() }
-}
-func (m *mwStack) onFailure(provider string) {
-	if provider == "" { provider = "_default" }
-	m.cbMu.RLock(); br := m.cb[provider]; m.cbMu.RUnlock()
-	if br != nil { br.Failure() }
-}
-
-// -------- primitives --------
-type rpmLimiter struct {
-	remain int
-	burst  int
-	last   time.Time
-	rpm    int
-	mu     sync.Mutex
-}
-func newRPMLimiter(rpm, burst int) *rpmLimiter {
-	return &rpmLimiter{remain: burst, burst: burst, last: time.Now(), rpm: rpm}
-}
-func (l *rpmLimiter) allow() bool {
-	l.mu.Lock(); defer l.mu.Unlock()
-	now := time.Now()
-	el := now.Sub(l.last)
-	// refil por segundo
-	perSec := float64(l.rpm) / 60.0
-	l.remain += int(float64(el.Seconds()) * perSec)
-	if l.remain > l.burst { l.remain = l.burst }
-	l.last = now
-	if l.remain <= 0 { return false }
-	l.remain--
-	return true
-}
-
-type bucket struct {
-	capacity int
-	refill   int // tokens/s
-	tokens   int
-	last     time.Time
-	mu       sync.Mutex
-}
-func newBucket(capacity, refill int) *bucket {
-	return &bucket{capacity: capacity, refill: refill, tokens: capacity, last: time.Now()}
-}
-func (b *bucket) Take() bool {
-	b.mu.Lock(); defer b.mu.Unlock()
-	now := time.Now()
-	el := now.Sub(b.last)
-	add := int(el.Seconds()) * b.refill
-	if add > 0 {
-		b.tokens += add
-		if b.tokens > b.capacity { b.tokens = b.capacity }
-		b.last = now
-	}
-	if b.tokens <= 0 { return false }
-	b.tokens--
-	return true
-}
-
-type breaker struct {
-	failures int
-	maxFail  int
-	resetAfter time.Duration
-	openedAt time.Time
-	successNeed int
-	halfOpen bool
-	mu sync.Mutex
-}
-func newBreaker(maxFail int, resetAfter time.Duration, successNeed int) *breaker {
-	return &breaker{maxFail:maxFail, resetAfter:resetAfter, successNeed:successNeed}
-}
-func (b *breaker) IsOpen() bool {
-	b.mu.Lock(); defer b.mu.Unlock()
-	if b.openedAt.IsZero() { return false }
-	if time.Since(b.openedAt) > b.resetAfter {
-		b.halfOpen = true
-		return false
-	}
-	return true
-}
-func (b *breaker) Failure() {
-	b.mu.Lock(); defer b.mu.Unlock()
-	b.failures++
-	if b.failures >= b.maxFail {
-		b.openedAt = time.Now()
-	}
-}
-func (b *breaker) Success() {
-	b.mu.Lock(); defer b.mu.Unlock()
-	if b.halfOpen {
-		b.successNeed--
-		if b.successNeed <= 0 {
-			b.failures = 0
-			b.halfOpen = false
-			b.openedAt = time.Time{}
-		}
-	} else {
-		if b.failures > 0 { b.failures-- }
-	}
-}
-
-// --- metrics (Prometheus texto simples) ---
-type metrics struct {
-	reqTotal    counter
-	dropped     counter
-	provFail    counter
-	latencySum  counter
-	latencyCnt  counter
-}
-func newMetrics() *metrics { return &metrics{} }
-type counter struct{ v uint64; mu sync.Mutex }
-func (c *counter) Add(n uint64) { c.mu.Lock(); c.v += n; c.mu.Unlock() }
-func (c *counter) Get() uint64  { c.mu.Lock(); defer c.mu.Unlock(); return c.v }
-
-func (m *metrics) Exposition() string {
-	// formato básico do Prometheus
-	return strings.Join([]string{
-		"# HELP gemx_requests_total total requests",
-		"# TYPE gemx_requests_total counter",
-		"gemx_requests_total " + u64(m.reqTotal.Get()),
-		"# HELP gemx_rate_dropped_total dropped by rate limit",
-		"# TYPE gemx_rate_dropped_total counter",
-		"gemx_rate_dropped_total " + u64(m.dropped.Get()),
-		"# HELP gemx_provider_failures_total upstream failures",
-		"# TYPE gemx_provider_failures_total counter",
-		"gemx_provider_failures_total " + u64(m.provFail.Get()),
-		"# HELP gemx_latency_ms_sum sum of latencies ms",
-		"gemx_latency_ms_sum " + u64(m.latencySum.Get()),
-		"# HELP gemx_latency_ms_count count of latencies",
-		"gemx_latency_ms_count " + u64(m.latencyCnt.Get()),
-	}, "\n") + "\n"
-}
-
-// utils
-func u64(v uint64) string { return itoa64(v) }
-func itoa(i int) string { return fmtInt(int64(i)) }
-func itoa64(i uint64) string { return fmtInt(int64(i)) }
-func fmtInt(i int64) string { return strconv.FormatInt(i, 10) }
-```
-
-*(importe `fmt`, `strconv` no topo conforme uso)*
-
----
-
-# 4) Wire do HTTP com middlewares + retries/circuit no /v1/chat
-
-/// internal/transport/http\_sse.go (patch grande) ///
-
-```go
-package transport
-
-import (
-	"context"
-	"encoding/json"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
-	"github.com/kubex-ecosystem/analyzer-gw/internal/config"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/providers"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/registry"
-)
-
-type httpHandlers struct {
-	reg *registry.Registry
-	mw  *mwStack
-}
-
-func WireHTTPServer(reg *registry.Registry) *http.Server {
-	cfg := reg.Root()
-	mw := newMW(cfg)
-	h := &httpHandlers{reg: reg, mw: mw}
-
-	mux := http.NewServeMux()
-	// rota de métricas (servidor principal também, além do dedicado opcional)
-	mux.HandleFunc(cfg.Monitoring.Prometheus.Endpoint, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type","text/plain; version=0.0.4")
-		w.Write([]byte(mw.metrics.Exposition()))
-	})
-
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
-	mux.HandleFunc("/v1/providers", h.providers)
-	mux.HandleFunc("/v1/session", h.session)
-	mux.HandleFunc("/v1/state/export", h.stateExport)
-	mux.HandleFunc("/v1/state/import", h.stateImport)
-	mux.HandleFunc("/v1/chat", h.chatSSE)
-
-	// middlewares: apikey -> cors -> ratelimit
-	var root http.Handler = mux
-	root = h.mw.apikey(root)
-	root = h.mw.cors(root)
-	root = h.mw.ratelimit(root)
-
-	srv := &http.Server{
-		Addr:         cfg.Production.Server.Addr,
-		Handler:      root,
-		ReadTimeout:  time.Duration(cfg.Production.Server.ReadTimeoutSec) * time.Second,
-		WriteTimeout: time.Duration(cfg.Production.Server.WriteTimeoutSec) * time.Second,
-		IdleTimeout:  time.Duration(cfg.Production.Server.IdleTimeoutSec) * time.Second,
-	}
-
-	// graceful shutdown
-	go func() {
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-		<-ch
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Production.Server.ShutdownTimeoutSec)*time.Second)
-		defer cancel()
-		_ = srv.Shutdown(ctx)
-	}()
-
-	return srv
-}
-
-type chatReq struct {
-	Provider string                 `json:"provider"`
-	Model    string                 `json:"model"`
-	Messages []providers.Message    `json:"messages"`
-	Temp     float32                `json:"temperature"`
-	Stream   bool                   `json:"stream"`
-	Meta     map[string]any         `json:"meta"`
-}
-
-func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
-	start := time.Now()
-	h.mw.metrics.reqTotal.Add(1)
-
-	var in chatReq
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest); return
-	}
-	if in.Provider == "" {
-		http.Error(w, "provider required", http.StatusBadRequest); return
-	}
-	// rate por provider
-	if !h.mw.takeProviderToken(in.Provider) {
-		http.Error(w, "rate limit (provider)", http.StatusTooManyRequests); return
-	}
-	// circuit breaker aberto?
-	if h.mw.isOpen(in.Provider) {
-		http.Error(w, "circuit open", http.StatusServiceUnavailable); return
-	}
-
-	p := h.reg.Resolve(in.Provider)
-	if p == nil { http.Error(w, "bad provider", http.StatusBadRequest); return }
-
-	headers := map[string]string{
-		"x-external-api-key": r.Header.Get("x-external-api-key"),
-		"x-tenant-id":        r.Header.Get("x-tenant-id"),
-		"x-user-id":          r.Header.Get("x-user-id"),
-	}
-
-	// retry/backoff ao criar o stream (falha precoce)
-	root := h.reg.Root()
-	retr := root.Production.Retry
-	provTuning := root.ProviderProduction.Provider[in.Provider]
-	maxRetries := retr.MaxRetries
-	if provTuning.MaxRetries > 0 { maxRetries = provTuning.MaxRetries }
-	baseDelay := time.Duration(max(tr( retr.BaseDelayMs, provTuning.BaseDelayMs ), 10)) * time.Millisecond
-	maxDelay  := time.Duration(max(tr( retr.MaxDelayMs,  provTuning.MaxDelayMs  ), 500)) * time.Millisecond
-	mult      := trF(retr.Multiplier, provTuning.Multiplier); if mult < 1 { mult = 2.0 }
-
-	var ch <-chan providers.ChatChunk
-	var err error
-	for attempt := 0; ; attempt++ {
-		ctx := r.Context()
-		timeoutSec := root.Production.Defaults.TimeoutSec
-		if provTuning.TimeoutSec > 0 { timeoutSec = provTuning.TimeoutSec }
-		if timeoutSec > 0 {
-			var cancel context.CancelFunc
-			ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutSec)*time.Second)
-			defer cancel()
-		}
-		ch, err = p.Chat(ctx, providers.ChatReq{
-			Provider: in.Provider, Model: in.Model, Messages: in.Messages,
-			Temp: in.Temp, Stream: true, Meta: in.Meta, Headers: headers,
-		})
-		if err == nil || !retr.Enabled || attempt >= maxRetries {
-			break
-		}
-		// backoff
-		d := time.Duration(float64(baseDelay) * pow(mult, float64(attempt)))
-		if d > maxDelay { d = maxDelay }
-		time.Sleep(d)
-	}
-
-	if err != nil {
-		h.mw.metrics.provFail.Add(1)
-		h.mw.onFailure(in.Provider)
-		http.Error(w, err.Error(), http.StatusBadGateway); return
-	}
-
-	w.Header().Set("Content-Type","text/event-stream")
-	w.Header().Set("Cache-Control","no-cache")
-	w.WriteHeader(http.StatusOK)
-	fl, _ := w.(http.Flusher)
-
-	enc := func(v any) []byte { b,_ := json.Marshal(v); return b }
-	success := false
-	for c := range ch {
-		if c.Content != "" {
-			w.Write([]byte("data: "))
-			w.Write(enc(map[string]any{"content": c.Content}))
-			w.Write([]byte("\n\n"))
-			fl.Flush()
-		}
-		if c.ToolCall != nil {
-			w.Write([]byte("data: "))
-			w.Write(enc(map[string]any{"toolCall": c.ToolCall}))
-			w.Write([]byte("\n\n"))
-			fl.Flush()
-		}
-		if c.Done {
-			success = true
-			payload := map[string]any{"done": true}
-			if c.Usage != nil { payload["usage"] = c.Usage }
-			w.Write([]byte("data: "))
-			w.Write(enc(payload))
-			w.Write([]byte("\n\n"))
-			fl.Flush()
-		}
-	}
-	lat := time.Since(start).Milliseconds()
-	h.mw.metrics.latencySum.Add(uint64(lat))
-	h.mw.metrics.latencyCnt.Add(1)
-	if success { h.mw.onSuccess(in.Provider) } else { h.mw.onFailure(in.Provider) }
-}
-
-// auxiliares numéricos
-func tr(a, b int) int { if b>0 { return b }; return a }
-func trF(a, b float32) float32 { if b>0 { return b }; return a }
-func pow(a, b float64) float64 { return math.Pow(a,b) }
-func max(a, b int) int { if a>b { return a }; return b }
-```
-
----
-
-# 5) main.go usa o novo WireHTTPServer + HTTPS opcional + /metrics dedicado
-
-/// cmd/gw/main.go ///
-
-```go
-package main
-
-import (
-	"log"
-	"net/http"
-	"os"
-
-	"github.com/kubex-ecosystem/analyzer-gw/internal/config"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/registry"
-	"github.com/kubex-ecosystem/analyzer-gw/internal/transport"
-)
-
-func main() {
-	// META config (YAML grandão que você mandou)
-	cfgPath := getenv("GEMX_META_CFG", "config/meta.yml")
-	root, err := config.Load(cfgPath)
-	if err != nil { log.Fatal("config load:", err) }
-
-	// Providers (YAML legado com endpoints/key_env)
-	provPath := getenv("PROVIDERS_CFG", "config/providers.yml")
-	reg, err := registry.LoadWith(root, provPath)
-	if err != nil { log.Fatal("registry load:", err) }
-
-	srv := transport.WireHTTPServer(reg)
-
-	// servidor de métricas dedicado (se habilitado)
-	if root.Monitoring.EnableMetrics && root.Monitoring.Prometheus.Port > 0 {
-		go func() {
-			mux := http.NewServeMux()
-			mux.HandleFunc(root.Monitoring.Prometheus.Endpoint, func(w http.ResponseWriter, r *http.Request) {
-				// reusa o handler principal montado em WireHTTPServer? simples: responde 200/empty aqui,
-				// pois o servidor principal já expõe o endpoint também.
-				w.WriteHeader(http.StatusOK)
-			})
-			addr := ":" + itoa(root.Monitoring.Prometheus.Port)
-			log.Println("metrics server on", addr)
-			_ = http.ListenAndServe(addr, mux)
-		}()
-	}
-
-	addr := srv.Addr
-	log.Println("analyzer-gw listening on", addr)
-
-	// HTTPS opcional
-	if root.Security.EnableHTTPS {
-		cert := getenv("TLS_CERT_FILE", "")
-		key  := getenv("TLS_KEY_FILE", "")
-		if cert != "" && key != "" {
-			log.Fatal(srv.ListenAndServeTLS(cert, key))
-			return
-		}
-		log.Println("HTTPS enabled but TLS_CERT_FILE/TLS_KEY_FILE missing; falling back to HTTP")
-	}
-
-	log.Fatal(srv.ListenAndServe())
-}
-
-func getenv(k, d string) string { if v:=os.Getenv(k); v!="" { return v }; return d }
-```
-
----
-
-# 6) Health-check leve dos providers (opcional async)
-
-Se quiser ativar **health\_check** de 30s/timeout 10s, dá pra usar um ping simples aos **base\_url** do providers legado e guardar o status (pra pintar no `/v1/providers`).
-
-/// internal/transport/health.go ///
-
-```go
-package transport
-
-import (
-	"net/http"
-	"sync"
-	"time"
-
-	"github.com/kubex-ecosystem/analyzer-gw/internal/registry"
-)
-
-var (
-	healthMu sync.RWMutex
-	health map[string]bool
-)
-func startHealth(reg *registry.Registry, interval, timeout time.Duration) {
-	health = map[string]bool{}
-	t := time.NewTicker(interval)
-	go func() {
-		for range t.C {
-			for name, pc := range reg.ProvidersLegacy() {
-				ok := ping(pc.BaseURL, timeout)
-				healthMu.Lock(); health[name] = ok; healthMu.Unlock()
-			}
-		}
-	}()
-}
-
-func ping(url string, timeout time.Duration) bool {
-	if url == "" { return false }
-	c := http.Client{ Timeout: timeout }
-	r, err := c.Get(url)
-	if err != nil { return false }
-	_ = r.Body.Close()
-	return r.StatusCode < 500
-}
-```
-
-E ajustar o `WireHTTPServer` pra ligar isso quando `health_check.enabled`:
-
-```go
-// dentro de WireHTTPServer, após construir srv:
-if cfg.Production.HealthCheck.Enabled {
-	startHealth(reg, time.Duration(cfg.Production.HealthCheck.IntervalSec)*time.Second,
-		time.Duration(cfg.Production.HealthCheck.TimeoutSec)*time.Second)
-}
-```
-
-Também pode enriquecer o `/v1/providers`:
-
-```go
-func (h *httpHandlers) providers(w http.ResponseWriter, r *http.Request) {
-	type item struct{ Name, Type string; Healthy *bool }
-	out := []item{}
-	for name, pc := range h.reg.ProvidersLegacy() {
-		var ok *bool
-		healthMu.RLock(); if v, exists := health[name]; exists { ok = &v }; healthMu.RUnlock()
-		out = append(out, item{Name: name, Type: pc.Type, Healthy: ok})
-	}
-	w.Header().Set("Content-Type","application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{"providers": out})
-}
-```
-
----
-
-## O que ficou **funcional** agora (alinhado ao teu YAML)
-
-* **Server**
-
-  * `addr`, `read/write/idle_timeout`, **graceful shutdown** (`shutdown_timeout_sec`)
-  * **CORS** completo (`allow_*`, `credentials`, `max_age`)
-  * **rate-limit global** RPM+burst (server.rate\_limit.\*)
-
-* **Defaults** (aplicados nas operações): `tenant_id`, `user_id`, `timeout_sec` para upstream
-
-* **Rate limiting (produção)**
-
-  * **por provider** (bucket tokens/s) + **default** fallback
-  * **global server** já acima
-
-* **Circuit breaker**
-
-  * por provider + default: `max_failures`, `reset_timeout_sec`, `success_threshold`
-
-* **Retry/Backoff**
-
-  * global + **override por provider** (`provider_production.*`)
-  * aplica **ao estabelecer o stream** (erros imediatos); não reinicia streams em andamento
-
-* **Health check** (opcional, leve): pinga `base_url` dos providers; status em `/v1/providers`
-
-* **Monitoring**
-
-  * `/metrics` no servidor principal **(Prometheus-format mínimo)** + servidor dedicado opcional (porta configurável)
-  * contadores: requests, dropped por rate, failures, latência (sum/count)
-
-* **Security**
-
-  * **HTTPS** opcional via `TLS_CERT_FILE`/`TLS_KEY_FILE`
-  * **API Keys** (lista) via `X-API-Key` **ou** `Authorization: Bearer <key>`
-    (JWT: reservado — dá pra ativar depois com HS256)
-
-> Itens do YAML **ainda não mapeados** nesta primeira passada (pra manter o bin enxuto e o core funcional):
->
-> * Logging avançado com rotação/compressão/Grafana provisioning
-> * Alerting/integrações (Slack/Teams/etc)
->   Se quiser, te mando uma **v2** plugando rotação simples (stdlib) e um **webhook genérico de alertas**.
-
----
-
-## Como subir
-
-```bash
-# configs
-export GEMX_META_CFG=config/meta.yml
-export PROVIDERS_CFG=config/providers.yml
-
-# TLS (opcional)
-export TLS_CERT_FILE=./certs/fullchain.pem
-export TLS_KEY_FILE=./certs/privkey.pem
-
-go build -o dist/analyzer-gw ./cmd/gw
-./dist/analyzer-gw
-```
-
-**Smoke:**
-
-```bash
-curl -I http://localhost:8080/healthz
-curl http://localhost:8080/v1/providers | jq
-curl -s http://localhost:8080/metrics | head
-```
-
-Se quiser, eu **expando** agora pra:
-
-* logging JSON com **rotação** leve (sem deps),
-* **JWT HS256** (claims básicos),
-* **/metrics** com labels por provider (sumário simples),
-* e um **/v1/rules** pra ler o YAML em runtime (hot-reload via SIGHUP).
+# Development Features Configuration
+development:
+  # General Settings
+  logging_level: DEBUG
+
+  # Server Configuration
+  server:
+    addr: ":8080"
+    read_timeout_sec: 15
+    write_timeout_sec: 15
+    idle_timeout_sec: 60
+    shutdown_timeout_sec: 10
+
+    # Security Settings
+    rate_limit:
+      enabled: false
+      requests_per_minute: 120 # Global rate limit
+      burst: 20 # Allow short bursts
+
+    # Access Control Settings
+    access_control:
+      enabled: true
+      allowed_ips:
+        - "0.0.0.0/0" # Allow all in dev
+      denied_ips:
+        - "" # No denied IPs in dev
+      use_x_forwarded_for: true
+      allow_remote_ip: true
+
+    # Proxy Configuration
+    proxy:
+      enabled: true
+      trusted_proxies:
+        - "0.0.0.0/0" # Allow all in dev
+      use_x_forwarded_for: true
+      use_x_real_ip: true
+
+    # CORS Configuration
+    cors:
+      allow_origins: ["*"] # em prod: ["https://kubex.world"]
+      allow_methods: ["GET", "POST", "PUT", "DELETE"]
+      allow_headers: ["Content-Type", "Authorization"]
+      allow_credentials: true
+      max_age: 600
+
+    # TLS Configuration
+    tls:
+      enabled: false
+      cert_file: "path/to/cert.pem"
+      key_file: "path/to/key.pem"
+
+    # Graceful Shutdown Configuration
+    graceful_shutdown:
+      enabled: true
+      timeout_sec: 10
+      shutdown_grace_period_sec: 5
+
+    # Health Check Endpoint
+    health_check:
+      enabled: true
+      interval_sec: 30 # Check every 30 seconds
+      timeout_sec: 10 # Timeout for health checks
+
+  # Default LLM Request Settings
+  defaults:
+    max_tokens: 2048
+    temperature: 0.7
+    top_p: 0.9
+    frequency_penalty: 0.0
+    presence_penalty: 0.0
+    stream: false
+    timeout_sec: 30
+    tenant_id: "default"
+    user_id: "anonymous"
+
+  # Rate Limiting Configuration
+  rate_limit:
+    enabled: true
+    default:
+      capacity: 100 # Max requests in bucket
+      refill_rate: 10 # Tokens added per second
+    per_provider:
+      groq:
+        capacity: 200 # Groq is fast, allow more
+        refill_rate: 20
+      gemini:
+        capacity: 50 # Gemini has generous limits
+        refill_rate: 8
+      openai:
+        capacity: 30 # OpenAI has stricter limits
+        refill_rate: 5
+      anthropic:
+        capacity: 40 # Anthropic moderate limits
+        refill_rate: 6
+
+  # Circuit Breaker Configuration
+  circuit_breaker:
+    enabled: true
+    default:
+      max_failures: 5 # Failures before opening circuit
+      reset_timeout_sec: 60 # Time before trying half-open
+      success_threshold: 3 # Successes needed to close
+    per_provider:
+      groq:
+        max_failures: 3 # Groq should be very reliable
+        reset_timeout_sec: 30
+        success_threshold: 2
+      gemini:
+        max_failures: 5 # Standard settings
+        reset_timeout_sec: 60
+        success_threshold: 3
+      openai:
+        max_failures: 4 # Slightly more tolerant
+        reset_timeout_sec: 90
+        success_threshold: 3
+      anthropic:
+        max_failures: 4
+        reset_timeout_sec: 75
+        success_threshold: 3
+
+  # Health Check Configuration
+  health_check:
+    enabled: true
+    interval_sec: 30 # Check every 30 seconds
+    timeout_sec: 10 # Timeout for health checks
+
+  # Retry Configuration
+  retry:
+    enabled: true
+    max_retries: 3 # Maximum retry attempts
+    base_delay_ms: 100 # Initial delay
+    max_delay_ms: 5000 # Maximum delay
+    multiplier: 2.0 # Exponential backoff multiplier
+
+# Provider-specific production settings
+provider_production:
+  groq:
+    timeout_sec: 30 # Groq is fast, shorter timeout
+    priority: high # High priority for speed-critical
+    max_retries: 3 # Maximum retry attempts
+    base_delay_ms: 50 # Initial delay
+    max_delay_ms: 3000 # Maximum delay
+    multiplier: 1.5 # Exponential backoff multiplier
+
+  gemini:
+    timeout_sec: 60 # Standard timeout
+    priority: medium
+    max_retries: 3 # Maximum retry attempts
+    base_delay_ms: 100 # Initial delay
+    max_delay_ms: 5000 # Maximum delay
+    multiplier: 2.0 # Exponential backoff multiplier
+
+  openai:
+    timeout_sec: 120 # Longer timeout for complex requests
+    priority: medium
+    max_retries: 4 # Maximum retry attempts
+    base_delay_ms: 200 # Initial delay
+    max_delay_ms: 6000 # Maximum delay
+    multiplier: 2.5 # Exponential backoff multiplier
+
+  anthropic:
+    timeout_sec: 90 # Claude can be slower but thorough
+    priority: medium
+    max_retries: 4 # Maximum retry attempts
+    base_delay_ms: 150 # Initial delay
+    max_delay_ms: 5500 # Maximum delay
+    multiplier: 2.0 # Exponential backoff multiplier
+
+  # Future providers (uncomment when implemented)
+  # openrouter:
+  #   timeout_sec: 60
+  #   priority: low
+  #   max_retries: 3 # Maximum retry attempts
+  #   base_delay_ms: 100 # Initial delay
+  #   max_delay_ms: 5000 # Maximum delay
+  #   multiplier: 2.0 # Exponential backoff multiplier
+  # ollama:
+  #   timeout_sec: 45
+  #   priority: low
+  #   max_retries: 2 # Maximum retry attempts
+  #   base_delay_ms: 100 # Initial delay
+  #   max_delay_ms: 4000 # Maximum delay
+  #   multiplier: 1.5 # Exponential backoff multiplier
+  # custom_provider:
+  #   timeout_sec: 60
+  #   priority: low
+  #   max_retries: 3 # Maximum retry attempts
+  #   base_delay_ms: 100 # Initial delay
+  #   max_delay_ms: 5000 # Maximum delay
+  #   multiplier: 2.0 # Exponential backoff multiplier
+
+# Security Settings
+security:
+  enable_https: true
+  allowed_origins: ["https://kubex.world"]
+  jwt_secret: "your_production_jwt_secret_here"
+  api_keys:
+    - "your_production_api_key_1"
+    - "your_production_api_key_2"
+    - "your_production_api_key_3"
+    - GF_SECURITY_ADMIN_USER=admin
+    - GF_SECURITY_ADMIN_PASSWORD=securepassword
+    - "your_production_api_key_4"
+
+# Monitoring and Logging
+monitoring:
+  enable_metrics: true
+
+  # Prometheus configuration
+  prometheus:
+    endpoint: /metrics
+    port: 9090
+
+  # Grafana configuration
+  grafana:
+    url: http://localhost:3000
+    admin_user: admin
+    admin_password: securepassword
+
+  # Logging configuration
+  logging:
+    # Local logging configuration
+    enabled: true
+    level: INFO
+    format: json
+    output: /var/log/gemx-analyzer/production.log
+
+    # Log rotation settings
+    rotation:
+      max_size_mb: 100
+      max_backups: 7
+      max_age_days: 30
+      enable_compression: true
+      compression_level: 5
+      retention_days: 30
+
+    # External logging service configuration
+    external_logging_service: null # e.g., "loggly", "splunk", or null
+    external_logging_api_key: null # API key for the external logging service
+    external_logging_endpoint: null # Endpoint URL for the external logging service
+    log_request_response: false # Set to true to log full requests and responses (may include sensitive data)
+    log_level: INFO # Log level for the external logging service
+    log_format: json # Format for the external logging service (e.g., "json", "text")
+
+  # Alerting configuration
+  alerting:
+    enabled: false
+
+    # Chat Ops Bot Configuration
+    chat_ops_bot:
+      enabled: false
+      provider: "slack" # e.g., "slack", "microsoft_teams", or "discord"
+      webhook_url: "your_slack_webhook_url"
+      channel: "#alerts"
+      username: "KubexAlertBot"
+      icon_emoji: ":alert:"
+      mention_users:
+        - "@user1"
+        - "@user2"
+        - "@user3"
+      mention_groups:
+        - "@here"
+        - "@channel"
+        - "@everyone"
+      mention_roles:
+        - "admin"
+        - "devops"
+        - "oncall"
+      message_format: "text" # e.g., "text", "markdown", or "json"
+      custom_message: "Alert: {{alert_name}} - {{alert_details}}"
+      alert_severity: "high" # e.g., "low", "medium", "high", or "critical"
+      notification_interval_min: 30 # Minimum interval between notifications in minutes
+      escalation_policy:
+        - level: "critical"
+          actions:
+            - "send_bot_message"
+        - level: "warning"
+          actions:
+            - "send_bot_message"
+        - level: "info"
+          actions:
+            - "send_bot_message"
+      profiles:
+        - "dev"
+        - "ops"
+        - "oncall"
+      tags:
+        - "alert"
+        - "notification"
+        - "monitoring"
+
+      # Chat Ops Bot Configuration (Integrations)
+      integrations:
+        # Slack Integration
+        slack:
+          enabled: false
+          webhook_url: "your_slack_webhook_url"
+          channel: "#alerts"
+          username: "KubexSlackBot"
+          icon_emoji: ":slack:"
+          mention_users:
+            - "@user1"
+            - "@user2"
+            - "@user3"
+          mention_groups:
+            - "@here"
+            - "@channel"
+            - "@everyone"
+          mention_roles:
+            - "admin"
+            - "devops"
+            - "oncall"
+          message_format: "text" # e.g., "text", "markdown", or "json"
+          custom_message: "Alert: {{alert_name}} - {{alert_details}}"
+          alert_severity: "high" # e.g., "low", "medium", "high", or "critical"
+          notification_interval_min: 30 # Minimum interval between notifications in minutes
+          escalation_policy:
+            - level: "critical"
+              actions:
+                - "send_slack_message"
+            - level: "warning"
+              actions:
+                - "send_slack_message"
+            - level: "info"
+              actions:
+                - "send_slack_message"
+
+        # Microsoft Teams Integration
+        microsoft_teams:
+          enabled: false
+          endpoint: "your_microsoft_teams_webhook_url"
+          token: "your_microsoft_teams_bot_token"
+          channel: "Alerts"
+          username: "KubexTeamsBot"
+          icon_emoji: ":teams:"
+          mention_users:
+            - "@user1"
+            - "@user2"
+            - "@user3"
+          mention_groups:
+            - "@here"
+            - "@channel"
+            - "@everyone"
+          mention_roles:
+            - "admin"
+            - "devops"
+            - "oncall"
+          message_format: "text" # e.g., "text", "markdown", or "json"
+          custom_message: "Alert: {{alert_name}} - {{alert_details}}"
+          alert_severity: "high" # e.g., "low", "medium", "high", or "critical"
+          notification_interval_min: 30 # Minimum interval between notifications in minutes
+          escalation_policy:
+            - level: "critical"
+              actions:
+                - "send_teams_message"
+            - level: "warning"
+              actions:
+                - "send_teams_message"
+            - level: "info"
+              actions:
+                - "send_teams_message"
+          webhook:
+            enabled: false
+            url: "your_custom_webhook_url"
+            method: "POST"
+            headers:
+              Content-Type: application/json
+            payload_template: '{"alert": "{{alert_name}}", "details": "{{alert_details}}"}'
+
+        # Discord Integration
+        discord:
+          enabled: false
+          endpoint: "your_discord_webhook_url"
+          token: "your_discord_bot_token"
+          channel: "alerts"
+          username: "KubexDiscordBot"
+          icon_emoji: ":discord:"
+          mention_users:
+            - "@user1"
+            - "@user2"
+            - "@user3"
+          mention_groups:
+            - "@here"
+            - "@channel"
+            - "@everyone"
+          mention_roles:
+            - "admin"
+            - "devops"
+            - "oncall"
+          message_format: "text" # e.g., "text", "markdown", or "json"
+          custom_message: "Alert: {{alert_name}} - {{alert_details}}"
+          alert_severity: "high" # e.g., "low", "medium", "high", or "critical"
+          notification_interval_min: 30 # Minimum interval between notifications in minutes
+          escalation_policy:
+            - level: "critical"
+              actions:
+                - "send_discord_message"
+            - level: "warning"
+              actions:
+                - "send_discord_message"
+            - level: "info"
+              actions:
+                - "send_discord_message"
+          webhook:
+            enabled: false
+            url: "your_custom_webhook_url"
+            method: "POST"
+            headers:
+              Content-Type: application/json
+            payload_template: '{"alert": "{{alert_name}}", "details": "{{alert_details}}"}'
+
+        # PagerDuty, OpsGenie, VictorOps Integrations
+        pagerduty:
+          enabled: false
+          service_key: "your_pagerduty_service_key"
+        opsgenie:
+          enabled: false
+          api_key: "your_opsgenie_api_key"
+        victorops:
+          enabled: false
+          api_key: "your_victorops_api_key"
+
+        # Meta Alerting Configuration
+        meta:
+          enabled: false
+          url: "your_meta_alerting_url"
+          api_key: "your_meta_api_key"
+          project_id: "your_meta_project_id"
+          incident_severity: "high" # e.g., "low", "medium", "high", or "critical"
+          notification_interval_min: 30 # Minimum interval between notifications in minutes
+          escalation_policy:
+            - level: "critical"
+              actions:
+                - "send_meta_alert"
+            - level: "warning"
+              actions:
+                - "send_meta_alert"
+            - level: "info"
+              actions:
+                - "send_meta_alert"
+          tags:
+            - "alert"
+            - "notification"
+            - "monitoring"
+          profiles:
+            - "dev"
+            - "ops"
+            - "oncall"
+          custom_message: "Alert: {{alert_name}} - {{alert_details}}"
+          message_format: "text" # e.g., "text", "markdown", or "json"
+          mention_users:
+            - "@user1"
+            - "@user2"
+            - "@user3"
+          mention_groups:
+            - "@here"
+            - "@channel"
+            - "@everyone"
+          mention_roles:
+            - "admin"
+            - "devops"
+            - "oncall"
+          bot_username: "KubexMetaAlertBot"
+          bot_icon_emoji: ":alert:"
+          alert_severity: "high" # e.g., "low", "medium", "high", or "critical"
+
+        # Custom Webhook Configuration
+        webhook:
+          enabled: false
+          url: "your_custom_webhook_url"
+          method: "POST"
+          headers:
+            Content-Type: application/json
+          payload_template: '{"alert": "{{alert_name}}", "details": "{{alert_details}}"}'
+
+    # SMS Configuration
+    sms:
+      provider: "twilio" # e.g., "twilio", "nexmo", or "plivo"
+      api_key: "your_sms_provider_api_key"
+      api_secret: "your_sms_provider_api_secret"
+      from_number: "your_sms_from_number"
+      to_numbers:
+        - "your_sms_to_number1"
+        - "your_sms_to_number2"
+        - "your_sms_to_number3"
+
+    # Email Configuration
+    email:
+      smtp_server: smtp.your-email-provider.com
+      smtp_port: 587
+      username: your-email-username
+      password: your-email-password
+      from_address: your-email-from-address
+      to_addresses:
+        - your-email-to-address1
+        - your-email-to-address2
+      subject: "Kubex GemX Analyzer Alert"
+    thresholds:
+      error_rate_percentage: 5 # Alert if error rate exceeds 5%
+      latency_ms: 2000 # Alert if average latency exceeds 2000ms
+      provider_failures: 10 # Alert if provider failures exceed 10 in a minute
+    notification_interval_min: 30 # Minimum interval between notifications in minutes
+    escalation_policy:
+      - level: "critical"
+        actions:
+          - "send_email"
+          - "send_sms"
+      - level: "warning"
+        actions:
+          - "send_email"
+          - "send_sms"
+      - level: "info"
+        actions:
+          - "send_email"
+
+Repository: https://github.com/kubex-ecosystem/kubex-gemx-analyzer
+version: 1.0.0
+authors:
+  - "Kubex Dev Team <dev@kubex.world>"
+license: "MIT"
+#
+#
+# We appreciate your support and feedback.
+# If you have any questions or need assistance, please reach out to us at support@kubex.world
+# Future enhancements
+#  - Add support for additional notification channels
+#  - Implement machine learning-based alerting
+#  - Improve alert correlation and deduplication
+#  - monitoring
+#  - incident response automation
+#
+# Kubex Ecosystem: https://kubex.world
+#
+# Thanks for using Kubex GemX Analyzer!
+#
+# 🚀 We hope it brings value to your projects and workflows. 🚀
+#
+# ❤️ Open Source software born out of passion and community effort. ❤️
+#
+# Please consider supporting our work by starring the repository and sharing it with others.
+# Your contributions and feedback are always welcome!
+# Happy coding! 😊

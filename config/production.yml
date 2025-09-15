@@ -1,7 +1,8 @@
 # Production Features Configuration
-development:
+production:
   # General Settings
-  logging_level: DEBUG
+  logging_level: INFO
+  debug_mode: false
 
   # Server Configuration
   server:
