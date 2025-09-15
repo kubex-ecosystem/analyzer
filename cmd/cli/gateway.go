@@ -62,7 +62,7 @@ Features:
 	serveCmd.Flags().StringVarP(&bindingAddress, "binding", "b", getEnv("ADDR", "0.0.0.0"), "Server address")
 	serveCmd.Flags().StringVarP(&port, "port", "p", getEnv("PORT", "8080"), "Server port")
 	serveCmd.Flags().BoolVar(&enableCORS, "cors", true, "Enable CORS headers")
-	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "./config/config.example.yml"), "Providers config file")
+	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "config/config.example.yml"), "Providers config file")
 	serveCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 
 	// Add status subcommand
