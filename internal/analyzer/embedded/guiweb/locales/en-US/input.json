@@ -1,0 +1,68 @@
+{
+  "title": "Project Context",
+  "placeholder": "Paste your project documentation, README files, or any relevant text here...",
+  "upload": "Upload File",
+  "showExample": "Show me an example",
+  "analysisTitle": "Choose Analysis Type",
+  "analysisTypes": {
+    "GENERAL": {
+      "label": "General Viability",
+      "description": "Overall assessment of project health, goals, and potential."
+    },
+    "SECURITY": {
+      "label": "Security Audit",
+      "description": "Analyzes for vulnerabilities and security best practices."
+    },
+    "SCALABILITY": {
+      "label": "Scalability Review",
+      "description": "Identifies performance bottlenecks and scaling issues."
+    },
+    "CODE_QUALITY": {
+      "label": "Code Quality Check",
+      "description": "Evaluates structure, maintainability, and best practices."
+    }
+  },
+  "exampleMode": {
+    "notice": "You are in example mode. Your input is disabled.",
+    "exit": "Exit Example"
+  },
+  "dataSources": {
+    "title": "Data Source",
+    "manual": {
+      "label": "Manual"
+    },
+    "github": {
+      "label": "GitHub",
+      "description": "Analyze an entire repository by providing its URL.",
+      "placeholder": "e.g., https://github.com/owner/repo",
+      "fetchButton": "Fetch Repository Data",
+      "patNotice": "Requires a Personal Access Token set in Settings."
+    },
+    "jira": {
+      "label": "Jira",
+      "description": "Analyze a project's epics, stories, and tasks.",
+      "placeholder": "e.g., PROJ",
+      "fetchButton": "Fetch Project Data",
+      "credentialsNotice": "Requires Jira credentials set in Settings."
+    }
+  },
+  "files": {
+    "title": "Project Files",
+    "addFile": "Add New File",
+    "addFromUpload": "Add from Upload",
+    "emptyState": "No files in context. Add a file to begin analysis.",
+    "editorPlaceholder": "Select a file to view or edit its content.",
+    "fileName": "File Name",
+    "fileContent": "File Content"
+  },
+  "githubSearch": {
+    "button": "Search Repositories",
+    "title": "Search GitHub Repositories",
+    "placeholder": "Enter a GitHub username or organization",
+    "searchButton": "Search",
+    "importButton": "Import",
+    "noReposFound": "No public repositories found for this user.",
+    "emptyUsername": "Please enter a GitHub username or organization.",
+    "resultsTitle": "Repositories for \"{username}\""
+  }
+}

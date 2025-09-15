@@ -1,0 +1,92 @@
+{
+  "projectContext": "O contexto do projeto do arquivo `constants` estaria aqui.",
+  "kortex": {
+    "projectName": "Painel Kortex",
+    "summary": "Kortex é um painel de monitoramento DevOps robusto e pronto para produção que transitou com sucesso de dados mockados para integrações de API em tempo real. Sua arquitetura é moderna, utilizando Next.js 15 e TypeScript, com foco em resiliência e atualizações em tempo real via WebSockets. O projeto demonstra um alto nível de maturidade técnica, forte experiência de desenvolvedor e um roadmap claro, indicando excelente viabilidade para desenvolvimento contínuo e adoção corporativa.",
+    "strengths": {
+      "s1": "**Arquitetura Pronta para Produção:** 'Desmockado' com sucesso, com dados em tempo real do GitHub, Azure e Kubernetes.",
+      "s2": "**Resiliente e Performático:** Implementa WebSockets, reconexão automática e fallbacks graciosos para indisponibilidade de API.",
+      "s3": "**Excelente Experiência de Desenvolvedor:** 100% TypeScript com tipagem estrita, um servidor de API mock completo e hot reloading.",
+      "s4": "**Alta Qualidade de Código:** Arquitetura modular, zero erros de compilação e adesão às melhores práticas modernas.",
+      "s5": "**Roadmap Claro e Ambicioso:** Metas futuras bem definidas, incluindo suporte multi-cloud e análises avançadas."
+    },
+    "improvements": {
+      "i1": {
+        "title": "Implementar Autenticação e Autorização",
+        "description": "A versão atual carece de uma camada de segurança para controlar o acesso. Implementar um sistema robusto de autenticação (ex: OAuth 2.0) e autorização é crítico antes de expor dados sensíveis de DevOps.",
+        "businessImpact": "Previne o acesso não autorizado a dados críticos de infraestrutura, garantindo segurança e conformidade."
+      },
+      "i2": {
+        "title": "Expandir Monitoramento com APIs de Produção",
+        "description": "O painel está conectado a várias fontes, mas precisa de integração com APIs de produção como StatusRafa e Kosmos para fornecer valor abrangente e do mundo real.",
+        "businessImpact": "Desbloqueia o valor de negócio principal do painel, fornecendo uma visão única para todos os sistemas críticos."
+      },
+      "i3": {
+        "title": "Desenvolver um Sistema de Alerta Avançado",
+        "description": "O painel monitora dados, mas ainda não notifica proativamente os usuários sobre anomalias. Um sistema de alerta (ex: e-mail, notificações no Slack) é necessário para eventos críticos.",
+        "businessImpact": "Reduz o tempo de inatividade do sistema e o tempo de resposta a incidentes, alertando proativamente os engenheiros sobre problemas."
+      }
+    },
+    "nextSteps": {
+      "shortTerm": {
+        "s1": {
+          "title": "Integrar com um Serviço de Gerenciamento de Usuários",
+          "description": "Escolha e implemente um serviço como Auth0, Firebase Auth, ou uma solução customizada para lidar com identidades e papéis de usuários."
+        },
+        "s2": {
+          "title": "Adicionar Gerenciamento de Chaves de API e Segredos",
+          "description": "Armazene e gerencie com segurança as chaves de API para serviços de produção usando um cofre ou sistema de gerenciamento de variáveis de ambiente."
+        }
+      },
+      "longTerm": {
+        "l1": {
+          "title": "Construir um Motor de Alerta Configurável",
+          "description": "Projete um sistema onde os usuários possam definir regras de alerta personalizadas, limiares e canais de notificação."
+        },
+        "l2": {
+          "title": "Explorar Integração Multi-Cloud (AWS, GCP)",
+          "description": "Desenvolva uma estratégia e arquitetura para estender as capacidades de monitoramento para outros grandes provedores de nuvem além da pilha atual."
+        }
+      }
+    },
+    "viability": {
+      "assessment": "O projeto tem viabilidade extremamente alta. Ele resolve uma necessidade de negócio clara, é construído sobre uma pilha de tecnologia moderna e escalável, e tem um plano bem definido para crescimento. A transição de dados mockados para dados reais é um grande evento de redução de risco."
+    },
+    "roi": {
+      "assessment": "O ROI potencial é significativo. Ao centralizar o monitoramento e fornecer insights em tempo real, o Kortex pode reduzir drasticamente o tempo de engenharia gasto em diagnósticos, melhorar o tempo de atividade do sistema e acelerar a resposta a incidentes.",
+      "gains": {
+        "g1": "Redução do Tempo Médio para Resolução (MTTR) de incidentes.",
+        "g2": "Aumento da produtividade do desenvolvedor ao centralizar dados.",
+        "g3": "Melhora na tomada de decisões com uma visão holística da saúde do sistema.",
+        "g4": "Detecção proativa de problemas antes que eles impactem os usuários."
+      }
+    },
+    "maturity": {
+      "assessment": "O projeto está no nível de 'Produção'. Possui um núcleo estável, integração de dados reais e tratamento de erros robusto. Está pronto para a adoção inicial de usuários, com passos claros delineados para alcançar um estado totalmente otimizado."
+    }
+  },
+  "history": {
+    "kortex": {
+      "h1": {
+        "assessment": "A viabilidade caiu ligeiramente devido à descoberta de complexidades na integração da API, mas o projeto permanece em uma trajetória positiva. Agora considerado um MVP forte."
+      },
+      "h2": {
+        "assessment": "O projeto mostra um forte potencial com uma arquitetura sólida, embora ainda dependa de dados mockados. As funcionalidades principais estão bem definidas, tornando-o um MVP viável."
+      },
+      "h3": {
+        "summary": "Esta é uma análise de segurança especializada do protótipo Kortex. Foca na identificação de vulnerabilidades potenciais na arquitetura e dependências planejadas.",
+        "assessment": "A arquitetura planejada tem algumas lacunas de segurança que precisam ser abordadas antes da produção. A viabilidade depende da implementação de autenticação e tratamento de dados adequados."
+      },
+      "h4": {
+        "projectName": "Protótipo Kortex",
+        "assessment": "O projeto está em seus estágios iniciais, mas é promissor. O conceito central é sólido, mas um trabalho significativo é necessário para ir além da fase de protótipo."
+      }
+    },
+    "orion": {
+      "projectName": "Orion UI Kit",
+      "summary": "Análise do Orion UI Kit, uma biblioteca de componentes. Foca na qualidade do código, reutilização e documentação.",
+      "assessment": "A biblioteca de componentes é bem estruturada e documentada, mostrando alta viabilidade para adoção dentro da organização.",
+      "maturityAssessment": "A biblioteca é altamente otimizada, com excelente qualidade de código, cobertura de teste abrangente e um processo de contribuição simplificado."
+    }
+  }
+}

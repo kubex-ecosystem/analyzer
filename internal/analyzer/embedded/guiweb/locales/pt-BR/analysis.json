@@ -1,0 +1,84 @@
+{
+  "results": {
+    "title": "Análise para: {projectName}",
+    "summary": {
+      "title": "Resumo Executivo"
+    },
+    "viability": {
+      "title": "Viabilidade do Projeto",
+      "scoreLabel": "Pontuação",
+      "assessmentLabel": "Avaliação",
+      "scoreEvolution": "Evolução da Pontuação"
+    },
+    "roi": {
+      "title": "Análise de ROI e Esforço",
+      "assessmentLabel": "Avaliação",
+      "effortLabel": "Esforço Estimado",
+      "gainsLabel": "Ganhos Potenciais"
+    },
+    "strengths": {
+      "title": "Pontos Fortes"
+    },
+    "improvements": {
+      "title": "Melhorias Sugeridas",
+      "impact": "Impacto",
+      "businessImpact": "Impacto de Negócio"
+    },
+    "nextSteps": {
+      "title": "Próximos Passos",
+      "shortTerm": "Curto Prazo",
+      "longTerm": "Longo Prazo"
+    },
+    "maturity": {
+      "title": "Maturidade do Projeto"
+    },
+    "exampleModeNotice": "Você está visualizando uma análise de exemplo. Para analisar seu próprio projeto, inicie uma nova análise.",
+    "usageMetadata": {
+      "ariaLabel": "Uso de Tokens da Análise",
+      "total": "Total",
+      "tokens": "tokens"
+    }
+  },
+  "maturityLevels": {
+    "PROTOTYPE": "Protótipo",
+    "MVP": "MVP",
+    "PRODUCTION": "Produção",
+    "OPTIMIZED": "Otimizado"
+  },
+  "feedback": {
+    "question": "Esta análise foi útil?",
+    "thanks": "Obrigado pelo seu feedback!",
+    "useful": "Útil",
+    "notUseful": "Não útil"
+  },
+  "evolution": {
+    "title": "Análise de Evolução",
+    "subtitle": "Comparando duas análises para {projectName} ({analysisType})",
+    "summary": "Resumo da Evolução",
+    "metrics": {
+      "viabilityScore": "Pontuação de Viabilidade",
+      "strengths": "Pontos Fortes",
+      "improvements": "Melhorias"
+    },
+    "usageAriaLabel": "Informação de Uso de Tokens da Comparação",
+    "comparisonCost": "Custo da Comparação",
+    "breakdown": {
+      "title": "Detalhamento das Melhorias",
+      "achievements": "Conquistas",
+      "noResolved": "Nenhuma melhoria resolvida identificada.",
+      "newChallenges": "Novos Desafios",
+      "noNew": "Nenhum novo desafio identificado.",
+      "technicalDebt": "Débito Técnico",
+      "noPersistent": "Nenhum débito técnico persistente encontrado."
+    }
+  },
+  "export": {
+    "json": "Exportar JSON",
+    "log": "Exportar Log",
+    "jsonAriaLabel": "Exportar análise como um arquivo JSON",
+    "logAriaLabel": "Exportar análise como um arquivo de log de texto",
+    "logContent": {
+      "mainTitle": "Relatório de Análise de Projeto"
+    }
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "title": "Perfil & Configurações",
+  "tabs": {
+    "profile": "Perfil",
+    "preferences": "Preferências",
+    "integrations": "Integrações",
+    "data": "Dados"
+  },
+  "saveHistory": {
+    "label": "Salvar Histórico de Análises",
+    "description": "Salvar automaticamente cada análise em seu histórico local."
+  },
+  "save": "Salvar Configurações",
+  "importExport": {
+    "title": "Dados da Aplicação",
+    "description": "Salve ou carregue todo o estado da sua aplicação, incluindo histórico e configurações.",
+    "importLabel": "Importar",
+    "exportLabel": "Exportar",
+    "warning": "Importar dados irá sobrescrever seu histórico e configurações atuais.",
+    "confirm": {
+      "title": "Importar Dados da Aplicação?",
+      "message": "Isso irá sobrescrever todos os dados atuais (histórico, configurações, etc.) e recarregar a aplicação. Esta ação não pode ser desfeita."
+    },
+    "invalidFile": "Formato do arquivo de backup inválido. O arquivo pode estar corrompido ou não ser um backup do GemX.",
+    "emptyFile": "O arquivo selecionado está vazio.",
+    "noData": "Não há dados para exportar."
+  },
+  "theme": {
+    "label": "Tema",
+    "light": "Claro",
+    "dark": "Escuro",
+    "system": "Sistema"
+  },
+  "language": {
+    "label": "Idioma"
+  },
+  "integrations": {
+    "description": "Forneça chaves de API e credenciais para serviços de terceiros para permitir a busca direta de dados.",
+    "github": {
+      "title": "Integração com GitHub",
+      "description": "Usado para buscar dados de repositórios para análise.",
+      "patLabel": "Token de Acesso Pessoal (PAT)",
+      "patPlaceholder": "Insira seu PAT do GitHub (escopo de repo)"
+    },
+    "jira": {
+      "title": "Integração com Jira",
+      "description": "Usado para buscar dados de projetos da sua instância Jira.",
+      "instanceUrlLabel": "URL da Instância Jira",
+      "instanceUrlPlaceholder": "https://sua-empresa.atlassian.net",
+      "emailLabel": "E-mail da Conta Jira",
+      "apiTokenLabel": "Token de API do Jira",
+      "apiTokenPlaceholder": "Insira seu token de API do Jira"
+    }
+  },
+  "apiKeys": {
+    "gemini": {
+      "title": "Chave de API do Google Gemini (BYOK)",
+      "description": "Opcionalmente, forneça sua própria chave. Ela será armazenada de forma segura no seu navegador e usada para todas as análises.",
+      "label": "Chave de API do Gemini",
+      "placeholder": "Insira sua chave de API aqui",
+      "testButton": "Testar",
+      "testing": "Testando...",
+      "testSuccess": "Sucesso",
+      "testFailure": "Falhou"
+    }
+  }
+}
