@@ -63,8 +63,16 @@ func Load(path string) (*Registry, error) {
 			}
 			r.providers[name] = p
 		case "anthropic":
-			// TODO: Implement Anthropic provider
-			return nil, fmt.Errorf("anthropic provider not yet implemented")
+			key := os.Getenv(pc.KeyEnv)
+			if key == "" {
+				fmt.Printf("Warning: Skipping Anthropic provider '%s' - no API key found in %s\n", name, pc.KeyEnv)
+				continue
+			}
+			p, err := NewAnthropicProvider(name, pc.BaseURL, key, pc.DefaultModel)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create Anthropic provider %s: %w", name, err)
+			}
+			r.providers[name] = p
 		case "groq":
 			// TODO: Implement Groq provider
 			return nil, fmt.Errorf("groq provider not yet implemented")

@@ -11,12 +11,14 @@ providers:
     key_env: GEMINI_API_KEY
     default_model: gemini-2.5-flash
 
+  anthropic:
+    type: anthropic
+    base_url: https://api.anthropic.com
+    key_env: ANTHROPIC_API_KEY
+    default_model: claude-3-5-sonnet-20241022
+
   # Future providers (uncomment when implemented)
-  # anthropic:
-  #   type: anthropic
-  #   base_url: https://api.anthropic.com
-  #   key_env: ANTHROPIC_API_KEY
-  #   default_model: claude-3-5-sonnet-latest  # groq:
+  # groq:
   #   type: groq
   #   base_url: https://api.groq.com
   #   key_env: GROQ_API_KEY
