@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/providers"
 )
 
 // Provider OpenAI com streaming + tool calling + response_format + usage (stream_options)

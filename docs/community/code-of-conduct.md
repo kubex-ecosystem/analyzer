@@ -38,9 +38,9 @@ Este Código de Conduta se aplica em todos os espaços da comunidade, e também 
 
 Instâncias de comportamento abusivo, de assédio ou de outro modo inaceitável podem ser relatadas aos líderes da comunidade responsáveis pela aplicação através dos seguintes canais:
 
-- **GitHub Issues:** [github.com/kubex-ecosystem/gemx/analyzer/issues](https://github.com/kubex-ecosystem/gemx/analyzer/issues)
+- **GitHub Issues:** [github.com/kubex-ecosystem/analyzer/issues](https://github.com/kubex-ecosystem/analyzer/issues)
 - **Email:** Entre em contato através do GitHub
-- **Discussões:** [github.com/kubex-ecosystem/gemx/analyzer/discussions](https://github.com/kubex-ecosystem/gemx/analyzer/discussions)
+- **Discussões:** [github.com/kubex-ecosystem/analyzer/discussions](https://github.com/kubex-ecosystem/analyzer/discussions)
 
 Todas as reclamações serão revisadas e investigadas de forma rápida e justa.
 

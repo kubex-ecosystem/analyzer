@@ -11,7 +11,7 @@ DIRETORIO_RAIZ="/srv/apps/LIFE/KUBEX/gemx-analyzer"
 TEXTO_ANTIGO="github.com/kubex-ecosystem/gemx-analyzer"
 
 # O novo texto que substituirá o antigo.
-TEXTO_NOVO="github.com/kubex-ecosystem/gemx/analyzer"
+TEXTO_NOVO="github.com/kubex-ecosystem/analyzer"
 
 # Lista de tipos de arquivo para verificar.
 # Adicione ou remova padrões de nome de arquivo conforme necessário,

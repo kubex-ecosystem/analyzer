@@ -8,13 +8,13 @@ Precisa de ajuda com o GemxAnalyzer? Aqui estão os canais de suporte disponíve
 
 Para reportar bugs ou solicitar funcionalidades:
 
-**🔗 [github.com/kubex-ecosystem/gemx/analyzer/issues](https://github.com/kubex-ecosystem/gemx/analyzer/issues)**
+**🔗 [github.com/kubex-ecosystem/analyzer/issues](https://github.com/kubex-ecosystem/analyzer/issues)**
 
 ### GitHub Discussions
 
 Para discussões, dúvidas e compartilhar experiências:
 
-**🔗 [github.com/kubex-ecosystem/gemx/analyzer/discussions](https://github.com/kubex-ecosystem/gemx/analyzer/discussions)**
+**🔗 [github.com/kubex-ecosystem/analyzer/discussions](https://github.com/kubex-ecosystem/analyzer/discussions)**
 
 ### Documentação
 

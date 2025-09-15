@@ -431,8 +431,8 @@ Ao contribuir, você concorda que suas contribuições serão licenciadas sob a 
 
 ## 📞 Contato
 
-- **GitHub Issues:** [github.com/kubex-ecosystem/gemx/analyzer/issues](https://github.com/kubex-ecosystem/gemx/analyzer/issues)
-- **GitHub Discussions:** [github.com/kubex-ecosystem/gemx/analyzer/discussions](https://github.com/kubex-ecosystem/gemx/analyzer/discussions)
+- **GitHub Issues:** [github.com/kubex-ecosystem/analyzer/issues](https://github.com/kubex-ecosystem/analyzer/issues)
+- **GitHub Discussions:** [github.com/kubex-ecosystem/analyzer/discussions](https://github.com/kubex-ecosystem/analyzer/discussions)
 - **Email:** [através do GitHub](https://github.com/kubex-ecosystem)
 
 ---

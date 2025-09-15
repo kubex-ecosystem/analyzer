@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/middleware"
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/registry"
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
+	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
+	"github.com/kubex-ecosystem/analyzer/internal/providers"
 )
 
 // httpHandlers holds the HTTP route handlers

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/registry"
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
+	"github.com/kubex-ecosystem/analyzer/internal/providers"
 )
 
 type httpHandlersSSE struct {

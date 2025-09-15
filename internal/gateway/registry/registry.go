@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/providers"
 	"gopkg.in/yaml.v3"
 )
 

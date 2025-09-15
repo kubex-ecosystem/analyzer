@@ -1,12 +1,12 @@
 # **Contributing to GemxAnalyzer**
 
-Thank you for your interest in contributing to **[GemxAnalyzer](https://github.com/kubex-ecosystem/gemx/analyzer)**! We are excited to have you as part of our community. This guide will help you get started and contribute effectively to the project.
+Thank you for your interest in contributing to **[GemxAnalyzer](https://github.com/kubex-ecosystem/analyzer)**! We are excited to have you as part of our community. This guide will help you get started and contribute effectively to the project.
 
 ---
 
 ## **How to Contribute**
 
-There are several ways to contribute to [GemxAnalyzer](https://github.com/kubex-ecosystem/gemx/analyzer):
+There are several ways to contribute to [GemxAnalyzer](https://github.com/kubex-ecosystem/analyzer):
 
 1. **Report Issues**
    - Found bugs or issues in the code? Open an issue detailing the problem.
@@ -29,7 +29,7 @@ There are several ways to contribute to [GemxAnalyzer](https://github.com/kubex-
 ### 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/kubex-ecosystem/gemx/analyzer.git
+git clone https://github.com/kubex-ecosystem/analyzer.git
 cd grompt
 ```
 

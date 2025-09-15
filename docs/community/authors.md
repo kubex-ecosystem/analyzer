@@ -16,7 +16,7 @@ Rafael é o criador e mantenedor principal do GemxAnalyzer. Desenvolvedor apaixo
 
 Agradecemos a todos que contribuíram para o projeto:
 
-**🔗 [Lista completa de contribuidores](https://github.com/kubex-ecosystem/gemx/analyzer/contributors)**
+**🔗 [Lista completa de contribuidores](https://github.com/kubex-ecosystem/analyzer/contributors)**
 
 ### Como Contribuir
 
@@ -81,7 +81,7 @@ Se você usar o GemxAnalyzer em sua pesquisa ou projeto, considere citar:
 @software{grompt2024,
   author = {Rafael Mori},
   title = {GemxAnalyzer: Professional Prompt Engineering Tool},
-  url = {https://github.com/kubex-ecosystem/gemx/analyzer},
+  url = {https://github.com/kubex-ecosystem/analyzer},
   year = {2024}
 }
 ```

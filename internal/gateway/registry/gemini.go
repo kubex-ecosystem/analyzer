@@ -9,7 +9,7 @@ import (
 	"time"
 
 	genai "github.com/google/generative-ai-go/genai"
-	"github.com/kubex-ecosystem/gemx/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/providers"
 	"google.golang.org/api/option"
 )
 

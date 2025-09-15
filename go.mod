@@ -1,4 +1,4 @@
-module github.com/kubex-ecosystem/gemx/analyzer
+module github.com/kubex-ecosystem/analyzer
 
 go 1.25.1
 

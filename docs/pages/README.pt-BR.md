@@ -65,7 +65,7 @@ Crie uma função TypeScript genérica que:
 
 ```bash
 # Baixe a versão mais recente para sua plataforma
-curl -L https://github.com/kubex-ecosystem/gemx/analyzer/releases/latest/download/grompt-linux-amd64 -o grompt
+curl -L https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt-linux-amd64 -o grompt
 chmod +x grompt
 ./grompt
 
@@ -75,7 +75,7 @@ chmod +x grompt
 ### Opção 2: Construir do Código Fonte
 
 ```bash
-git clone https://github.com/kubex-ecosystem/gemx/analyzer
+git clone https://github.com/kubex-ecosystem/analyzer
 cd grompt
 make build-all
 ./grompt
@@ -247,7 +247,7 @@ Recebemos contribuições! Veja como você pode ajudar:
 
 ```bash
 # 1. Fork e clone
-git clone https://github.com/kubex-ecosystem/gemx/analyzer
+git clone https://github.com/kubex-ecosystem/analyzer
 cd grompt
 
 # 2. Criar branch de funcionalidade
@@ -316,7 +316,7 @@ Este projeto é licenciado sob a Licença MIT - veja o arquivo [LICENSE](../LICE
 
 ***Feito com ❤️ usando Go + React***
 
-[⭐ Star este projeto](https://github.com/kubex-ecosystem/gemx/analyzer/stargazers) • [🐛 Reportar Bug](https://github.com/kubex-ecosystem/gemx/analyzer/issues) • [✨ Solicitar Funcionalidade](https://github.com/kubex-ecosystem/gemx/analyzer/issues)
+[⭐ Star este projeto](https://github.com/kubex-ecosystem/analyzer/stargazers) • [🐛 Reportar Bug](https://github.com/kubex-ecosystem/analyzer/issues) • [✨ Solicitar Funcionalidade](https://github.com/kubex-ecosystem/analyzer/issues)
 
 *Transforme suas ideias em prompts poderosos hoje!*
 
@@ -333,7 +333,7 @@ GemxAnalyzer é uma ferramenta COMPLETA para construção de prompts com assist�
 ### Via Go
 
 ```bash
-go install github.com/kubex-ecosystem/gemx/analyzer@latest
+go install github.com/kubex-ecosystem/analyzer@latest
 ```
 
 ### Via Docker
@@ -345,7 +345,7 @@ docker run -it --rm ghcr.io/kubex-ecosystem/grompt:latest
 ### Via Binaries
 
 ```bash
-wget https://github.com/kubex-ecosystem/gemx/analyzer/releases/latest/download/grompt_linux_amd64.tar.gz
+wget https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt_linux_amd64.tar.gz
 tar -xzf grompt_linux_amd64.tar.gz
 chmod +x grompt
 sudo mv grompt /usr/local/bin/
