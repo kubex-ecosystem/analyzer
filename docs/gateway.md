@@ -78,7 +78,7 @@ Realiza chat completion com streaming SSE.
 
 **Response (SSE):**
 
-```
+```json
 data: {"content": "Hello", "done": false}
 data: {"content": "! How", "done": false}
 data: {"done": true, "usage": {"tokens": 15, "latency_ms": 1200, "cost_usd": 0.00003}}
@@ -115,7 +115,7 @@ Cada resposta inclui métricas detalhadas:
 
 ## 🏗️ Arquitetura
 
-```
+```plaintext
 cmd/gw/main.go              # Bootstrap do gateway
 internal/gateway/
 ├── registry/               # Provider registry e interfaces
