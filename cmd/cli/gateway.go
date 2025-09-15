@@ -2,9 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/kubex-ecosystem/analyzer/internal/gateway"
 	"github.com/spf13/cobra"
@@ -14,10 +14,11 @@ import (
 func GatewayCmds() *cobra.Command {
 	// Main gateway command
 	var (
-		addr       string
-		configPath string
-		debug      bool
-		enableCORS bool
+		bindingAddress string
+		port           string
+		configPath     string
+		debug          bool
+		enableCORS     bool
 	)
 
 	rootCmd := &cobra.Command{
@@ -45,11 +46,11 @@ Features:
 	// Serve subcommand
 	serveCmd := &cobra.Command{
 		Use:   "serve",
-		Short: "Start the gateway server",
-		Long:  "Start the Analyzer Gateway server with enterprise features",
+		Short: "Start the gateway server (with GUI)",
+		Long:  "Start the Analyzer Gateway server with enterprise features (with GUI)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return startGateway(&gateway.ServerConfig{
-				Addr:            addr,
+				Addr:            net.JoinHostPort(bindingAddress, port),
 				ProvidersConfig: configPath,
 				Debug:           debug,
 				EnableCORS:      enableCORS,
@@ -58,10 +59,11 @@ Features:
 	}
 
 	// Add flags to serve command
-	serveCmd.Flags().StringVarP(&addr, "addr", "a", getEnv("ADDR", ":8080"), "Server address")
-	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "config/config.example.yml"), "Providers config file")
-	serveCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
+	serveCmd.Flags().StringVarP(&bindingAddress, "binding", "b", getEnv("ADDR", "0.0.0.0"), "Server address")
+	serveCmd.Flags().StringVarP(&port, "port", "p", getEnv("PORT", "8080"), "Server port")
 	serveCmd.Flags().BoolVar(&enableCORS, "cors", true, "Enable CORS headers")
+	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "./config/config.example.yml"), "Providers config file")
+	serveCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
 
 	// Add status subcommand
 	statusCmd := &cobra.Command{
@@ -99,12 +101,16 @@ func startGateway(config *gateway.ServerConfig) error {
 
 // statusCommand checks the gateway status
 func statusCommand(cmd *cobra.Command, args []string) error {
-	addr := getEnv("ADDR", ":8080")
-	if !strings.HasPrefix(addr, ":") {
-		addr = ":" + addr
+	port := getEnv("PORT", "8080")
+	bindingAddress := getEnv("ADDR", "0.0.0.0")
+	targetAddress := ""
+	if bindingAddress == "0.0.0.0" {
+		targetAddress = net.JoinHostPort("localhost", port)
+	} else {
+		targetAddress = net.JoinHostPort(bindingAddress, port)
 	}
 
-	resp, err := http.Get("http://localhost" + addr + "/healthz")
+	resp, err := http.Get("http://" + targetAddress + "/healthz")
 	if err != nil {
 		return fmt.Errorf("gateway not reachable: %w", err)
 	}
@@ -114,7 +120,7 @@ func statusCommand(cmd *cobra.Command, args []string) error {
 		fmt.Println("✅ Gateway is healthy")
 
 		// Also check Repository Intelligence endpoints
-		riResp, err := http.Get("http://localhost" + addr + "/api/v1/health")
+		riResp, err := http.Get("http://" + targetAddress + "/api/v1/health")
 		if err == nil && riResp.StatusCode == http.StatusOK {
 			fmt.Println("✅ Repository Intelligence APIs are available")
 			riResp.Body.Close()
