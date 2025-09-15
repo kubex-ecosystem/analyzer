@@ -4,12 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/kubex-ecosystem/analyzer/internal/advise"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 )
 
 type httpHandlersSSE struct {
-	reg *registry.Registry
+	reg    *registry.Registry
+	engine *scorecard.Engine // Add scorecard engine
 }
 
 // WireHTTP sets up HTTP routes
@@ -30,6 +33,7 @@ func WireHTTPSSE(mux *http.ServeMux, reg *registry.Registry) {
 	mux.HandleFunc("/v1/auth/login", hh.authLoginPassthrough)
 	mux.HandleFunc("/v1/state/export", hh.stateExport)
 	mux.HandleFunc("/v1/state/import", hh.stateImport)
+	mux.Handle("/v1/advise", advise.New(reg))
 }
 
 type chatReq struct {

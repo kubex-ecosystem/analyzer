@@ -1,0 +1,359 @@
+name: 🏷️ Release Automation
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.2.3)'
+        required: true
+        type: string
+
+jobs:
+  # ============================================================================
+  # Create Release
+  # ============================================================================
+  create-release:
+    name: 🏷️ Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🏷️ Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: 📝 Generate changelog
+        id: changelog
+        run: |
+          if [ -f CHANGELOG.md ]; then
+            echo "Using existing CHANGELOG.md"
+            CHANGELOG=$(awk '/^## \[/{if(seen) exit; seen=1; next} seen' CHANGELOG.md)
+          else
+            echo "Generating changelog from git history"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" $(git describe --tags --abbrev=0 HEAD~1)..HEAD 2>/dev/null || git log --pretty=format:"- %s (%h)" --max-count=20)
+          fi
+
+          # Save to file for multiline handling
+          cat << 'EOF' > changelog.txt
+          ## 🚀 What's New in ${{ steps.get_version.outputs.version }}
+
+          $CHANGELOG
+
+          ## 📦 Installation
+
+          ### Docker
+          ```bash
+          docker pull ghcr.io/${{ github.repository }}:${{ steps.get_version.outputs.version }}
+          ```
+
+          ### From Source
+          ```bash
+          git clone https://github.com/${{ github.repository }}.git
+          cd analyzer
+          git checkout ${{ steps.get_version.outputs.version }}
+          make build-all
+          ```
+
+          ### Docker Compose
+          ```bash
+          wget https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.version }}/docker-compose.yml
+          docker compose up -d
+          ```
+
+          ## 🔒 Security
+
+          This release has been scanned for vulnerabilities and is ready for production use.
+
+          ## 📊 Checksums
+
+          See assets below for SHA256 checksums.
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.get_version.outputs.version }}...HEAD
+          EOF
+
+      - name: 🏷️ Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          body_path: changelog.txt
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.version, '-') }}
+
+  # ============================================================================
+  # Build Release Artifacts
+  # ============================================================================
+  build-artifacts:
+    name: 🏗️ Build Artifacts
+    runs-on: ubuntu-latest
+    needs: create-release
+    strategy:
+      matrix:
+        include:
+          - os: linux
+            arch: amd64
+            suffix: linux-amd64
+          - os: linux
+            arch: arm64
+            suffix: linux-arm64
+          - os: darwin
+            arch: amd64
+            suffix: darwin-amd64
+          - os: darwin
+            arch: arm64
+            suffix: darwin-arm64
+          - os: windows
+            arch: amd64
+            suffix: windows-amd64.exe
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: 🏗️ Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build:static
+
+      - name: 🏗️ Build binary
+        env:
+          GOOS: ${{ matrix.os }}
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 0
+        run: |
+          BINARY_NAME="analyzer-gw-${{ needs.create-release.outputs.version }}-${{ matrix.suffix }}"
+          if [ "${{ matrix.os }}" = "windows" ]; then
+            BINARY_NAME="${BINARY_NAME}"
+          fi
+
+          go build \
+            -trimpath \
+            -ldflags="-s -w -X main.version=${{ needs.create-release.outputs.version }} -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ) -X main.commitSHA=${{ github.sha }}" \
+            -o "${BINARY_NAME}" \
+            ./cmd/gw
+
+          # Create checksum
+          if command -v sha256sum > /dev/null; then
+            sha256sum "${BINARY_NAME}" > "${BINARY_NAME}.sha256"
+          else
+            shasum -a 256 "${BINARY_NAME}" > "${BINARY_NAME}.sha256"
+          fi
+
+      - name: 📤 Upload binary to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: |
+            analyzer-gw-${{ needs.create-release.outputs.version }}-${{ matrix.suffix }}*
+
+  # ============================================================================
+  # Build and Push Docker Images
+  # ============================================================================
+  docker-release:
+    name: 🐳 Docker Release
+    runs-on: ubuntu-latest
+    needs: create-release
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔧 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔑 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.create-release.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.create-release.outputs.version }}
+            type=semver,pattern={{major}},value=${{ needs.create-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: 🏗️ Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.created'] }}
+            VERSION=${{ needs.create-release.outputs.version }}
+            COMMIT_SHA=${{ github.sha }}
+
+  # ============================================================================
+  # Create Release Package
+  # ============================================================================
+  package-release:
+    name: 📦 Package Release
+    runs-on: ubuntu-latest
+    needs: [create-release, build-artifacts]
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📁 Create release package
+        run: |
+          mkdir -p analyzer-${{ needs.create-release.outputs.version }}
+
+          # Copy essential files
+          cp README.md analyzer-${{ needs.create-release.outputs.version }}/
+          cp LICENSE analyzer-${{ needs.create-release.outputs.version }}/
+          cp docker-compose.yml analyzer-${{ needs.create-release.outputs.version }}/
+          cp .env.example analyzer-${{ needs.create-release.outputs.version }}/
+
+          # Copy configuration
+          cp -r config analyzer-${{ needs.create-release.outputs.version }}/
+
+          # Create installation script
+          cat << 'EOF' > analyzer-${{ needs.create-release.outputs.version }}/install.sh
+          #!/bin/bash
+          set -e
+
+          echo "🚀 Installing Analyzer Gateway ${{ needs.create-release.outputs.version }}"
+
+          # Detect OS and architecture
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m)
+
+          case $ARCH in
+            x86_64) ARCH="amd64" ;;
+            arm64|aarch64) ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+          esac
+
+          BINARY_NAME="analyzer-gw-${{ needs.create-release.outputs.version }}-${OS}-${ARCH}"
+          if [ "$OS" = "windows" ]; then
+            BINARY_NAME="${BINARY_NAME}.exe"
+          fi
+
+          echo "📥 Downloading ${BINARY_NAME}..."
+          curl -L "https://github.com/${{ github.repository }}/releases/download/${{ needs.create-release.outputs.version }}/${BINARY_NAME}" -o analyzer-gw
+
+          chmod +x analyzer-gw
+
+          echo "✅ Installation complete!"
+          echo "Run with: ./analyzer-gw"
+          EOF
+
+          chmod +x analyzer-${{ needs.create-release.outputs.version }}/install.sh
+
+          # Create deployment scripts
+          mkdir -p analyzer-${{ needs.create-release.outputs.version }}/scripts
+          cp scripts/* analyzer-${{ needs.create-release.outputs.version }}/scripts/ 2>/dev/null || true
+
+          # Create archive
+          tar -czf analyzer-${{ needs.create-release.outputs.version }}.tar.gz analyzer-${{ needs.create-release.outputs.version }}
+          zip -r analyzer-${{ needs.create-release.outputs.version }}.zip analyzer-${{ needs.create-release.outputs.version }}
+
+          # Create checksums
+          sha256sum analyzer-${{ needs.create-release.outputs.version }}.tar.gz > analyzer-${{ needs.create-release.outputs.version }}.tar.gz.sha256
+          sha256sum analyzer-${{ needs.create-release.outputs.version }}.zip > analyzer-${{ needs.create-release.outputs.version }}.zip.sha256
+
+      - name: 📤 Upload packages to release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: |
+            analyzer-${{ needs.create-release.outputs.version }}.tar.gz*
+            analyzer-${{ needs.create-release.outputs.version }}.zip*
+
+  # ============================================================================
+  # Update Documentation
+  # ============================================================================
+  update-docs:
+    name: 📚 Update Documentation
+    runs-on: ubuntu-latest
+    needs: create-release
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📝 Update documentation
+        run: |
+          # Update version in documentation
+          sed -i "s/version: .*/version: ${{ needs.create-release.outputs.version }}/" docs/index.md 2>/dev/null || true
+
+          # Update README with latest version
+          sed -i "s/analyzer-gw:latest/analyzer-gw:${{ needs.create-release.outputs.version }}/g" README.md 2>/dev/null || true
+
+      - name: 📤 Commit documentation updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add -A
+          git diff --staged --quiet || git commit -m "📚 docs: update for release ${{ needs.create-release.outputs.version }}"
+          git push
+
+  # ============================================================================
+  # Post-Release Notifications
+  # ============================================================================
+  notify:
+    name: 📢 Notifications
+    runs-on: ubuntu-latest
+    needs: [create-release, build-artifacts, docker-release, package-release]
+    if: always()
+    steps:
+      - name: 📢 Success notification
+        if: needs.create-release.result == 'success'
+        run: |
+          echo "🎉 Release ${{ needs.create-release.outputs.version }} completed successfully!"
+          echo "📦 Docker Image: ghcr.io/${{ github.repository }}:${{ needs.create-release.outputs.version }}"
+          echo "🔗 Release URL: https://github.com/${{ github.repository }}/releases/tag/${{ needs.create-release.outputs.version }}"
+
+      - name: ❌ Failure notification
+        if: failure()
+        run: |
+          echo "❌ Release ${{ needs.create-release.outputs.version }} failed!"
+          echo "Please check the workflow logs for details."

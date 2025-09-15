@@ -445,3 +445,19 @@ jobs:
           echo "### 📄 Release Notes:" >> $GITHUB_STEP_SUMMARY
           cat $(git rev-parse --show-toplevel)/RELEASE_NOTES.md >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+
+
+      - name: Publish New Docs With Changelog
+        if: startsWith(needs.build.outputs.module-name, 'analyzer')
+        run: |
+          make build-docs || {
+            echo "❌ Failed to build documentation"
+            exit 1
+          }
+
+          make pub-docs || {
+            echo "❌ Failed to publish documentation"
+            exit 1
+          }
+
+          echo "✅ Documentation published successfully!"

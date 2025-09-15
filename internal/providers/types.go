@@ -1,8 +1,24 @@
+// Package providers defines interfaces and types for AI providers
 package providers
 
 import "context"
 
-// Tool call básico (um por vez). Se houver múltiplos, enviaremos um ChatChunk por call.
+type ServerCORS struct {
+	AllowOrigins []string `yaml:"allow_origins"`
+}
+
+type ServerConfig struct {
+	Addr  string     `yaml:"addr"`
+	CORS  ServerCORS `yaml:"cors"`
+	Debug bool       `yaml:"debug"`
+}
+
+type DefaultsConfig struct {
+	TenantID string `yaml:"tenant_id"`
+	UserID   string `yaml:"user_id"`
+	Byok     string `yaml:"byok"`
+}
+
 type ToolCall struct {
 	Name string      `json:"name"`
 	Args interface{} `json:"args"` // geralmente map[string]any
@@ -18,6 +34,8 @@ type ProviderConfig struct {
 
 // Config holds the complete provider configuration
 type Config struct {
+	Server    *ServerConfig             `yaml:"server"`
+	Defaults  *DefaultsConfig           `yaml:"defaults"`
 	Providers map[string]ProviderConfig `yaml:"providers"`
 }
 

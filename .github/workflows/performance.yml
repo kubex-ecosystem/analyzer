@@ -1,0 +1,275 @@
+name: ⚡ Performance Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run performance tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  # ============================================================================
+  # Load Testing
+  # ============================================================================
+  load-test:
+    name: 🚛 Load Testing
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        provider: [gemini, openai, anthropic, groq]
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Build test image
+        run: docker build -t analyzer-gw:test .
+
+      - name: 🚀 Start test container
+        run: |
+          docker run -d --name analyzer-test \
+            -p 8080:8080 \
+            -e GEMINI_API_KEY=test \
+            -e OPENAI_API_KEY=test \
+            -e ANTHROPIC_API_KEY=test \
+            -e GROQ_API_KEY=test \
+            analyzer-gw:test
+
+      - name: ⏳ Wait for service to start
+        run: |
+          timeout 60s bash -c 'until curl -f http://localhost:8080/v1/status; do sleep 2; done'
+
+      - name: 🧪 Install testing tools
+        run: |
+          # Install k6 for load testing
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: 🚛 Run load test for ${{ matrix.provider }}
+        run: |
+          cat << 'EOF' > load-test.js
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Rate } from 'k6/metrics';
+
+          export let errorRate = new Rate('errors');
+
+          export let options = {
+            stages: [
+              { duration: '2m', target: 10 }, // Ramp up
+              { duration: '5m', target: 10 }, // Stay at 10 users
+              { duration: '2m', target: 0 },  // Ramp down
+            ],
+            thresholds: {
+              http_req_duration: ['p(95)<500'], // 95% of requests must complete below 500ms
+              errors: ['rate<0.1'], // <10% errors
+            },
+          };
+
+          export default function () {
+            const payload = JSON.stringify({
+              provider: '${{ matrix.provider }}',
+              prompt: 'Hello, this is a test prompt for performance testing.',
+              max_tokens: 100,
+              stream: false
+            });
+
+            const params = {
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            };
+
+            let response = http.post('http://localhost:8080/v1/chat/completions', payload, params);
+
+            check(response, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 2s': (r) => r.timings.duration < 2000,
+            });
+
+            errorRate.add(response.status !== 200);
+            sleep(1);
+          }
+          EOF
+
+          k6 run load-test.js
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: docker stop analyzer-test && docker rm analyzer-test
+
+  # ============================================================================
+  # Benchmark Testing
+  # ============================================================================
+  benchmark:
+    name: 📊 Benchmark Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: 🏃 Run benchmarks
+        run: |
+          go test -bench=. -benchmem -count=3 ./... > benchmark-results.txt
+          cat benchmark-results.txt
+
+      - name: 📊 Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: benchmark-results.txt
+
+      - name: 📈 Compare with baseline
+        run: |
+          echo "📈 Benchmark comparison with baseline..."
+          # Add logic to compare with previous benchmarks
+          # You can use benchstat tool for this
+
+  # ============================================================================
+  # Memory Profiling
+  # ============================================================================
+  memory-profile:
+    name: 🧠 Memory Profiling
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐹 Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: 🧠 Run memory profiling
+        run: |
+          go test -memprofile=mem.prof -bench=. ./...
+          go tool pprof -text mem.prof > memory-profile.txt
+
+      - name: 📤 Upload memory profile
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-profile
+          path: memory-profile.txt
+
+  # ============================================================================
+  # Container Resource Usage
+  # ============================================================================
+  resource-usage:
+    name: 📋 Resource Usage
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Build and analyze image
+        run: |
+          docker build -t analyzer-gw:analysis .
+
+          # Analyze image size
+          echo "📦 Image Analysis:" > resource-analysis.txt
+          docker images analyzer-gw:analysis >> resource-analysis.txt
+
+          # Analyze layers
+          echo -e "\n🏗️ Layer Analysis:" >> resource-analysis.txt
+          docker history analyzer-gw:analysis >> resource-analysis.txt
+
+      - name: 🚀 Test resource usage
+        run: |
+          # Start container with resource limits
+          docker run -d --name resource-test \
+            --memory=256m \
+            --cpus=1 \
+            -p 8080:8080 \
+            -e GEMINI_API_KEY=test \
+            analyzer-gw:analysis
+
+          sleep 10
+
+          # Monitor resource usage
+          echo -e "\n💾 Resource Usage:" >> resource-analysis.txt
+          docker stats --no-stream resource-test >> resource-analysis.txt
+
+          # Health check
+          curl -f http://localhost:8080/v1/status
+
+          docker stop resource-test
+          docker rm resource-test
+
+      - name: 📤 Upload resource analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: resource-analysis
+          path: resource-analysis.txt
+
+  # ============================================================================
+  # Performance Report
+  # ============================================================================
+  report:
+    name: 📋 Performance Report
+    runs-on: ubuntu-latest
+    needs: [load-test, benchmark, memory-profile, resource-usage]
+    if: always()
+    steps:
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: 📋 Generate performance report
+        run: |
+          echo "# 📊 Performance Test Report" > performance-report.md
+          echo "Generated on: $(date)" >> performance-report.md
+          echo "" >> performance-report.md
+
+          if [ -f benchmark-results/benchmark-results.txt ]; then
+            echo "## 🏃 Benchmark Results" >> performance-report.md
+            echo '```' >> performance-report.md
+            cat benchmark-results/benchmark-results.txt >> performance-report.md
+            echo '```' >> performance-report.md
+            echo "" >> performance-report.md
+          fi
+
+          if [ -f memory-profile/memory-profile.txt ]; then
+            echo "## 🧠 Memory Profile" >> performance-report.md
+            echo '```' >> performance-report.md
+            head -20 memory-profile/memory-profile.txt >> performance-report.md
+            echo '```' >> performance-report.md
+            echo "" >> performance-report.md
+          fi
+
+          if [ -f resource-analysis/resource-analysis.txt ]; then
+            echo "## 📋 Resource Analysis" >> performance-report.md
+            echo '```' >> performance-report.md
+            cat resource-analysis/resource-analysis.txt >> performance-report.md
+            echo '```' >> performance-report.md
+          fi
+
+      - name: 📤 Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report
+          path: performance-report.md
+
+      - name: 💬 Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (fs.existsSync('performance-report.md')) {
+              const report = fs.readFileSync('performance-report.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: report
+              });
+            }

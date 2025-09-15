@@ -192,42 +192,42 @@ docker-shell:
 .PHONY: compose-up
 compose-up:
 	@$(call log,"Starting services with Docker Compose...")
-	@docker-compose up -d
+	@docker compose up -d
 	@$(call log_success,"Services started")
 
 .PHONY: compose-up-dev
 compose-up-dev:
 	@$(call log,"Starting development environment with Docker Compose...")
-	@docker-compose -f docker-compose.dev.yml up -d
+	@docker compose -f docker-compose.dev.yml up -d
 	@$(call log_success,"Development environment started")
 
 .PHONY: compose-down
 compose-down:
 	@$(call log,"Stopping Docker Compose services...")
-	@docker-compose down
+	@docker compose down
 	@$(call log_success,"Services stopped")
 
 .PHONY: compose-logs
 compose-logs:
-	@docker-compose logs -f
+	@docker compose logs -f
 
 # Monitoring stack (optional profiles)
 .PHONY: compose-up-monitoring
 compose-up-monitoring:
 	@$(call log,"Starting services with monitoring stack...")
-	@docker-compose --profile monitoring up -d
+	@docker compose --profile monitoring up -d
 	@$(call log_success,"Services with monitoring started")
 
 .PHONY: compose-up-cache
 compose-up-cache:
 	@$(call log,"Starting services with Redis cache...")
-	@docker-compose --profile cache up -d
+	@docker compose --profile cache up -d
 	@$(call log_success,"Services with cache started")
 
 .PHONY: compose-up-full
 compose-up-full:
 	@$(call log,"Starting full stack (app + monitoring + cache)...")
-	@docker-compose --profile monitoring --profile cache up -d
+	@docker compose --profile monitoring --profile cache up -d
 	@$(call log_success,"Full stack started")
 
 # Deployment Commands
