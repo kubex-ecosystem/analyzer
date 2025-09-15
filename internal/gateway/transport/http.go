@@ -10,6 +10,7 @@ import (
 
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
+	"github.com/kubex-ecosystem/analyzer/internal/handlers/lookatni"
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 	"github.com/kubex-ecosystem/analyzer/internal/web"
@@ -20,14 +21,20 @@ type httpHandlers struct {
 	registry             *registry.Registry
 	productionMiddleware *middleware.ProductionMiddleware
 	engine               *scorecard.Engine // Repository Intelligence engine
+	lookAtniHandler      *lookatni.Handler // LookAtni integration
 }
 
 // WireHTTP sets up HTTP routes
 func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middleware.ProductionMiddleware) {
+	// Initialize LookAtni handler
+	workDir := "./lookatni_workspace" // TODO: Make configurable
+	lookAtniHandler := lookatni.NewHandler(workDir)
+
 	h := &httpHandlers{
 		registry:             reg,
 		productionMiddleware: prodMiddleware,
 		engine:               nil, // TODO: Initialize scorecard engine with real clients
+		lookAtniHandler:      lookAtniHandler,
 	}
 
 	// Web Interface - Frontend embarcado! 🚀
@@ -53,6 +60,15 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	mux.HandleFunc("/api/v1/scorecard/advice", h.handleScorecardAdvice)
 	mux.HandleFunc("/api/v1/metrics/ai", h.handleAIMetrics)
 	mux.HandleFunc("/api/v1/health", h.handleRepositoryHealth)
+
+	// LookAtni Integration endpoints - CODE NAVIGATION! 🔍
+	mux.HandleFunc("/api/v1/lookatni/extract", h.lookAtniHandler.HandleExtractProject)
+	mux.HandleFunc("/api/v1/lookatni/archive", h.lookAtniHandler.HandleCreateArchive)
+	mux.HandleFunc("/api/v1/lookatni/download/", h.lookAtniHandler.HandleDownloadArchive)
+	mux.HandleFunc("/api/v1/lookatni/projects", h.lookAtniHandler.HandleListExtractedProjects)
+	mux.HandleFunc("/api/v1/lookatni/projects/", h.lookAtniHandler.HandleProjectFragments)
+
+	log.Println("✅ LookAtni integration enabled - Code extraction and navigation ready!")
 }
 
 // healthCheck provides a simple health endpoint
