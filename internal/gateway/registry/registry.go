@@ -58,10 +58,6 @@ func Load(path string) (*Registry, error) {
 				return nil, fmt.Errorf("failed to create Gemini provider %s: %w", name, err)
 			}
 			r.providers[name] = p
-			if err != nil {
-				return nil, fmt.Errorf("failed to create Gemini provider %s: %w", name, err)
-			}
-			r.providers[name] = p
 		case "anthropic":
 			key := os.Getenv(pc.KeyEnv)
 			if key == "" {

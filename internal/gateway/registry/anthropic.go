@@ -55,7 +55,7 @@ func (p *anthropicProvider) Name() string {
 
 func (p *anthropicProvider) Available() error {
 	if p.apiKey == "" {
-		return errors.New("Anthropic API key not configured")
+		return errors.New("anthropic API key not configured")
 	}
 	return nil
 }

@@ -78,7 +78,7 @@ func (g *geminiProvider) Chat(ctx context.Context, req providers.ChatRequest) (<
 
 	var safetySettings []*genai.SafetySetting
 	var schema *genai.Schema
-	var candidateCount *int32 = func() *int32 { var i int32 = 1; return &i }()
+	var candidateCount = func() *int32 { var i int32 = 1; return &i }()
 
 	// Set safety settings
 	// safetySettings = append(safetySettings, &genai.SafetySetting{
