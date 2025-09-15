@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/kubex-ecosystem/analyzer/internal/types"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
@@ -15,7 +14,7 @@ type NotificationService struct {
 }
 
 // NewNotificationService creates a new NotificationService with the given provider and timeout_seconds
-func NewNotificationService(config *types.Config) *NotificationService {
+func NewNotificationService(config *providers.Config) *NotificationService {
 	if config.Defaults.NotificationTimeoutSeconds <= 0 {
 		config.Defaults.NotificationTimeoutSeconds = 60 // Default to 60 seconds if invalid
 	}
