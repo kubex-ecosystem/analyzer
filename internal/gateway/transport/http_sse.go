@@ -25,7 +25,7 @@ type httpHandlersSSE struct {
 // }
 
 func WireHTTPSSE(mux *http.ServeMux, reg *registry.Registry) {
-	hh := &httpHandlersSSE{reg: reg}
+	hh := &httpHandlersSSE{reg: reg, engine: nil} // TODO: Initialize engine when ready
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
 	mux.HandleFunc("/v1/chat", hh.chatSSE)
 	mux.HandleFunc("/v1/session", hh.session)
@@ -34,6 +34,12 @@ func WireHTTPSSE(mux *http.ServeMux, reg *registry.Registry) {
 	mux.HandleFunc("/v1/state/export", hh.stateExport)
 	mux.HandleFunc("/v1/state/import", hh.stateImport)
 	mux.Handle("/v1/advise", advise.New(reg))
+
+	// Repository Intelligence APIs (to be implemented)
+	// mux.HandleFunc("/api/v1/scorecard", hh.handleScorecard)
+	// mux.HandleFunc("/api/v1/scorecard/advice", hh.handleScorecardAdvice)
+	// mux.HandleFunc("/api/v1/metrics/ai", hh.handleAIMetrics)
+	// mux.HandleFunc("/api/v1/health", hh.handleHealthRI)
 }
 
 type chatReq struct {

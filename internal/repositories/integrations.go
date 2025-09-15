@@ -210,7 +210,7 @@ func (g *GitHubClient) getFirstReviewTime(ctx context.Context, owner, repo strin
 	return nil, nil
 }
 
-// GitHub API response types
+// GitHubPullRequest GitHub API response types
 type GitHubPullRequest struct {
 	Number         int        `json:"number"`
 	Title          string     `json:"title"`

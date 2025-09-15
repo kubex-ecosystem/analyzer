@@ -1,3 +1,4 @@
+// Package openai implements the OpenAI API client.
 package openai
 
 import (

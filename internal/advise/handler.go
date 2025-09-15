@@ -1,3 +1,4 @@
+// Package advise implements the advice generation for Repository Intelligence.
 package advise
 
 import (

@@ -16,7 +16,7 @@ type Repository struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-// DORA Metrics - DevOps Research and Assessment metrics
+// DORAMetrics - DevOps Research and Assessment metrics
 type DORAMetrics struct {
 	LeadTimeP95Hours        float64   `json:"lead_time_p95_hours"`
 	DeploymentFrequencyWeek float64   `json:"deployment_frequency_per_week"`
@@ -26,7 +26,7 @@ type DORAMetrics struct {
 	CalculatedAt            time.Time `json:"calculated_at"`
 }
 
-// Code Health Index metrics
+// CHIMetrics Index metrics
 type CHIMetrics struct {
 	Score                int       `json:"chi_score"` // 0-100
 	DuplicationPercent   float64   `json:"duplication_pct"`
@@ -38,7 +38,7 @@ type CHIMetrics struct {
 	CalculatedAt         time.Time `json:"calculated_at"`
 }
 
-// AI Impact Metrics - Human vs AI development analysis
+// AIMetrics Metrics - Human vs AI development analysis
 type AIMetrics struct {
 	HIR          float64   `json:"hir"` // Human Input Ratio (0.0-1.0)
 	AAC          float64   `json:"aac"` // AI Assist Coverage (0.0-1.0)
@@ -70,7 +70,7 @@ type Confidence struct {
 	Group float64 `json:"group"` // Overall confidence
 }
 
-// Executive report types (P1-P4 prompts)
+// ExecutiveReport report types (P1-P4 prompts)
 type ExecutiveReport struct {
 	Summary      ExecutiveSummary `json:"summary"`
 	TopFocus     []FocusArea      `json:"top_focus"`
@@ -105,7 +105,7 @@ type Risk struct {
 	Mitigation string `json:"mitigation"`
 }
 
-// Code Health Deep Dive report
+// CodeHealthReport Code Health Deep Dive report
 type CodeHealthReport struct {
 	CHINow       int            `json:"chi_now"`
 	Drivers      []CHIDriver    `json:"drivers"`
@@ -133,7 +133,7 @@ type Milestone struct {
 	Goal   string `json:"goal"`
 }
 
-// DORA & Ops report
+// DORAReport DORA & Ops report
 type DORAReport struct {
 	LeadTimeP95Hours        float64        `json:"lead_time_p95_hours"`
 	DeploymentFrequencyWeek float64        `json:"deployment_frequency_per_week"`
@@ -161,7 +161,7 @@ type Experiment struct {
 	DurationDays int    `json:"duration_days"`
 }
 
-// Community & Bus Factor report
+// CommunityReport Community & Bus Factor report
 type CommunityReport struct {
 	BusFactor         int              `json:"bus_factor"`
 	OnboardingP50Days int              `json:"onboarding_p50_days"`

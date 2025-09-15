@@ -1,3 +1,31 @@
+server:
+  addr: ":8080"
+  read_timeout_sec: 15
+  write_timeout_sec: 15
+  idle_timeout_sec: 60
+  shutdown_timeout_sec: 10
+  rate_limit:
+    enabled: true
+    requests_per_minute: 120 # Global rate limit
+    burst: 20 # Allow short bursts
+  cors:
+    allow_origins: ["*"] # em prod: ["https://app.seudominio.com"]
+    allow_methods: ["GET", "POST", "PUT", "DELETE"]
+    allow_headers: ["Content-Type", "Authorization"]
+    allow_credentials: true
+    max_age: 600
+
+defaults:
+  max_tokens: 2048
+  temperature: 0.7
+  top_p: 0.9
+  frequency_penalty: 0.0
+  presence_penalty: 0.0
+  stream: false
+  timeout_sec: 30
+  tenant_id: "default"
+  user_id: "anonymous"
+
 providers:
   openai:
     type: openai

@@ -1,4 +1,3 @@
-// Package transport provides HTTP transport layer for the gateway.package transport
 package transport
 
 import (
@@ -10,12 +9,14 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 )
 
 // httpHandlers holds the HTTP route handlers
 type httpHandlers struct {
 	registry             *registry.Registry
 	productionMiddleware *middleware.ProductionMiddleware
+	engine               *scorecard.Engine // Repository Intelligence engine
 }
 
 // WireHTTP sets up HTTP routes
@@ -23,12 +24,20 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	h := &httpHandlers{
 		registry:             reg,
 		productionMiddleware: prodMiddleware,
+		engine:               nil, // TODO: Initialize scorecard engine with real clients
 	}
 
+	// Existing gateway endpoints
 	mux.HandleFunc("/healthz", h.healthCheck)
 	mux.HandleFunc("/v1/chat", h.chatSSE)
 	mux.HandleFunc("/v1/providers", h.listProviders)
 	mux.HandleFunc("/v1/status", h.productionStatus)
+
+	// Repository Intelligence endpoints - MERGE POINT! 🚀
+	mux.HandleFunc("/api/v1/scorecard", h.handleRepositoryScorecard)
+	mux.HandleFunc("/api/v1/scorecard/advice", h.handleScorecardAdvice)
+	mux.HandleFunc("/api/v1/metrics/ai", h.handleAIMetrics)
+	mux.HandleFunc("/api/v1/health", h.handleRepositoryHealth)
 }
 
 // healthCheck provides a simple health endpoint
@@ -191,4 +200,85 @@ func (h *httpHandlers) productionStatus(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
+}
+
+// Repository Intelligence Handlers - MERGED! 🚀
+
+// handleRepositoryScorecard handles GET /api/v1/scorecard
+func (h *httpHandlers) handleRepositoryScorecard(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement with real scorecard engine
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Schema-Version", "scorecard@1.0.0")
+	w.Header().Set("X-Server-Version", "analyzer-v1.0.0")
+
+	// Placeholder response
+	placeholder := map[string]interface{}{
+		"status":  "not_implemented",
+		"message": "Repository Intelligence API under development",
+		"endpoints": []string{
+			"/api/v1/scorecard",
+			"/api/v1/scorecard/advice",
+			"/api/v1/metrics/ai",
+		},
+	}
+	json.NewEncoder(w).Encode(placeholder)
+}
+
+// handleScorecardAdvice handles POST /api/v1/scorecard/advice
+func (h *httpHandlers) handleScorecardAdvice(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement advice generation using existing advise system
+	w.Header().Set("Content-Type", "application/json")
+	placeholder := map[string]interface{}{
+		"status":  "not_implemented",
+		"message": "Will integrate with existing /v1/advise system",
+	}
+	json.NewEncoder(w).Encode(placeholder)
+}
+
+// handleAIMetrics handles GET /api/v1/metrics/ai
+func (h *httpHandlers) handleAIMetrics(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// TODO: Implement AI metrics calculation
+	w.Header().Set("Content-Type", "application/json")
+	placeholder := map[string]interface{}{
+		"status":  "not_implemented",
+		"message": "AI Metrics (HIR/AAC/TPH) calculation under development",
+	}
+	json.NewEncoder(w).Encode(placeholder)
+}
+
+// handleRepositoryHealth handles GET /api/v1/health
+func (h *httpHandlers) handleRepositoryHealth(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	health := map[string]interface{}{
+		"status":  "healthy",
+		"service": "repository-intelligence",
+		"components": map[string]string{
+			"scorecard_engine": "not_initialized",
+			"dora_calculator":  "not_initialized",
+			"chi_calculator":   "not_initialized",
+			"ai_metrics":       "not_initialized",
+		},
+		"version": "analyzer-v1.0.0",
+	}
+	json.NewEncoder(w).Encode(health)
 }

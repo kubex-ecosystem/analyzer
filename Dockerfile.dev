@@ -1,5 +1,5 @@
 # Development Dockerfile for Analyzer Gateway
-FROM golang:1.25-alpine AS DEVELOPMENT
+FROM golang:1.25-alpine AS development
 
 # Install development dependencies
 RUN apk add --no-cache \
