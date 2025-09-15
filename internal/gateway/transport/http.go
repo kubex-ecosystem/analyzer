@@ -10,8 +10,9 @@ import (
 
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
+	"github.com/kubex-ecosystem/analyzer/internal/web"
 )
 
 // httpHandlers holds the HTTP route handlers
@@ -29,7 +30,19 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 		engine:               nil, // TODO: Initialize scorecard engine with real clients
 	}
 
-	// Existing gateway endpoints
+	// Web Interface - Frontend embarcado! 🚀
+	webHandler, err := web.NewHandler()
+	if err != nil {
+		log.Printf("⚠️  Failed to initialize web interface: %v", err)
+	} else {
+		// Register web interface on /app/* and root
+		mux.Handle("/app/", http.StripPrefix("/app", webHandler))
+		// Root path serves the frontend (but with lower priority than API endpoints)
+		mux.Handle("/", webHandler)
+		log.Println("✅ Web interface enabled at /app/ and /")
+	}
+
+	// API endpoints (higher priority routes)
 	mux.HandleFunc("/healthz", h.healthCheck)
 	mux.HandleFunc("/v1/chat", h.chatSSE)
 	mux.HandleFunc("/v1/providers", h.listProviders)

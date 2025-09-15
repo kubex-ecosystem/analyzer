@@ -1,22 +1,22 @@
 {
-  "name": "Kubex - Grompt",
-  "application": "grompt",
+  "name": "Kubex - GemX Analyzer",
+  "application": "analyzer",
   "version": "1.0.9",
   "private": false,
   "published": true,
   "aliases": [
-    "grompt"
+    "analyzer"
   ],
-  "repository": "https://github.com/kubex-ecosystem/grompt",
-  "homepage": "https://github.com/kubex-ecosystem/grompt",
-  "description": "Kubex - Grompt is a profissional AI prompt context object kind like: agents, prompts, API calls, and more.",
+  "repository": "https://github.com/kubex-ecosystem/analyzer",
+  "homepage": "https://github.com/kubex-ecosystem/analyzer",
+  "description": "Kubex - GemX Analyzer is a professional AI prompt context object kind like: agents, prompts, API calls, and more.",
   "main": "cmd/main.go",
-  "bin": "grompt",
+  "bin": "analyzer",
   "author": "Rafael Mori <faelmori@gmail.com>",
   "organization": "kubex-ecosystem",
   "license": "MIT",
   "keywords": [
-    "grompt",
+    "analyzer",
     "kubex",
     "file-markers",
     "control",

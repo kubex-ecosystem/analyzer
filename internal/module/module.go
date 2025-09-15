@@ -62,6 +62,7 @@ func (m *Analyzer) Command() *cobra.Command {
 	// rtCmd.AddCommand(cc.AskCmd())
 	// rtCmd.AddCommand(cc.ChatCmd())
 	rtCmd.AddCommand(cc.GatewayCmds())
+	rtCmd.AddCommand(cc.NewDaemonCommand())
 
 	// Add more commands as needed
 	rtCmd.AddCommand(vs.CliCommand())

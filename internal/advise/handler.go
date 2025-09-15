@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
-	"github.com/kubex-ecosystem/analyzer/internal/providers"
+	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
 type Handler struct{ reg *registry.Registry }

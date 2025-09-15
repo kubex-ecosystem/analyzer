@@ -2,11 +2,11 @@
 package analyzer
 
 import (
-	_ "embed"
+	"embed"
 )
 
 //go:embed all:embedded/guiweb
-var guiWeb string
+var GuiWebFS embed.FS
 
 // GUIAnalyzer analyzes GUI-related metrics and provides insights
 type GUIAnalyzer struct {
