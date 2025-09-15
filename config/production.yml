@@ -1,0 +1,75 @@
+# Production Features Configuration
+production:
+  # Rate Limiting Configuration
+  rate_limit:
+    enabled: true
+    default:
+      capacity: 100 # Max requests in bucket
+      refill_rate: 10 # Tokens added per second
+    per_provider:
+      groq:
+        capacity: 200 # Groq is fast, allow more
+        refill_rate: 20
+      gemini:
+        capacity: 50 # Gemini has generous limits
+        refill_rate: 8
+      openai:
+        capacity: 30 # OpenAI has stricter limits
+        refill_rate: 5
+      anthropic:
+        capacity: 40 # Anthropic moderate limits
+        refill_rate: 6
+
+  # Circuit Breaker Configuration
+  circuit_breaker:
+    enabled: true
+    default:
+      max_failures: 5 # Failures before opening circuit
+      reset_timeout_sec: 60 # Time before trying half-open
+      success_threshold: 3 # Successes needed to close
+    per_provider:
+      groq:
+        max_failures: 3 # Groq should be very reliable
+        reset_timeout_sec: 30
+        success_threshold: 2
+      gemini:
+        max_failures: 5 # Standard settings
+        reset_timeout_sec: 60
+        success_threshold: 3
+      openai:
+        max_failures: 4 # Slightly more tolerant
+        reset_timeout_sec: 90
+        success_threshold: 3
+      anthropic:
+        max_failures: 4
+        reset_timeout_sec: 75
+        success_threshold: 3
+
+  # Health Check Configuration
+  health_check:
+    enabled: true
+    interval_sec: 30 # Check every 30 seconds
+    timeout_sec: 10 # Timeout for health checks
+
+  # Retry Configuration
+  retry:
+    enabled: true
+    max_retries: 3 # Maximum retry attempts
+    base_delay_ms: 100 # Initial delay
+    max_delay_ms: 5000 # Maximum delay
+    multiplier: 2.0 # Exponential backoff multiplier
+
+# Provider-specific production settings
+provider_production:
+  groq:
+    timeout_sec: 30 # Groq is fast, shorter timeout
+    priority: high # High priority for speed-critical
+  gemini:
+    timeout_sec: 60 # Standard timeout
+    priority: medium
+  openai:
+    timeout_sec: 120 # Longer timeout for complex requests
+    priority: medium
+  anthropic:
+    timeout_sec: 90 # Claude can be slower but thorough
+    priority: medium

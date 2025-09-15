@@ -7,22 +7,28 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/gemx/analyzer/internal/providers"
 )
 
 // httpHandlers holds the HTTP route handlers
 type httpHandlers struct {
-	registry *registry.Registry
+	registry             *registry.Registry
+	productionMiddleware *middleware.ProductionMiddleware
 }
 
 // WireHTTP sets up HTTP routes
-func WireHTTP(mux *http.ServeMux, reg *registry.Registry) {
-	h := &httpHandlers{registry: reg}
+func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middleware.ProductionMiddleware) {
+	h := &httpHandlers{
+		registry:             reg,
+		productionMiddleware: prodMiddleware,
+	}
 
 	mux.HandleFunc("/healthz", h.healthCheck)
 	mux.HandleFunc("/v1/chat", h.chatSSE)
 	mux.HandleFunc("/v1/providers", h.listProviders)
+	mux.HandleFunc("/v1/status", h.productionStatus)
 }
 
 // healthCheck provides a simple health endpoint
@@ -163,4 +169,26 @@ func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
+}
+
+// productionStatus returns comprehensive status including middleware metrics
+func (h *httpHandlers) productionStatus(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	status := map[string]interface{}{
+		"service":   "analyzer-gw",
+		"status":    "healthy",
+		"providers": h.registry.ListProviders(),
+	}
+
+	// Add production middleware status if available
+	if h.productionMiddleware != nil {
+		status["production_features"] = h.productionMiddleware.GetStatus()
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
 }

@@ -4,7 +4,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
+	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/gemx/analyzer/internal/gateway/transport"
 )
@@ -16,11 +19,30 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Initialize production middleware with default config
+	prodConfig := middleware.DefaultProductionConfig()
+	prodMiddleware := middleware.NewProductionMiddleware(prodConfig)
+
+	// Register all providers with production middleware
+	for _, providerName := range reg.ListProviders() {
+		prodMiddleware.RegisterProvider(providerName)
+	}
+
+	// Setup graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		log.Println("Shutting down gracefully...")
+		prodMiddleware.Stop()
+		os.Exit(0)
+	}()
+
 	mux := http.NewServeMux()
-	transport.WireHTTP(mux, reg) // /v1/chat, /healthz, etc.
+	transport.WireHTTP(mux, reg, prodMiddleware) // /v1/chat, /healthz, /v1/status etc.
 
 	addr := getEnv("ADDR", ":8080")
-	log.Println("analyzer-gw listening on", addr)
+	log.Println("🚀 analyzer-gw listening on", addr, "with ENTERPRISE features!")
 	log.Fatal(http.ListenAndServe(addr, withCORS(mux)))
 }
 
