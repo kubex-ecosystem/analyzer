@@ -186,14 +186,14 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
     language: '',
     search: ''
   });
-  const [previewFiles, setPreviewFiles] = useState<{ file: File; path: string; shouldInclude: boolean }[]>([]);
+  const [previewFiles, setPreviewFiles] = useState<{ file: File; path: string; shouldInclude: boolean; reason?: string; size: number }[]>([]);
   const [showPreview, setShowPreview] = useState(false);
 
   // Utility functions for safety checks
   const isDangerousPath = (path: string): boolean => {
     const normalizedPath = path.toLowerCase();
-    return DANGEROUS_FOLDERS.some(folder => 
-      normalizedPath.includes(`/${folder.toLowerCase()}/`) || 
+    return DANGEROUS_FOLDERS.some(folder =>
+      normalizedPath.includes(`/${folder.toLowerCase()}/`) ||
       normalizedPath.includes(`\\${folder.toLowerCase()}\\`) ||
       normalizedPath.endsWith(`/${folder.toLowerCase()}`) ||
       normalizedPath.endsWith(`\\${folder.toLowerCase()}`) ||
@@ -269,7 +269,7 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
       const file = files[i];
       const relativePath = file.webkitRelativePath || file.name;
       const analysis = shouldIncludeFile(file, relativePath);
-      
+
       fileAnalysis.push({
         file,
         path: relativePath,
@@ -914,6 +914,95 @@ const LookAtniDirectExtractor: React.FC<LookAtniDirectExtractorProps> = ({
               )}
             </motion.div>
           )}
+        </motion.div>
+      )}
+
+      {/* File Preview Modal */}
+      {showPreview && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                🛡️ Review Files Before Processing
+              </h3>
+              <button
+                onClick={() => setShowPreview(false)}
+                className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
+
+            {previewFiles.length > 0 && (
+              <>
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Safety Summary:</strong>
+                    <br />
+                    • {previewFiles.filter(f => f.shouldInclude).length} files will be processed
+                    <br />
+                    • {previewFiles.filter(f => !f.shouldInclude).length} files will be excluded (dangerous/too large)
+                    <br />
+                    • Total size: {formatFileSize(previewFiles.filter(f => f.shouldInclude).reduce((sum, f) => sum + f.size, 0))}
+                  </div>
+                </div>
+
+                <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+                  {previewFiles.map((fileInfo, index) => (
+                    <div
+                      key={index}
+                      className={`p-2 rounded border text-sm ${fileInfo.shouldInclude
+                          ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                          : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {fileInfo.shouldInclude ? '✅' : '❌'} {fileInfo.path}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatFileSize(fileInfo.size)}
+                        </span>
+                      </div>
+                      {!fileInfo.shouldInclude && fileInfo.reason && (
+                        <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                          Excluded: {fileInfo.reason}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <button
+                    onClick={() => {
+                      const filesToProcess = previewFiles
+                        .filter(f => f.shouldInclude)
+                        .map(f => ({ file: f.file, path: f.path }));
+                      processSelectedFiles(filesToProcess);
+                    }}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    🚀 Process {previewFiles.filter(f => f.shouldInclude).length} Safe Files
+                  </button>
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+          </motion.div>
         </motion.div>
       )}
     </motion.div>
