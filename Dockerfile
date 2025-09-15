@@ -1,4 +1,5 @@
 # Multi-stage Dockerfile for Analyzer Gateway
+# Image: gemx-analyzer:latest
 # Stage 1: Build frontend
 FROM node:22-alpine AS frontend-builder
 
@@ -60,7 +61,7 @@ RUN addgroup -g 1001 analyzer && \
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=backend-builder /app/analyzer_linux_amd64 .
+COPY --from=backend-builder /app/dist/analyzer_linux_amd64 .
 
 # Copy frontend assets from builder
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
@@ -79,7 +80,7 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/v1/status || exit 1
+    CMD curl -f http://localhost:8080/v1/health || exit 1
 
 # Set entrypoint
-ENTRYPOINT ["./analyzer_linux_amd64", "gateway", "serve", "--config", "./config/providers.yml"]
+ENTRYPOINT ["bash", "./dist/analyzer_linux_amd64", "gateway", "serve", "--config", "./config/providers.yml", "&", "bash"]
