@@ -16,4 +16,14 @@ export const historyPtBR: HistoryTranslations = {
   notifications: {
     invalidFile: 'Arquivo de análise inválido. Certifique-se de que é um JSON válido exportado do GemX.',
   },
+  importFile: {
+    label: 'Arquivo de Análise',
+    placeholder: 'Selecione o arquivo JSON exportado do GemX...',
+    description: 'Importe um arquivo de análise previamente exportado para visualizar seus dados aqui.',
+  },
+  closePanel: 'Fechar Painel',
+  selectItem: 'Selecionar Item',
+  deleteItem: 'Excluir Item',
+  itemSelected: 'Item Selecionado',
+  itemsSelected: 'Itens Selecionados',
 };

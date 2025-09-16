@@ -36,6 +36,9 @@ export const dashboardEnUS: DashboardTranslations = {
   projects: {
     title: "Projects",
     allProjects: "All Projects",
-    recentAnalyses: "Recent Analyses"
+    recentAnalyses: "Recent Analyses",
+    analysesFor: "Analyses for {projectName}",
+    noAnalysesForProject: "No analyses found for this project",
+    viewAllProjects: "View All Projects"
   }
 };

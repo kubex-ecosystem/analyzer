@@ -26,10 +26,10 @@ export enum Effort {
 }
 
 export enum MaturityLevel {
-  Prototype = 'Prototype',
+  Prototype = 'PROTOTYPE',
   MVP = 'MVP',
-  Production = 'Production',
-  Optimized = 'Optimized',
+  Production = 'PRODUCTION',
+  Optimized = 'OPTIMIZED',
 }
 
 export type NotificationType = 'success' | 'error' | 'info';

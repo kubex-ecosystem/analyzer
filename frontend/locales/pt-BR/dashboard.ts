@@ -36,6 +36,9 @@ export const dashboardPtBR: DashboardTranslations = {
   projects: {
     title: "Projetos",
     allProjects: "Todos os Projetos",
-    recentAnalyses: "Análises Recentes"
+    recentAnalyses: "Análises Recentes",
+    analysesFor: "Análises para {projectName}",
+    noAnalysesForProject: "Nenhuma análise encontrada para este projeto",
+    viewAllProjects: "Ver Todos os Projetos"
   }
 };

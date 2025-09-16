@@ -17,7 +17,8 @@ const maturityConfig: Record<MaturityLevel, { labelKey: string; color: string; w
 
 const MaturityKpiCard: React.FC<MaturityKpiCardProps> = ({ maturity }) => {
   const { t } = useTranslation(['analysis', 'common']);
-  const config = maturityConfig[maturity.level];
+  const level = maturity.level.toString().toUpperCase() as MaturityLevel;
+  const config = maturityConfig[level];
 
   if (!config) {
     console.warn(`Unknown maturity level: ${maturity.level}`);

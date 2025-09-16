@@ -253,6 +253,9 @@ export interface DashboardTranslations {
     title: string;
     allProjects: string;
     recentAnalyses: string;
+    analysesFor: string;
+    noAnalysesForProject: string;
+    viewAllProjects: string;
   };
 }
 
@@ -347,12 +350,16 @@ export interface ExampleTranslations {
         assessment: string;
       };
       h4: {
+        projectName: string;
         summary: string;
         assessment: string;
       };
     };
     orion: {
+      projectName: string;
+      summary: string;
       assessment: string;
+      maturityAssessment: string;
     };
   };
 }
@@ -363,6 +370,17 @@ export interface InputTranslations {
   uploadFiles: string;
   importFromGithub: string;
   subtitle: string;
+  fileInput: {
+    label: string;
+    placeholder: string;
+    description: string;
+  };
+  githubInput: {
+    label: string;
+    placeholder: string;
+    description: string;
+  };
+  orText: string;
   projectContext: {
     label: string;
     placeholder: string;
@@ -553,6 +571,16 @@ export interface HistoryTranslations {
   notifications: {
     invalidFile: string;
   };
+  importFile: {
+    label: string;
+    placeholder: string;
+    description: string;
+  };
+  closePanel: string;
+  selectItem: string;
+  deleteItem: string;
+  itemSelected: string;
+  itemsSelected: string;
 }
 
 export interface ProfileTranslations {

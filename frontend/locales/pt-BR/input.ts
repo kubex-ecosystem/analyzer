@@ -6,6 +6,17 @@ export const inputPtBR: InputTranslations = {
   uploadFiles: "Carregar Arquivos",
   importFromGithub: "Importar do GitHub",
   subtitle: "Analise o contexto e arquivos do seu projeto",
+  fileInput: {
+    label: "Arquivos do Projeto",
+    placeholder: "Carregue seus arquivos do projeto aqui...",
+    description: "Você pode carregar vários arquivos. Formatos suportados: .zip, .tar, .gz, .rar"
+  },
+  githubInput: {
+    label: "Repositório do GitHub",
+    placeholder: "Insira a URL do repositório do GitHub...",
+    description: "Importe arquivos diretamente de um repositório público do GitHub"
+  },
+  orText: "OU",
   projectContext: {
     label: "Contexto do Projeto",
     placeholder: "Descreva seu projeto aqui...",

@@ -89,7 +89,18 @@ export const examplePtBR: ExampleTranslations = {
       h3: {
         summary: "Análise de segurança identificou vulnerabilidades críticas que foram posteriormente corrigidas, fortalecendo a postura de segurança geral.",
         assessment: "Apesar das vulnerabilidades encontradas, a resposta rápida da equipe e implementação de correções demonstraram maturidade do processo."
+      },
+      h4: {
+        projectName: "Kortex Advanced Analytics v4.2",
+        summary: "Revisão de escalabilidade revelou gargalos na arquitetura de dados, resultando em otimizações significativas no sistema de cache.",
+        assessment: "As melhorias de performance implementadas superaram expectativas, aumentando capacidade em 300% e reduzindo latência em 60%."
       }
+    },
+    orion: {
+      projectName: "Orion Spatial Intelligence",
+      summary: "Plataforma complementar especializada em análise de dados geoespaciais e inteligência de localização para otimização logística.",
+      assessment: "Projeto complementar ao Kortex focado em análise de dados espaciais, demonstrando potencial de sinergia entre plataformas.",
+      maturityAssessment: "Sistema em fase beta com funcionalidades core estáveis e roadmap claro para integração completa com o ecossistema Kortex."
     }
   }
 };

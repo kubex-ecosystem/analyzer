@@ -16,4 +16,14 @@ export const historyEnUS: HistoryTranslations = {
   notifications: {
     invalidFile: 'Invalid analysis file. Please ensure it\'s a valid JSON exported from GemX.',
   },
+  importFile: {
+    label: 'Analysis File',
+    placeholder: 'Select the JSON file exported from GemX...',
+    description: 'Import a previously exported analysis file to view your data here.',
+  },
+  closePanel: 'Close Panel',
+  selectItem: 'Select Item',
+  deleteItem: 'Delete Item',
+  itemSelected: 'Item Selected',
+  itemsSelected: 'Items Selected',
 };

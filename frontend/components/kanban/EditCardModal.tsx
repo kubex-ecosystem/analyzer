@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Edit, Info, Save, Trash2, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Difficulty, KanbanCard, Priority } from '../../types';
 
@@ -92,9 +93,9 @@ const EditCardModal: React.FC<EditCardModalProps> = ({ isOpen, onClose, card, on
                 </div>
               )}
               <div>
-                <label className="text-sm font-medium text-gray-300">{t('common.title')}</label>
+                <label className="text-sm font-medium text-gray-300">{t('kanban.card.title')}</label>
                 <input
-                  title={t('common.title')}
+                  title={t('kanban.card.title')}
                   name="title"
                   value={formData.title || ''}
                   onChange={handleChange}
@@ -113,9 +114,9 @@ const EditCardModal: React.FC<EditCardModalProps> = ({ isOpen, onClose, card, on
 
               {isNewCard && (
                 <div>
-                  <label className="text-sm font-medium text-gray-300">{t('common.description')}</label>
+                  <label className="text-sm font-medium text-gray-300">{t('kanban.card.description')}</label>
                   <textarea
-                    title={t('common.description')}
+                    title={t('kanban.card.description')}
                     name="description"
                     value={formData.description || ''}
                     onChange={handleChange}
@@ -139,9 +140,9 @@ const EditCardModal: React.FC<EditCardModalProps> = ({ isOpen, onClose, card, on
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-300">{t('common.priority')}</label>
+                  <label className="text-sm font-medium text-gray-300">{t('kanban.card.priority')}</label>
                   <select
-                    title={t('common.priority')}
+                    title={t('kanban.card.priority')}
                     name="priority"
                     value={formData.priority || Priority.Medium}
                     onChange={handleChange}
@@ -151,9 +152,9 @@ const EditCardModal: React.FC<EditCardModalProps> = ({ isOpen, onClose, card, on
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-300">{t('common.difficulty')}</label>
+                  <label className="text-sm font-medium text-gray-300">{t('kanban.card.difficulty')}</label>
                   <select
-                    title={t('common.difficulty')}
+                    title={t('kanban.card.difficulty')}
                     name="difficulty"
                     value={formData.difficulty || Difficulty.Medium}
                     onChange={handleChange}

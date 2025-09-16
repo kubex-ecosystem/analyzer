@@ -251,7 +251,7 @@ const ProjectInput: React.FC = () => {
                   <textarea
                     value={activeFileData.content}
                     onChange={(e) => handleUpdateFileContent(activeFileData.id, e.target.value)}
-                    placeholder={t('placeholder')}
+                    placeholder={t('input.fileInput.placeholder')}
                     className="w-full h-full p-3 bg-gray-900/30 text-gray-300 resize-none focus:outline-none font-mono text-sm"
                   />
                 </>
