@@ -11,6 +11,7 @@
     "not ios_saf <= 15.8"
   ],
   "hints": {
-    "axe/structure": "off"
+    "axe/structure": "off",
+    "no-inline-styles": "off"
   }
 }
