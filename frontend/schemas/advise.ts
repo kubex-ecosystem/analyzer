@@ -68,7 +68,7 @@ export const AdviseRequestSchema = z.object({
   context: z.object({
     repository: z.string().optional(),
     hotspots: z.array(z.string()).optional(),
-    scorecard: z.record(z.any()).optional(),
+    scorecard: z.record(z.any(), z.string()).optional(),
   }).optional(),
   options: z.object({
     timeout_sec: z.number().optional(),
