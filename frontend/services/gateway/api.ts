@@ -14,7 +14,12 @@ interface GatewayResponse {
   error?: string;
 }
 
-const GATEWAY_BASE_URL = process.env.GATEWAY_URL || 'http://localhost:8080';
+// Environment-based configuration
+const GATEWAY_BASE_URL = import.meta.env.VITE_GATEWAY_URL ||
+  process.env.GATEWAY_URL ||
+  'http://localhost:8080';
+
+console.log('🔗 Gateway URL:', GATEWAY_BASE_URL);
 
 /**
  * Tests gateway connectivity and provider availability

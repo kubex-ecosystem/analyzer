@@ -262,6 +262,11 @@ func (pm *ProductionMiddleware) GetStatus() map[string]interface{} {
 	return status
 }
 
+// GetHealthMonitor returns the health monitor instance
+func (pm *ProductionMiddleware) GetHealthMonitor() *HealthMonitor {
+	return pm.healthMonitor
+}
+
 // Stop gracefully stops all middleware components
 func (pm *ProductionMiddleware) Stop() {
 	if pm.healthMonitor != nil {
