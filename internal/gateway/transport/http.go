@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/kubex-ecosystem/analyzer/internal/config"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/handlers/lookatni"
@@ -53,6 +54,7 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	mux.HandleFunc("/healthz", h.healthCheck)
 	mux.HandleFunc("/v1/chat", h.chatSSE)
 	mux.HandleFunc("/v1/providers", h.listProviders)
+	mux.HandleFunc("/v1/advise", h.handleAdvise)
 	mux.HandleFunc("/v1/status", h.productionStatus)
 
 	// Repository Intelligence endpoints - MERGE POINT! 🚀
@@ -81,19 +83,71 @@ func (h *httpHandlers) healthCheck(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// listProviders returns available providers
+// listProviders returns available providers with health status
 func (h *httpHandlers) listProviders(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	providers := h.registry.ListProviders()
+	providerNames := h.registry.ListProviders()
 	config := h.registry.GetConfig()
 
+	// Get health status for all providers from health monitor
+	healthStatuses := make(map[string]interface{})
+	if h.productionMiddleware != nil {
+		healthMonitor := h.productionMiddleware.GetHealthMonitor()
+		if healthMonitor != nil {
+			allHealth := healthMonitor.GetAllHealth()
+			for providerName, health := range allHealth {
+				healthStatuses[providerName] = map[string]interface{}{
+					"status":        health.Status.String(),
+					"last_check":    health.LastCheck,
+					"response_time": health.ResponseTime.String(),
+					"uptime":        health.Uptime,
+					"error":         health.ErrorMsg,
+				}
+			}
+		}
+	}
+
+	// Enrich providers with health information
+	enrichedProviders := make([]map[string]interface{}, 0, len(providerNames))
+	for _, providerName := range providerNames {
+		enrichedProvider := map[string]interface{}{
+			"name":      providerName,
+			"type":      providerName, // TODO: Get actual type from registry
+			"available": true,         // Default to true
+		}
+
+		// Add health status if available
+		if healthStatus, exists := healthStatuses[providerName]; exists {
+			enrichedProvider["health"] = healthStatus
+			// Update availability based on health status
+			if healthMap, ok := healthStatus.(map[string]interface{}); ok {
+				if status, ok := healthMap["status"].(string); ok {
+					enrichedProvider["available"] = (status == "healthy" || status == "degraded")
+				}
+			}
+		} else {
+			// No health data available
+			enrichedProvider["health"] = map[string]interface{}{
+				"status":     "unknown",
+				"last_check": nil,
+				"uptime":     100.0,
+				"error":      "",
+			}
+		}
+
+		enrichedProviders = append(enrichedProviders, enrichedProvider)
+	}
+
 	response := map[string]interface{}{
-		"providers": providers,
+		"providers": enrichedProviders,
 		"config":    config.Providers,
+		"timestamp": "2024-01-01T00:00:00Z", // TODO: Use real timestamp
+		"service":   "analyzer-gateway",
+		"version":   "v1.0.0",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -231,6 +285,134 @@ func (h *httpHandlers) productionStatus(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(status)
+}
+
+// handleAdvise handles POST /v1/advise for AI-powered analysis advice
+func (h *httpHandlers) handleAdvise(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Check BF1_MODE restrictions
+	bf1Config := config.GetBF1Config()
+	if bf1Config.Enabled {
+		// In BF1 mode, add guard-rails and limitations
+		w.Header().Set("X-BF1-Mode", "true")
+		w.Header().Set("X-BF1-WIP-Cap", fmt.Sprintf("%d", bf1Config.WIPCap))
+	}
+
+	// Parse request body
+	var req struct {
+		Mode     string                 `json:"mode"`     // "exec" or "code"
+		Provider string                 `json:"provider"` // optional, defaults to first available
+		Context  map[string]interface{} `json:"context"`  // repository, hotspots, scorecard
+		Options  map[string]interface{} `json:"options"`  // timeout_sec, temperature
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON request", http.StatusBadRequest)
+		return
+	}
+
+	// Validate mode
+	if req.Mode != "exec" && req.Mode != "code" {
+		http.Error(w, "Mode must be 'exec' or 'code'", http.StatusBadRequest)
+		return
+	}
+
+	// Set SSE headers for streaming response
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Generate mock response based on mode
+	if req.Mode == "exec" {
+		// Simulate exec mode response
+		execResponse := map[string]interface{}{
+			"summary": map[string]interface{}{
+				"grade":               "B+",
+				"chi":                 72.5,
+				"lead_time_p95_hours": 24.0,
+				"deploys_per_week":    3.2,
+			},
+			"top_focus": []map[string]interface{}{
+				{
+					"title":      "Reduce Lead Time",
+					"why":        "Long deployment cycles impacting delivery velocity",
+					"kpi":        "lead_time_p95_hours",
+					"target":     "< 12 hours",
+					"confidence": 0.85,
+				},
+			},
+			"quick_wins": []map[string]interface{}{
+				{
+					"action":        "Implement automated testing",
+					"effort":        "M",
+					"expected_gain": "20% faster deployments",
+				},
+			},
+			"risks": []map[string]interface{}{
+				{
+					"risk":       "Technical debt accumulation",
+					"mitigation": "Schedule dedicated refactoring sprints",
+				},
+			},
+			"call_to_action": "Focus on deployment automation and testing coverage",
+		}
+
+		// Send as SSE
+		fmt.Fprintf(w, "data: %s\n\n", mustMarshal(execResponse))
+
+	} else { // code mode
+		// Simulate code mode response
+		codeResponse := map[string]interface{}{
+			"chi_now": 72.5,
+			"drivers": []map[string]interface{}{
+				{
+					"metric": "cyclomatic_complexity",
+					"value":  15.2,
+					"impact": "high",
+				},
+			},
+			"refactor_plan": []map[string]interface{}{
+				{
+					"step":    1,
+					"theme":   "Simplify complex functions",
+					"actions": []string{"Break down large functions", "Extract common utilities"},
+					"kpi":     "cyclomatic_complexity",
+					"target":  "< 10",
+				},
+			},
+			"guardrails": []string{"Maintain test coverage > 80%", "No functions > 50 lines"},
+			"milestones": []map[string]interface{}{
+				{
+					"in_days": 14,
+					"goal":    "Reduce complexity by 30%",
+				},
+			},
+		}
+
+		// Send as SSE
+		fmt.Fprintf(w, "data: %s\n\n", mustMarshal(codeResponse))
+	}
+
+	// Send completion event
+	fmt.Fprintf(w, "data: {\"done\": true}\n\n")
+
+	if f, ok := w.(http.Flusher); ok {
+		f.Flush()
+	}
+}
+
+// Helper function to marshal JSON (panic on error for simplicity)
+func mustMarshal(v interface{}) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
 }
 
 // Repository Intelligence Handlers - MERGED! 🚀
