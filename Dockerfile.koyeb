@@ -1,0 +1,53 @@
+# Koyeb-optimized Dockerfile for Analyzer Gateway
+FROM golang:1.25-alpine AS builder
+
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata make
+
+WORKDIR /app
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build the application
+RUN make build-dev linux amd64
+
+# Final stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk --no-cache add ca-certificates curl bash
+
+# Create non-root user
+RUN addgroup -g 1001 -S analyzer && \
+    adduser -u 1001 -S analyzer -G analyzer
+
+# Create app directory
+WORKDIR /app
+
+# Copy binary from builder
+COPY --from=builder /app/dist/analyzer_linux_amd64 ./analyzer
+
+# Copy configuration files
+COPY config/ ./config/
+
+# Set ownership
+RUN chown -R analyzer:analyzer /app && \
+    chmod +x ./analyzer
+
+# Switch to non-root user
+USER analyzer
+
+# Expose port (Koyeb will map this)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/healthz || exit 1
+
+# Command to run
+CMD ["./analyzer", "gateway", "serve", "--config", "./config/koyeb.yml"]
