@@ -15,14 +15,16 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 	"github.com/kubex-ecosystem/analyzer/internal/web"
+	"github.com/kubex-ecosystem/analyzer/internal/webhook"
 )
 
 // httpHandlers holds the HTTP route handlers
 type httpHandlers struct {
 	registry             *registry.Registry
 	productionMiddleware *middleware.ProductionMiddleware
-	engine               *scorecard.Engine // Repository Intelligence engine
-	lookAtniHandler      *lookatni.Handler // LookAtni integration
+	engine               *scorecard.Engine    // Repository Intelligence engine
+	lookAtniHandler      *lookatni.Handler    // LookAtni integration
+	webhookHandler       *webhook.HTTPHandler // Meta-recursive webhook handler
 }
 
 // WireHTTP sets up HTTP routes
@@ -31,11 +33,15 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	workDir := "./lookatni_workspace" // TODO: Make configurable
 	lookAtniHandler := lookatni.NewHandler(workDir)
 
+	// Initialize webhook handler (mock for now - TODO: implement real actors)
+	webhookHandler := webhook.NewHTTPHandler(nil) // TODO: Initialize with real handler
+
 	h := &httpHandlers{
 		registry:             reg,
 		productionMiddleware: prodMiddleware,
 		engine:               nil, // TODO: Initialize scorecard engine with real clients
 		lookAtniHandler:      lookAtniHandler,
+		webhookHandler:       webhookHandler,
 	}
 
 	// Web Interface - Frontend embarcado! 🚀
@@ -70,7 +76,12 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	mux.HandleFunc("/api/v1/lookatni/projects", h.lookAtniHandler.HandleListExtractedProjects)
 	mux.HandleFunc("/api/v1/lookatni/projects/", h.lookAtniHandler.HandleProjectFragments)
 
+	// Meta-Recursive Webhook endpoints - INSANIDADE RACIONAL! 🔄
+	mux.HandleFunc("/v1/webhooks", h.webhookHandler.HandleWebhook)
+	mux.HandleFunc("/v1/webhooks/health", h.webhookHandler.HealthCheck)
+
 	log.Println("✅ LookAtni integration enabled - Code extraction and navigation ready!")
+	log.Println("🔄 Meta-recursive webhook system enabled - INSANIDADE RACIONAL activated!")
 }
 
 // healthCheck provides a simple health endpoint

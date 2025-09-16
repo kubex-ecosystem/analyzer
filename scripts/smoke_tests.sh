@@ -160,10 +160,60 @@ test_bf1_mode() {
     fi
 }
 
+function test_webhook_endpoints() {
+    log_info "🔄 Testing Meta-Recursive Webhook Endpoints..."
+
+    # Test webhook health
+    test_endpoint "Webhook Health" "GET" "/v1/webhooks/health" 200
+
+    # Test webhook processing with mock GitHub push event
+    local github_payload='{
+        "repository": {
+            "full_name": "test-owner/test-repo",
+            "name": "test-repo",
+            "owner": {
+                "login": "test-owner"
+            }
+        },
+        "commits": [
+            {
+                "id": "abc123",
+                "message": "Add new feature",
+                "author": {
+                    "name": "Test User"
+                }
+            }
+        ]
+    }'
+
+    # GitHub webhook with proper headers
+    log_info "Testing GitHub webhook processing..."
+    response=$(curl -s -w "%{http_code}" -X POST \
+        -H "Content-Type: application/json" \
+        -H "X-GitHub-Event: push" \
+        -d "$github_payload" \
+        "$BASE_URL/v1/webhooks")
+
+    status_code="${response: -3}"
+    if [ "$status_code" = "202" ] || [ "$status_code" = "200" ]; then
+        log_success "GitHub webhook processing: Status $status_code"
+    else
+        log_error "GitHub webhook processing failed: Status $status_code"
+        echo "Response: ${response%???}"
+    fi
+
+    log_info "🎉 Webhook tests completed!"
+}
+
 # Run main test suite
 main
 
 # Optionally run BF1 tests
 if [ "$1" = "--bf1" ]; then
     test_bf1_mode
+fi
+
+# Test webhook endpoints if requested
+if [ "$1" = "--webhooks" ] || [ "$2" = "--webhooks" ]; then
+    test_webhook_endpoints
 fi
