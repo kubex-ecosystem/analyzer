@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ConfirmationProvider } from './contexts/ConfirmationContext';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { NotificationProvider, useNotification } from './contexts/NotificationContext';
+import { ProjectProvider, useProjectContext } from './contexts/ProjectContext';
 import { usePersistentState } from './hooks/usePersistentState';
 import { useTranslation } from './hooks/useTranslation';
 
@@ -30,24 +31,16 @@ import NavigationBar from './components/layout/NavigationBar';
 import UserSettingsModal from './components/settings/UserSettingsModal';
 
 // Services & Data
-import { defaultSettings, defaultUserProfile, initialProjectContext } from './constants';
-import { exampleAnalysis, exampleHistory } from './data/exampleAnalysis';
 // NEW: Unified AI Service - supports both direct Gemini and Gateway
 import { AIProvider, AIService } from './services/unified-ai';
 
 // Types
 import {
   AllChatHistories,
-  AnalysisType,
-  AppSettings,
   ChatMessage,
-  EvolutionAnalysis,
-  HistoryItem,
   KanbanState,
   ProjectAnalysis,
   ProjectFile,
-  UsageTracking,
-  UserProfile,
   ViewType
 } from './types';
 
@@ -100,18 +93,31 @@ const parseContextToFiles = (context: string): ProjectFile[] => {
 };
 
 function DashboardWrapper() {
-  const [view, setView] = useState<ViewType>(ViewType.Dashboard);
-  const [isLoading, setIsLoading] = useState(false);
-  const [projectFiles, setProjectFiles] = usePersistentState<ProjectFile[]>('projectFiles', []);
-  const [currentAnalysis, setCurrentAnalysis] = useState<ProjectAnalysis | null>(null);
-  const [evolutionAnalysis, setEvolutionAnalysis] = useState<EvolutionAnalysis | null>(null);
-  const [history, setHistory] = usePersistentState<HistoryItem[]>('analysisHistory', []);
-  const [kanbanState, setKanbanState] = usePersistentState<KanbanState | null>('kanbanState', null);
-  const [settings, setSettings] = usePersistentState<AppSettings>('appSettings', defaultSettings);
-  const [userProfile, setUserProfile] = usePersistentState<UserProfile>('userProfile', defaultUserProfile);
-  const [usageTracking, setUsageTracking] = usePersistentState<UsageTracking>('usageTracking', { totalTokens: 0, monthlyTokens: 0 });
-  const [isExample, setIsExample] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const {
+    view, setView,
+    isLoading, setIsLoading,
+    projectFiles, setProjectFiles,
+    currentAnalysis,
+    evolutionAnalysis,
+    history,
+    kanbanState, setKanbanState,
+    settings, setSettings,
+    userProfile, setUserProfile,
+    usageTracking,
+    isExample,
+    selectedProject, setSelectedProject,
+    isHistoryPanelOpen, setIsHistoryPanelOpen,
+    isUserSettingsModalOpen, setIsUserSettingsModalOpen,
+    deletingHistoryId,
+    handleLoadHistoryItem,
+    handleDeleteHistoryItem,
+    handleClearHistory,
+    handleCompare,
+    handleAnalyze,
+    handleShowExample,
+    handleExitExample,
+    handleNavigateToKanban
+  } = useProjectContext();
 
   // AI Provider Selection State - NEW!
   const [aiProvider, setAiProvider] = usePersistentState<AIProvider>('aiProvider', 'gemini-direct');
@@ -122,10 +128,6 @@ function DashboardWrapper() {
     userApiKey: settings.userApiKey,
     gatewayUrl: 'http://localhost:8080'
   }), [aiProvider, settings.userApiKey]);
-
-  const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
-  const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
-  const [deletingHistoryId, setDeletingHistoryId] = useState<number | null>(null);
 
   // Chat State - Updated to support unified interface
   const [chatSession, setChatSession] = useState<Chat | { sendMessage: (message: string) => Promise<string> } | null>(null);
@@ -161,117 +163,7 @@ function DashboardWrapper() {
   const { locale } = useLanguage();
   const { t } = useTranslation(['common', 'input', 'example']);
 
-  const handleAnalyze = async (analysisType: AnalysisType) => {
-    if (projectFiles.length === 0) {
-      addNotification({ message: t('notifications.emptyContext'), type: 'error' });
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const result = await aiService.analyzeProject(projectContext, analysisType, locale);
-
-      const newId = Date.now();
-      const newHistoryItem: HistoryItem = {
-        id: newId,
-        projectName: result.projectName,
-        analysisType: result.analysisType,
-        timestamp: new Date().toLocaleString(locale),
-        analysis: result,
-        projectContext, // The combined string context is saved
-      };
-
-      setCurrentAnalysis(result);
-      setCurrentHistoryId(newId);
-
-      if (settings.saveHistory) {
-        setHistory(prev => [...prev, newHistoryItem]);
-      }
-      if (result.usageMetadata) {
-        setUsageTracking(prev => ({ ...prev, totalTokens: prev.totalTokens + result.usageMetadata!.totalTokenCount }));
-      }
-      setView(ViewType.Analysis);
-      setIsExample(false);
-
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCompare = async (ids: number[]) => {
-    if (ids.length !== 2) {
-      addNotification({ message: t('notifications.selectTwo'), type: 'error' });
-      return;
-    }
-    const itemsToCompare = history.filter(h => ids.includes(h.id));
-    if (itemsToCompare.length !== 2) return;
-
-    setIsLoading(true);
-    setIsHistoryPanelOpen(false);
-    try {
-      const [item1, item2] = itemsToCompare;
-      const result = await aiService.compareAnalyses(item1, item2, locale);
-      setEvolutionAnalysis(result);
-      if (result.usageMetadata) {
-        setUsageTracking(prev => ({ ...prev, totalTokens: prev.totalTokens + result.usageMetadata!.totalTokenCount }));
-      }
-      setView(ViewType.Evolution);
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleShowExample = () => {
-    setProjectFiles(parseContextToFiles(initialProjectContext));
-    const example = exampleAnalysis(t as any);
-    setCurrentAnalysis(example);
-    setHistory(exampleHistory(t as any, locale));
-    setKanbanState(createInitialKanbanState(example)); // Also create a kanban for the example
-    setIsExample(true);
-    setView(ViewType.Analysis);
-    addNotification({ message: t('notifications.exampleLoaded'), type: 'info' });
-  };
-
-  const handleExitExample = () => {
-    setIsExample(false);
-    setProjectFiles([]);
-    setCurrentAnalysis(null);
-    setCurrentHistoryId(null);
-    setHistory([]);
-    setKanbanState(null);
-    setView(ViewType.Input);
-  };
-
-  const handleLoadHistoryItem = (item: HistoryItem) => {
-    setProjectFiles(parseContextToFiles(item.projectContext));
-    setCurrentAnalysis(item.analysis);
-    setCurrentHistoryId(item.id);
-    setIsHistoryPanelOpen(false);
-    setView(ViewType.Analysis);
-    setIsExample(false);
-    setChatSession(null);
-  };
-
-  const handleDeleteHistoryItem = (id: number) => {
-    setDeletingHistoryId(id);
-    setTimeout(() => {
-      setHistory(prev => prev.filter(item => item.id !== id));
-      setAllChatHistories(prev => {
-        const newHistories = { ...prev };
-        delete newHistories[id];
-        return newHistories;
-      });
-      setDeletingHistoryId(null);
-    }, 500);
-  };
-
-  const handleClearHistory = () => {
-    setHistory([]);
-    setAllChatHistories({});
-  };
+  // VAMOS TRAZER DO CONTEXTO DO PROJETO
 
   const handleNavigate = (targetView: ViewType | 'history') => {
     if (targetView === 'history') {
@@ -341,23 +233,6 @@ Based *only* on the information provided above, please answer the user's questio
     }
   };
 
-  const handleNavigateToKanban = () => {
-    if (currentAnalysis) {
-      if (isExample) {
-        setView(ViewType.Kanban);
-        return;
-      }
-      // Check if a Kanban for this project already exists
-      if (kanbanState && kanbanState.projectName === currentAnalysis.projectName) {
-        // If it exists, just navigate to it
-        setView(ViewType.Kanban);
-      } else {
-        // Otherwise, create a new one, replacing any old one
-        setKanbanState(createInitialKanbanState(currentAnalysis));
-        setView(ViewType.Kanban);
-      }
-    }
-  };
 
   const handleSendChatMessage = async (message: string) => {
     if (!chatSession || isChatLoading || !currentHistoryId) return;
@@ -411,18 +286,7 @@ Based *only* on the information provided above, please answer the user's questio
           showEmptyState={history.length === 0 && !isExample}
         />;
       case ViewType.Input:
-        return <ProjectInput
-          files={projectFiles}
-          onFilesChange={setProjectFiles}
-          onAnalyze={handleAnalyze}
-          onShowExample={handleShowExample}
-          isLoading={isLoading}
-          settings={settings}
-          usageTracking={usageTracking}
-          isExample={isExample}
-          onExitExample={handleExitExample}
-          hasRealData={history.length > 0 && !isExample}
-        />;
+        return <ProjectInput />;
       case ViewType.Analysis:
         if (currentAnalysis) {
           return <SuggestionsDisplay
@@ -446,12 +310,7 @@ Based *only* on the information provided above, please answer the user's questio
         }
         return null;
       case ViewType.Chat:
-        return <ChatPanel
-          history={chatHistory}
-          isLoading={isChatLoading}
-          onSendMessage={handleSendChatMessage}
-          projectName={currentAnalysis?.projectName || ''}
-        />;
+        return <ChatPanel />;
       default:
         return <Dashboard history={history} usageTracking={usageTracking} onNavigate={handleNavigate} onLoadHistoryItem={handleLoadHistoryItem} selectedProject={selectedProject} onSelectProject={setSelectedProject} isExample={isExample} showEmptyState={history.length === 0 && !isExample} />;
     }
@@ -482,17 +341,7 @@ Based *only* on the information provided above, please answer the user's questio
         </div>
       </main>
 
-      <HistoryPanel
-        isOpen={isHistoryPanelOpen}
-        onClose={() => setIsHistoryPanelOpen(false)}
-        history={history}
-        onLoad={handleLoadHistoryItem}
-        onDelete={handleDeleteHistoryItem}
-        onClear={handleClearHistory}
-        onCompare={handleCompare}
-        isExampleView={isExample}
-        deletingHistoryId={deletingHistoryId}
-      />
+      <HistoryPanel />
 
       <UserSettingsModal
         isOpen={isUserSettingsModalOpen}
@@ -517,7 +366,9 @@ const App: React.FC = () => (
       <AuthProvider>
         <ConfirmationProvider>
           <AppProvider>
-            <MainApp />
+            <ProjectProvider>
+              <MainApp />
+            </ProjectProvider>
           </AppProvider>
         </ConfirmationProvider>
       </AuthProvider>

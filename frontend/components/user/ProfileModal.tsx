@@ -1,7 +1,7 @@
-import { Mail, User } from 'lucide-react';
-import * as React from 'react';
-import { useTranslation } from '../../hooks/useTranslation';
+import React from 'react';
 import { UserProfile } from '../../types';
+import { useTranslation } from '../../hooks/useTranslation';
+import { User, Mail } from 'lucide-react';
 
 interface ProfileTabProps {
   profile: UserProfile;
@@ -9,7 +9,7 @@ interface ProfileTabProps {
 }
 
 const ProfileTab: React.FC<ProfileTabProps> = ({ profile, onProfileChange }) => {
-  const { t } = useTranslation(['common', 'settings']);
+  const { t } = useTranslation(['profile', 'common']);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onProfileChange({ ...profile, [e.target.name]: e.target.value });
@@ -31,7 +31,7 @@ const ProfileTab: React.FC<ProfileTabProps> = ({ profile, onProfileChange }) => 
           <button className="mt-2 text-sm text-blue-400 hover:underline">{t('profile.avatar.change')}</button>
         </div>
       </div>
-
+      
       <div className="space-y-4">
         <div>
           <label htmlFor="name" className="text-sm font-medium text-gray-300 flex items-center gap-2">

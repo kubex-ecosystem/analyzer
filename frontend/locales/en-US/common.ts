@@ -35,7 +35,8 @@ export const commonEnUS: TranslationMessages = {
     cancel: "Cancel",
     confirm: "Confirm",
     connect: "Connect",
-    notConnected: "Not Connected"
+    notConnected: "Not Connected",
+    close: "Close"
   },
   priority: {
     Low: "Low",
@@ -64,6 +65,12 @@ export const commonEnUS: TranslationMessages = {
     analyzing: "Analyzing",
     saving: "Saving"
   },
+  maturityLevels: {
+    PROTOTYPE: "Prototype",
+    MVP: "MVP",
+    PRODUCTION: "Production",
+    OPTIMIZED: "Optimized"
+  },
   feedback: {
     success: "Success",
     error: "Error",
@@ -89,6 +96,10 @@ export const commonEnUS: TranslationMessages = {
     language: "Language",
     theme: "Theme",
     appearance: "Appearance"
+  },
+  history: {
+    compareProjectMismatchError: "Cannot compare analyses from different projects",
+    compareMismatchError: "Cannot compare analyses of different types"
   },
   showExample: "Show me an example",
   analysisTitle: "Analysis Title",

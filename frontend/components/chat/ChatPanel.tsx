@@ -1,20 +1,20 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Loader2, Send, User } from 'lucide-react';
-import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import { ChatMessage } from '../../types';
 
-interface ChatPanelProps {
-  history: ChatMessage[];
-  isLoading: boolean;
-  onSendMessage: (message: string) => void;
-  projectName: string;
-}
-
-const ChatPanel: React.FC<ChatPanelProps> = ({ history, isLoading, onSendMessage, projectName }) => {
+const ChatPanel: React.FC = () => {
+  const {
+    chatHistory,
+    isChatLoading,
+    handleSendChatMessage,
+    currentAnalysis,
+    suggestedQuestions,
+    isSuggestionsLoading,
+  } = useProjectContext();
   const { t } = useTranslation(['chat', 'common']);
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,15 +25,23 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ history, isLoading, onSendMessage
 
   useEffect(() => {
     scrollToBottom();
-  }, [history, isLoading]);
+  }, [chatHistory, isChatLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
-      onSendMessage(input.trim());
+    if (input.trim() && !isChatLoading) {
+      handleSendChatMessage(input.trim());
       setInput('');
     }
   };
+
+  const handleSuggestionClick = (question: string) => {
+    // We send the question directly because setState is async
+    handleSendChatMessage(question);
+    setInput('');
+  };
+
+  const projectName = currentAnalysis?.projectName || '';
 
   return (
     <motion.div
@@ -46,7 +54,46 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ history, isLoading, onSendMessage
         <p className="text-sm text-gray-400">{t('chat:subtitle', { projectName })}</p>
       </div>
       <div className="flex-grow p-4 overflow-y-auto space-y-6">
-        {history.map((msg, index) => (
+        {chatHistory.length === 0 && (
+          <AnimatePresence>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center py-8 flex flex-col justify-center h-full"
+            >
+              <div className="w-16 h-16 rounded-full bg-purple-900/50 flex items-center justify-center shrink-0 mx-auto">
+                <Bot className="w-8 h-8 text-purple-400" />
+              </div>
+              <h3 className="mt-4 text-xl font-semibold text-white">{t('chat:welcomeTitle')}</h3>
+              <p className="mt-1 text-gray-400">{t('chat:welcomeSubtitle', { projectName })}</p>
+
+              <div className="mt-6 space-y-2 max-w-md mx-auto">
+                {isSuggestionsLoading ? (
+                  <div className="flex items-center justify-center gap-2 text-gray-500">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{t('chat:generatingSuggestions')}</span>
+                  </div>
+                ) : (
+                  suggestedQuestions.map((q, i) => (
+                    <motion.button
+                      key={i}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      onClick={() => handleSuggestionClick(q)}
+                      className="w-full text-left p-3 bg-gray-700/50 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                    >
+                      {q}
+                    </motion.button>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        )}
+
+        {chatHistory.map((msg, index) => (
           <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
             {msg.role === 'model' && (
               <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center shrink-0">
@@ -68,7 +115,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ history, isLoading, onSendMessage
           </div>
         ))}
         <AnimatePresence>
-          {isLoading && (!history.length || history[history.length - 1]?.role === 'user') && (
+          {isChatLoading && (!chatHistory.length || chatHistory[chatHistory.length - 1]?.role === 'user') && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -98,11 +145,11 @@ const ChatPanel: React.FC<ChatPanelProps> = ({ history, isLoading, onSendMessage
               }
             }}
             placeholder={t('chat:placeholder')}
-            disabled={isLoading}
+            disabled={isChatLoading}
             rows={1}
             className="w-full p-2 bg-gray-900 border border-gray-600 rounded-md resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-60"
           />
-          <button title={t('chat:send')} type="submit" disabled={isLoading || !input.trim()} className="p-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed">
+          <button title={t('chat:send')} type="submit" disabled={isChatLoading || !input.trim()} className="p-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed">
             <Send className="w-5 h-5" />
           </button>
         </form>

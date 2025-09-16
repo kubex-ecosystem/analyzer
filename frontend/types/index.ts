@@ -4,6 +4,7 @@ export enum AnalysisType {
   Security = 'Security',
   Scalability = 'Scalability',
   CodeQuality = 'CodeQuality',
+  DocsReview = 'DocumentationReview',
 }
 
 export enum Priority {
@@ -217,4 +218,20 @@ export interface GitHubRepoListItem {
   owner: {
     login: string;
   };
+}
+
+// Dashboard Types
+export interface DashboardInsight {
+  title: string;
+  summary: string;
+}
+
+export interface DashboardSettings {
+  enableProjectSummaries: boolean;
+  enableImprovementTrends: boolean;
+  enableViabilityScores: boolean;
+  enableRoiAnalyses: boolean;
+  enableMaturityLevels: boolean;
+  enableStrengthsAndImprovements: boolean;
+  enableDashboardInsights: boolean;
 }

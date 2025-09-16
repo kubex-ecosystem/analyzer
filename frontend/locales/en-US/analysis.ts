@@ -58,7 +58,31 @@ export const analysisEnUS: AnalysisTranslations = {
       title: "Conclusion",
       recommendation: "Recommendation",
       confidence: "Confidence"
+    },
+    maturity: {
+      title: "Project Maturity"
+    },
+    usageMetadata: {
+      ariaLabel: "Token usage information",
+      total: "Total",
+      tokens: "tokens"
+    },
+    exampleModeNotice: "You are in example mode. Changes will not be saved."
+  },
+  export: {
+    json: "JSON",
+    jsonAriaLabel: "Export analysis as JSON",
+    log: "Log",
+    logAriaLabel: "Export analysis as text",
+    logContent: {
+      mainTitle: "Project Analysis"
     }
+  },
+  feedback: {
+    question: "Was this analysis helpful?",
+    useful: "Useful",
+    notUseful: "Not useful",
+    thanks: "Thank you for your feedback!"
   },
   comparison: {
     title: "Evolution Analysis",

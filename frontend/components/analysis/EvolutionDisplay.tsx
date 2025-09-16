@@ -12,6 +12,16 @@ interface EvolutionDisplayProps {
 
 const ImprovementCard: React.FC<{ improvement: Improvement; type: 'resolved' | 'new' | 'persistent' }> = ({ improvement, type }) => {
   const { t } = useTranslation(['analysis', 'common']);
+
+  const getPriorityClass = (priority: Priority) => {
+    switch (priority) {
+      case Priority.High: return 'bg-red-900/80 text-red-300';
+      case Priority.Medium: return 'bg-yellow-900/80 text-yellow-300';
+      case Priority.Low: return 'bg-blue-900/80 text-blue-300';
+      default: return 'bg-blue-900/80 text-blue-300';
+    }
+  };
+
   const typeConfig = {
     resolved: {
       icon: <Check className="w-5 h-5 text-green-400" />,
@@ -44,10 +54,9 @@ const ImprovementCard: React.FC<{ improvement: Improvement; type: 'resolved' | '
           <p className="mt-1 text-sm text-gray-400">{improvement.description}</p>
           <div className="mt-3 flex items-center gap-4 text-xs">
             <DifficultyMeter difficulty={improvement.difficulty} />
-            <span className={`px-2 py-0.5 rounded-full font-mono text-xs ${improvement.priority === Priority.High ? 'bg-red-900/80 text-red-300' :
-                improvement.priority === Priority.Medium ? 'bg-yellow-900/80 text-yellow-300' :
-                  'bg-blue-900/80 text-blue-300'
-              }`}>{t(`priority.${improvement.priority}`)}</span>
+            <span className={`px-2 py-0.5 rounded-full font-mono text-xs ${getPriorityClass(improvement.priority)}`}>
+              {t(`priority.${improvement.priority}`)}
+            </span>
           </div>
         </div>
       </div>
@@ -63,7 +72,8 @@ const EvolutionDisplay: React.FC<EvolutionDisplayProps> = ({ analysis, onNavigat
     [AnalysisType.General]: t('analysisTypes.GENERAL.label'),
     [AnalysisType.Security]: t('analysisTypes.SECURITY.label'),
     [AnalysisType.Scalability]: t('analysisTypes.SCALABILITY.label'),
-    [AnalysisType.CodeQuality]: t('analysisTypes.CODE_QUALITY.label')
+    [AnalysisType.CodeQuality]: t('analysisTypes.CODE_QUALITY.label'),
+    [AnalysisType.DocsReview]: t('analysisTypes.DOCUMENTATION_REVIEW.label')
   };
 
   const cardVariants: Variants = {

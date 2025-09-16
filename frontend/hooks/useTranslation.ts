@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TranslationNamespace } from '../locales';
 
@@ -23,21 +23,29 @@ const getDeepValue = (obj: any, path: string[]): any => {
   }
 
   return current;
-}; export const useTranslation = (namespaces: TranslationNamespace | TranslationNamespace[] = 'common') => {
+};
+
+export const useTranslation = (namespaces: TranslationNamespace | TranslationNamespace[] = 'common') => {
   const { translations, loadNamespace } = useLanguage();
-  const nsArray = Array.isArray(namespaces) ? namespaces : [namespaces];
+  const nsArray = useMemo(() => Array.isArray(namespaces) ? namespaces : [namespaces], [namespaces]);
+
+  // Stabilize loadNamespace call
+  const loadNamespaceStable = useCallback(loadNamespace, [loadNamespace]);
 
   useEffect(() => {
     nsArray.forEach(ns => {
-      loadNamespace(ns);
+      loadNamespaceStable(ns);
     });
-  }, [nsArray, loadNamespace]);
+  }, [nsArray, loadNamespaceStable]);
 
   const isLoading = useMemo(() => {
     return nsArray.some(ns => translations[ns] === undefined);
   }, [nsArray, translations]);
 
   const t = (key: string, options?: Record<string, string | number>): string => {
+    // Prevent running t function if translations are not ready
+    if (isLoading) return '';
+
     const keyParts = key.split(':');
     let result: any;
 
@@ -48,8 +56,8 @@ const getDeepValue = (obj: any, path: string[]): any => {
 
       // Make sure the namespace is loaded
       if (translations[ns] === undefined) {
-        loadNamespace(ns);
-        return ''; // Return empty while loading
+        console.warn(`Translation namespace '${ns}' not loaded. Use explicit namespace loading.`);
+        return key; // Return the key as fallback
       }
 
       result = getDeepValue(translations[ns], path);
@@ -64,9 +72,9 @@ const getDeepValue = (obj: any, path: string[]): any => {
         const validNamespaces = ['common', 'analysis', 'auth', 'chat', 'dashboard', 'dataSources', 'example', 'files', 'githubSearch', 'history', 'importExport', 'input', 'kanban', 'landing', 'notifications', 'profile', 'settings', 'tabs', 'tokenUsage'];
 
         if (validNamespaces.includes(potentialNamespace) && translations[potentialNamespace] === undefined) {
-          // Load the namespace and return empty for now
-          loadNamespace(potentialNamespace);
-          return '';
+          // Namespace not loaded, warn and return key as fallback
+          console.warn(`Translation namespace '${potentialNamespace}' not loaded for key '${key}'`);
+          return key;
         }
 
         if (validNamespaces.includes(potentialNamespace) && translations[potentialNamespace] !== undefined) {

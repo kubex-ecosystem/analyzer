@@ -20,7 +20,7 @@ const DifficultyMeter: React.FC<DifficultyMeterProps> = ({ difficulty }) => {
 
   return (
     <div className="flex items-center gap-2 text-xs text-gray-300">
-      <span className="font-medium">{t('common.difficulty')}:</span>
+      <span className="font-medium">{label}</span>
       <div className="flex items-center gap-1" title={`${t('common.difficulty')}: ${label}`}>
         {[...Array(3)].map((_, i) => (
           <div

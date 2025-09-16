@@ -35,6 +35,7 @@ export interface TranslationMessages {
     confirm: string;
     connect: string;
     notConnected: string;
+    close: string;
   };
   priority: {
     Low: string;
@@ -50,6 +51,12 @@ export interface TranslationMessages {
     Low: string;
     Medium: string;
     High: string;
+  };
+  maturityLevels: {
+    PROTOTYPE: string;
+    MVP: string;
+    PRODUCTION: string;
+    OPTIMIZED: string;
   };
   status: {
     TODO: string;
@@ -88,6 +95,10 @@ export interface TranslationMessages {
     language: string;
     theme: string;
     appearance: string;
+  };
+  history: {
+    compareProjectMismatchError: string;
+    compareMismatchError: string;
   };
   showExample: string;
   analysisTitle: string;
@@ -153,6 +164,30 @@ export interface AnalysisTranslations {
       recommendation: string;
       confidence: string;
     };
+    maturity: {
+      title: string;
+    };
+    usageMetadata: {
+      ariaLabel: string;
+      total: string;
+      tokens: string;
+    };
+    exampleModeNotice: string;
+  };
+  export: {
+    json: string;
+    jsonAriaLabel: string;
+    log: string;
+    logAriaLabel: string;
+    logContent: {
+      mainTitle: string;
+    };
+  };
+  feedback: {
+    question: string;
+    useful: string;
+    notUseful: string;
+    thanks: string;
   };
   comparison: {
     title: string;
@@ -233,10 +268,101 @@ export interface ExampleTranslations {
     type: string;
     domain: string;
   };
+  kortex: {
+    projectName: string;
+    summary: string;
+    strengths: {
+      s1: string;
+      s2: string;
+      s3: string;
+      s4: string;
+      s5: string;
+    };
+    improvements: {
+      i1: {
+        title: string;
+        description: string;
+        businessImpact: string;
+      };
+      i2: {
+        title: string;
+        description: string;
+        businessImpact: string;
+      };
+      i3: {
+        title: string;
+        description: string;
+        businessImpact: string;
+      };
+    };
+    nextSteps: {
+      shortTerm: {
+        s1: {
+          title: string;
+          description: string;
+        };
+        s2: {
+          title: string;
+          description: string;
+        };
+      };
+      longTerm: {
+        l1: {
+          title: string;
+          description: string;
+        };
+        l2: {
+          title: string;
+          description: string;
+        };
+      };
+    };
+    viability: {
+      assessment: string;
+    };
+    roi: {
+      assessment: string;
+      gains: {
+        g1: string;
+        g2: string;
+        g3: string;
+        g4: string;
+      };
+    };
+    maturity: {
+      assessment: string;
+    };
+  };
+  projectContext: string;
+  history: {
+    kortex: {
+      h1: {
+        assessment: string;
+      };
+      h2: {
+        assessment: string;
+      };
+      h3: {
+        summary: string;
+        assessment: string;
+      };
+      h4: {
+        summary: string;
+        assessment: string;
+      };
+    };
+    orion: {
+      assessment: string;
+    };
+  };
 }
 
 export interface InputTranslations {
   title: string;
+  addFile: string;
+  uploadFiles: string;
+  importFromGithub: string;
+  subtitle: string;
   projectContext: {
     label: string;
     placeholder: string;
@@ -268,6 +394,10 @@ export interface InputTranslations {
       label: string;
       description: string;
     };
+    DOCUMENTATION_REVIEW: {
+      label: string;
+      description: string;
+    };
   };
   uploadArea: {
     title: string;
@@ -276,16 +406,36 @@ export interface InputTranslations {
     dragDrop: string;
     clickToUpload: string;
   };
+  noFiles: {
+    title: string;
+    subtitle: string;
+  };
   validation: {
     required: string;
     minLength: string;
     maxLength: string;
     invalidFormat: string;
   };
+  notifications: {
+    lookAtniSuccess: string;
+    fragmentsSelected: string;
+  };
 }
 
 export interface KanbanTranslations {
   title: string;
+  projectHeader: string;
+  addCard: string;
+  editCard: string;
+  originalDescription: string;
+  notes: string;
+  notesPlaceholder: string;
+  exampleModeNotice: string;
+  deleteConfirm: {
+    title: string;
+    message: string;
+    confirm: string;
+  };
   columns: {
     todo: string;
     inProgress: string;
@@ -389,6 +539,20 @@ export interface AuthTranslations {
 
 export interface HistoryTranslations {
   title: string;
+  clearAll: string;
+  compare: string;
+  importAnalysis: string;
+  empty: {
+    title: string;
+    subtitle: string;
+  };
+  clearConfirm: {
+    title: string;
+    message: string;
+  };
+  notifications: {
+    invalidFile: string;
+  };
 }
 
 export interface ProfileTranslations {
@@ -433,6 +597,8 @@ export interface GithubSearchTranslations {
 // Token Usage namespace
 export interface TokenUsageTranslations {
   monthlyUsage: string;
+  title: string;
+  usageText: string;
 }
 
 // Import Export namespace
@@ -451,6 +617,26 @@ export interface ImportExportTranslations {
 // Notifications namespace
 export interface NotificationsTranslations {
   importSuccess: string;
+  analysisImportSuccess: string;
+  emptyContext: string;
+  selectTwo: string;
+  exampleLoaded: string;
+  noAnalysisForChat: string;
+  settingsSaved: string;
+  profileSaved: string;
+  exportSuccess: string;
+  exportError: string;
+  importError: string;
+  importAborted: string;
+  apiKeyTestSuccess: string;
+  apiKeyTestFailure: string;
+  apiKeyTestEmpty: string;
+  chatError: string;
+  lookAtniSuccess: string;
+  fragmentsSelected: string;
+  fileLoaded: string;
+  repoImportSuccess: string;
+  noGithubPat: string;
 }
 
 // Main locale type combining all translations

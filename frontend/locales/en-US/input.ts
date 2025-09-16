@@ -2,6 +2,10 @@ import { InputTranslations } from '../types';
 
 export const inputEnUS: InputTranslations = {
   title: "Data Input",
+  addFile: "Add File",
+  uploadFiles: "Upload Files",
+  importFromGithub: "Import from GitHub",
+  subtitle: "Analyze your project context and files",
   projectContext: {
     label: "Project Context",
     placeholder: "Describe your project here...",
@@ -32,7 +36,15 @@ export const inputEnUS: InputTranslations = {
     CODE_QUALITY: {
       label: "Code Quality",
       description: "Analysis of patterns, maintainability, and development best practices"
+    },
+    DOCUMENTATION_REVIEW: {
+      label: "Documentation Review",
+      description: "Analysis of project documentation quality and completeness"
     }
+  },
+  noFiles: {
+    title: "No files added",
+    subtitle: "Add project files to start analysis"
   },
   uploadArea: {
     title: "Upload Area",
@@ -46,5 +58,9 @@ export const inputEnUS: InputTranslations = {
     minLength: "Minimum characters required",
     maxLength: "Maximum characters exceeded",
     invalidFormat: "Invalid format"
+  },
+  notifications: {
+    lookAtniSuccess: "{{count}} file(s) successfully extracted from LookAtni!",
+    fragmentsSelected: "{{count}} code fragment(s) selected for analysis!"
   }
 };

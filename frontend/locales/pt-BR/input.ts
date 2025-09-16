@@ -2,6 +2,10 @@ import { InputTranslations } from '../types';
 
 export const inputPtBR: InputTranslations = {
   title: "Entrada de Dados",
+  addFile: "Adicionar Arquivo",
+  uploadFiles: "Carregar Arquivos",
+  importFromGithub: "Importar do GitHub",
+  subtitle: "Analise o contexto e arquivos do seu projeto",
   projectContext: {
     label: "Contexto do Projeto",
     placeholder: "Descreva seu projeto aqui...",
@@ -32,7 +36,15 @@ export const inputPtBR: InputTranslations = {
     CODE_QUALITY: {
       label: "Qualidade de Código",
       description: "Análise de padrões, manutenibilidade e boas práticas de desenvolvimento"
+    },
+    DOCUMENTATION_REVIEW: {
+      label: "Revisão de Documentação",
+      description: "Análise da qualidade e completude da documentação do projeto"
     }
+  },
+  noFiles: {
+    title: "Nenhum arquivo adicionado",
+    subtitle: "Adicione arquivos do projeto para começar a análise"
   },
   uploadArea: {
     title: "Área de Upload",
@@ -46,5 +58,9 @@ export const inputPtBR: InputTranslations = {
     minLength: "Mínimo de caracteres necessário",
     maxLength: "Máximo de caracteres excedido",
     invalidFormat: "Formato inválido"
+  },
+  notifications: {
+    lookAtniSuccess: "{{count}} arquivo(s) extraído(s) com sucesso do LookAtni!",
+    fragmentsSelected: "{{count}} fragmento(s) de código selecionado(s) para análise!"
   }
 };

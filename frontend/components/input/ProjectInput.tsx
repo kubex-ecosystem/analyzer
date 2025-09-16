@@ -1,483 +1,331 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Code2, FileText, FolderOpen, Github, Loader2, Plus, Search, Sparkles, Upload, X } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { BookText, Code, FilePlus, FileText, Scaling, Shield, Sparkles, Upload, Wand2 } from 'lucide-react';
+import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import { useTranslation } from '../../hooks/useTranslation';
-import { fetchRepoContents, fetchRepoForAnalysis } from '../../services/integrations/github';
-import { fetchJiraProject } from '../../services/integrations/jira';
-import { AnalysisType, AppSettings, ProjectFile, UsageTracking } from '../../types';
+import { fetchRepoForAnalysis } from '../../services/integrations/github';
+import { AnalysisType, ProjectFile } from '../../types';
 import SubtleTokenUsage from '../common/SubtleTokenUsage';
 import TokenUsageAlert from '../common/TokenUsageAlert';
 import GitHubSearchModal from './GitHubSearchModal';
 import LookAtniDirectExtractor from './LookAtniDirectExtractor';
 
-interface ProjectInputProps {
-  files: ProjectFile[];
-  onFilesChange: (files: ProjectFile[]) => void;
-  onAnalyze: (type: AnalysisType) => void;
-  onShowExample: () => void;
-  isLoading: boolean;
-  settings: AppSettings;
-  usageTracking: UsageTracking;
-  isExample: boolean;
-  onExitExample: () => void;
-  hasRealData: boolean;
-}
+const ProjectInput: React.FC = () => {
+  const {
+    projectFiles: files,
+    setProjectFiles,
+    handleAnalyze,
+    handleShowExample,
+    isLoading,
+    setIsLoading,
+    settings,
+    usageTracking,
+    isExample
+  } = useProjectContext();
+  const { t } = useTranslation(['input', 'common', 'tokenUsage']);
+  const [activeFileId, setActiveFileId] = useState<number | null>(null);
+  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
+  const [showLookAtni, setShowLookAtni] = useState(false);
 
-const colorMap = {
-  blue: { text: 'text-blue-400', hoverBorder: 'hover:border-blue-500/50' },
-  red: { text: 'text-red-400', hoverBorder: 'hover:border-red-500/50' },
-  purple: { text: 'text-purple-400', hoverBorder: 'hover:border-purple-500/50' },
-  teal: { text: 'text-teal-400', hoverBorder: 'hover:border-teal-500/50' },
-};
-
-const AnalysisButton: React.FC<{
-  type: AnalysisType;
-  label: string;
-  description: string;
-  onAnalyze: (type: AnalysisType) => void;
-  isLoading: boolean;
-  color: keyof typeof colorMap;
-  icon: React.ElementType;
-}> = ({ type, label, description, onAnalyze, isLoading, color, icon: Icon }) => {
-  const styles = colorMap[color] || colorMap.blue;
-  return (
-    <button
-      onClick={() => onAnalyze(type)}
-      disabled={isLoading}
-      className={`group p-4 bg-gray-800/50 border border-gray-700 rounded-lg text-left hover:bg-gray-700/50 ${styles.hoverBorder} transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-4`}
-    >
-      <Icon className={`w-6 h-6 shrink-0 mt-1 ${styles.text} transition-transform duration-300 group-hover:scale-110`} />
-      <div>
-        <p className="font-semibold text-white">{label}</p>
-        <p className="text-sm text-gray-400 mt-1">{description}</p>
-      </div>
-    </button>
-  );
-};
-
-
-const ProjectInput: React.FC<ProjectInputProps> = ({
-  files,
-  onFilesChange,
-  onAnalyze,
-  onShowExample,
-  isLoading,
-  settings,
-  usageTracking,
-  isExample,
-  onExitExample,
-  hasRealData,
-}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslation(['input', 'common']);
   const { addNotification } = useNotification();
 
-  const [isFetching, setIsFetching] = useState<null | 'github' | 'jira' | 'github-search'>(null);
-  const [repoUrl, setRepoUrl] = useState('');
-
-  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [inputMode, setInputMode] = useState<'files' | 'lookatni'>('files');
-
-  const selectedFile = useMemo(() => files.find(f => f.id === selectedFileId), [files, selectedFileId]);
-
+  // Auto-select first file on load if one exists
   useEffect(() => {
-    if (!selectedFileId && files.length > 0) {
-      setSelectedFileId(files[0].id);
+    if (files.length > 0 && activeFileId === null) {
+      setActiveFileId(files[0].id);
     }
-    if (selectedFileId && !files.some(f => f.id === selectedFileId)) {
-      setSelectedFileId(files.length > 0 ? files[0].id : null);
+    if (files.length === 0) {
+      setActiveFileId(null);
     }
-  }, [files, selectedFileId]);
+  }, [files, activeFileId]);
 
-  const analysisTypes = [
-    { type: AnalysisType.General, label: t('analysisTypes.GENERAL.label'), description: t('analysisTypes.GENERAL.description'), color: 'blue', icon: FileText },
-    { type: AnalysisType.Security, label: t('analysisTypes.SECURITY.label'), description: t('analysisTypes.SECURITY.description'), color: 'red', icon: Sparkles },
-    { type: AnalysisType.Scalability, label: t('analysisTypes.SCALABILITY.label'), description: t('analysisTypes.SCALABILITY.description'), color: 'purple', icon: Sparkles },
-    { type: AnalysisType.CodeQuality, label: t('analysisTypes.CODE_QUALITY.label'), description: t('analysisTypes.CODE_QUALITY.description'), color: 'teal', icon: Sparkles },
-  ];
-
-  // Convert LookAtni extracted files to ProjectFile format
-  const handleLookAtniFilesExtracted = (extractedFiles: any[]) => {
-    const convertedFiles: ProjectFile[] = extractedFiles.map((file) => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      content: file.content,
-      isFragment: true,
-    }));
-
-    onFilesChange([...files, ...convertedFiles]);
-
-    if (convertedFiles.length > 0) {
-      setSelectedFileId(convertedFiles[0].id);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFiles = e.target.files;
+    if (uploadedFiles) {
+      Array.from(uploadedFiles).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          const newFile: ProjectFile = {
+            id: Date.now() + Math.random(),
+            name: file.name,
+            content: content
+          };
+          setProjectFiles((prev: any) => [...prev, newFile]);
+          setActiveFileId(newFile.id);
+        };
+        reader.readAsText(file);
+        addNotification({ message: t('notifications.fileLoaded', { fileName: file.name }), type: 'info' });
+      });
     }
-
-    addNotification({
-      type: 'success',
-      message: `Successfully imported ${convertedFiles.length} files from LookAtni extraction!`
-    });
-  };
-
-  // Handle selected fragments from LookAtni
-  const handleLookAtniFragmentsSelected = (fragments: any[]) => {
-    const fragmentFiles: ProjectFile[] = fragments.map((fragment, index) => ({
-      id: Date.now() + index,
-      name: `${fragment.type}-${fragment.name}.${fragment.language}`,
-      content: `// Fragment: ${fragment.name} (${fragment.type})\n// File: ${fragment.file_path}:${fragment.start_line}-${fragment.end_line}\n// Language: ${fragment.language}\n\n${fragment.content}`,
-    }));
-
-    onFilesChange([...files, ...fragmentFiles]);
-
-    if (fragmentFiles.length > 0) {
-      setSelectedFileId(fragmentFiles[0].id);
-    }
-
-    addNotification({
-      type: 'success',
-      message: `Successfully imported ${fragmentFiles.length} code fragments for analysis!`
-    });
   };
 
   const handleAddNewFile = () => {
     const newFile: ProjectFile = {
       id: Date.now(),
-      name: `untitled-${files.length + 1}.txt`,
-      content: '',
+      name: 'untitled.md',
+      content: ''
     };
-    onFilesChange([...files, newFile]);
-    setSelectedFileId(newFile.id);
+    setProjectFiles((prev: any) => [...prev, newFile]);
+    setActiveFileId(newFile.id);
   };
 
-  const handleFileSelectedForUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newFile: ProjectFile = {
-          id: Date.now(),
-          name: file.name,
-          content: event.target?.result as string,
-        };
-        onFilesChange([...files, newFile]);
-        setSelectedFileId(newFile.id);
-      };
-      reader.readAsText(file);
-    }
-    // Reset file input to allow selecting the same file again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleUpdateFileContent = (id: number, content: string) => {
+    setProjectFiles(files.map(f => f.id === id ? { ...f, content } : f));
+  };
+
+  const handleUpdateFileName = (id: number, name: string) => {
+    setProjectFiles(files.map(f => f.id === id ? { ...f, name } : f));
+  };
+
+  const handleRemoveFile = (id: number) => {
+    setProjectFiles(files.filter(f => f.id !== id));
+    if (activeFileId === id) {
+      setActiveFileId(files.length > 1 ? files.find(f => f.id !== id)!.id : null);
     }
   };
 
-  const handleDeleteFile = (idToDelete: number) => {
-    onFilesChange(files.filter(f => f.id !== idToDelete));
-  };
-
-  const handleUpdateFile = (updatedFile: ProjectFile) => {
-    onFilesChange(files.map(f => f.id === updatedFile.id ? updatedFile : f));
-  };
-
-  const handleFetchGitHub = async () => {
-    if (!repoUrl) {
-      addNotification({ message: t('notifications.emptyRepoUrl'), type: 'error' });
-      return;
-    }
+  const handleImportFromGitHub = async (owner: string, repo: string) => {
     if (!settings.githubPat) {
       addNotification({ message: t('notifications.noGithubPat'), type: 'error' });
       return;
     }
-    setIsFetching('github');
-    try {
-      const content = await fetchRepoContents(repoUrl, settings.githubPat);
-      const repoName = repoUrl.split('/').pop() || 'github-repo';
-      const newFile: ProjectFile = {
-        id: Date.now(),
-        name: `${repoName}.md`,
-        content: content,
-      };
-      onFilesChange([...files, newFile]);
-      setSelectedFileId(newFile.id);
-      addNotification({ message: t('notifications.repoDataFetched'), type: 'success' });
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsFetching(null);
-    }
-  };
-
-  const handleImportRepo = async (owner: string, repo: string) => {
-    if (!settings.githubPat) {
-      addNotification({ message: t('notifications.noGithubPat'), type: 'error' });
-      return;
-    }
-    setIsFetching('github-search');
-    setIsSearchModalOpen(false);
+    setIsLoading(true);
     try {
       const content = await fetchRepoForAnalysis(owner, repo, settings.githubPat);
       const newFile: ProjectFile = {
         id: Date.now(),
-        name: `${owner}-${repo}.md`,
-        content: content,
+        name: `${owner}_${repo}_context.md`,
+        content,
       };
-      onFilesChange([...files, newFile]);
-      setSelectedFileId(newFile.id);
+      setProjectFiles([newFile]);
+      setActiveFileId(newFile.id);
       addNotification({ message: t('notifications.repoImportSuccess'), type: 'success' });
     } catch (error: any) {
       addNotification({ message: error.message, type: 'error' });
     } finally {
-      setIsFetching(null);
+      setIsLoading(false);
+      setIsGitHubModalOpen(false);
     }
   };
 
-  // This is still mocked, but adds a file.
-  const handleFetchJira = async () => {
-    setIsFetching('jira');
-    try {
-      const content = await fetchJiraProject("MOCK", settings);
-      const newFile: ProjectFile = {
-        id: Date.now(),
-        name: 'jira-project.md',
-        content: content
-      };
-      onFilesChange([...files, newFile]);
-      setSelectedFileId(newFile.id);
-      addNotification({ message: t('notifications.jiraDataFetched'), type: 'info' });
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsFetching(null);
+  const handleLookAtniFilesExtracted = (extractedFiles: any[]) => {
+    const newFiles: ProjectFile[] = extractedFiles.map((file, index) => ({
+      id: Date.now() + index,
+      name: file.name || file.path?.split('/').pop() || `extracted_${index}.txt`,
+      content: file.content || ''
+    }));
+
+    setProjectFiles((prev: any) => [...prev, ...newFiles]);
+    if (newFiles.length > 0) {
+      setActiveFileId(newFiles[0].id);
     }
+    setShowLookAtni(false);
+    addNotification({
+      message: t('notifications.lookAtniSuccess', { count: newFiles.length }),
+      type: 'success'
+    });
   };
 
-  const tokenPercentage = settings.tokenLimit > 0 ? (usageTracking.totalTokens / settings.tokenLimit) * 100 : 0;
+  const handleLookAtniFragmentsSelected = (fragments: any[]) => {
+    const fragmentFiles: ProjectFile[] = fragments.map((fragment, index) => ({
+      id: Date.now() + index,
+      name: `${fragment.name || 'fragment'}_${fragment.type || 'code'}.${fragment.language || 'txt'}`,
+      content: `// Fragment: ${fragment.name} (${fragment.type})\n// File: ${fragment.file_path}\n// Lines: ${fragment.start_line}-${fragment.end_line}\n\n${fragment.content}`
+    }));
+
+    setProjectFiles((prev: any) => [...prev, ...fragmentFiles]);
+    if (fragmentFiles.length > 0) {
+      setActiveFileId(fragmentFiles[0].id);
+    }
+    setShowLookAtni(false);
+    addNotification({
+      message: t('notifications.fragmentsSelected', { count: fragmentFiles.length }),
+      type: 'success'
+    });
+  };
+
+  // Check if there are any LookAtni blobs in the current files
+  const hasLookAtniBlob = files.some(file =>
+    file.content.includes('// LookAtni Extraction') ||
+    file.content.includes('lookatni') ||
+    file.name.toLowerCase().includes('lookatni') ||
+    file.name.toLowerCase().includes('extracted') ||
+    file.content.includes('Fragment:') ||
+    file.content.includes('// Fragment:')
+  );
+
+  // Handlers for the LookAtni buttons
+  const handleUploadLocalFiles = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleExtractFromProject = () => {
+    if (!hasLookAtniBlob) {
+      addNotification({
+        message: 'Você precisa ter um blob do LookAtni carregado antes de extrair fragmentos!',
+        type: 'info'
+      });
+      return;
+    }
+    setShowLookAtni(true);
+  };
+
+  const analysisTypes = [
+    { type: AnalysisType.General, label: t('analysisTypes.GENERAL.label'), description: t('analysisTypes.GENERAL.description'), icon: Wand2, color: 'blue' },
+    { type: AnalysisType.Security, label: t('analysisTypes.SECURITY.label'), description: t('analysisTypes.SECURITY.description'), icon: Shield, color: 'red' },
+    { type: AnalysisType.Scalability, label: t('analysisTypes.SCALABILITY.label'), description: t('analysisTypes.SCALABILITY.description'), icon: Scaling, color: 'purple' },
+    { type: AnalysisType.DocsReview, label: t('analysisTypes.DOCUMENTATION_REVIEW.label'), description: t('analysisTypes.DOCUMENTATION_REVIEW.description'), icon: BookText, color: 'amber' },
+    { type: AnalysisType.CodeQuality, label: t('analysisTypes.CODE_QUALITY.label'), description: t('analysisTypes.CODE_QUALITY.description'), icon: Code, color: 'teal' }
+  ];
+
+  const colorMap = {
+    blue: { text: 'text-blue-400', border: 'border-blue-600/60', hoverBg: 'hover:bg-blue-900/40', shadow: 'hover:shadow-blue-500/20' },
+    red: { text: 'text-red-400', border: 'border-red-600/60', hoverBg: 'hover:bg-red-900/40', shadow: 'hover:shadow-red-500/20' },
+    purple: { text: 'text-purple-400', border: 'border-purple-600/60', hoverBg: 'hover:bg-purple-900/40', shadow: 'hover:shadow-purple-500/20' },
+    teal: { text: 'text-teal-400', border: 'border-teal-600/60', hoverBg: 'hover:bg-teal-900/40', shadow: 'hover:shadow-teal-500/20' },
+    amber: { text: 'text-amber-400', border: 'border-amber-600/60', hoverBg: 'hover:bg-amber-900/40', shadow: 'hover:shadow-amber-500/20' },
+  };
+
+  const activeFileData = files.find(f => f.id === activeFileId);
 
   return (
-    <>
-      <div className="space-y-8">
-        {isExample && (
-          <motion.div
-            className="mb-8 p-4 bg-purple-900/50 border border-purple-700 text-purple-300 rounded-lg flex items-center justify-between gap-3"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-              <p className="text-sm font-medium">{t('exampleMode.notice')}</p>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+      <TokenUsageAlert limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Left Side: File Management and Editor */}
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl flex flex-col h-[70vh]">
+          <div className="p-4 border-b border-gray-700">
+            <h2 className="text-xl font-semibold text-white">{t('title')}</h2>
+            <p className="text-sm text-gray-400">{t('subtitle')}</p>
+          </div>
+          <div className="flex-grow flex">
+            {/* File List */}
+            <div className="w-1/3 border-r border-gray-700 p-2 space-y-1 overflow-y-auto">
+              {files.map(file => (
+                <button key={file.id} onClick={() => setActiveFileId(file.id)} className={`w-full text-left p-2 rounded-md text-sm flex items-center justify-between ${activeFileId === file.id ? 'bg-blue-600/30 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}>
+                  <span className="truncate">{file.name}</span>
+                  <span onClick={(e) => { e.stopPropagation(); handleRemoveFile(file.id) }} className="text-gray-500 hover:text-red-400 p-1 rounded-full">&times;</span>
+                </button>
+              ))}
+              <button onClick={handleAddNewFile} className="w-full flex items-center gap-2 p-2 text-sm text-blue-400 hover:bg-blue-900/50 rounded-md">
+                <FilePlus className="w-4 h-4" /> {t('addFile')}
+              </button>
+              <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-2 p-2 text-sm text-gray-400 hover:bg-gray-700/50 rounded-md">
+                <Upload className="w-4 h-4" /> {t('uploadFiles')}
+              </button>
+              <input title='Upload files' type="file" ref={fileInputRef} onChange={handleFileChange} multiple className="hidden" />
             </div>
-            <button
-              onClick={onExitExample}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-200 bg-purple-800/50 border border-purple-600 rounded-md hover:bg-purple-700/50 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              {t('exampleMode.exit')}
-            </button>
-          </motion.div>
-        )}
-
-        {/* Mode Selection Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex gap-2 p-1 bg-gray-800/50 border border-gray-700 rounded-lg"
-        >
-          <button
-            onClick={() => setInputMode('files')}
-            className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-colors ${inputMode === 'files'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="w-4 h-4" />
-              Manual Files & Integration
-            </div>
-          </button>
-          <button
-            onClick={() => setInputMode('lookatni')}
-            className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-colors ${inputMode === 'lookatni'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Code2 className="w-4 h-4" />
-              LookAtni Code Extraction
-            </div>
-          </button>
-        </motion.div>
-
-        {/* LookAtni Mode */}
-        {inputMode === 'lookatni' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <LookAtniDirectExtractor
-              onFilesExtracted={handleLookAtniFilesExtracted}
-              onFragmentsSelected={handleLookAtniFragmentsSelected}
-            />
-
-            {/* Analysis Options for LookAtni Mode */}
-            {files.length > 0 && (
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">Analyze Extracted Code</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {analysisTypes.map(at => (
-                    <AnalysisButton
-                      key={at.type}
-                      type={at.type}
-                      label={at.label}
-                      description={at.description}
-                      onAnalyze={onAnalyze}
-                      isLoading={isLoading}
-                      color={at.color as any}
-                      icon={at.icon}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Manual Files Mode */}
-        {inputMode === 'files' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-          >
-            {/* Left Side: File Management UI */}
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 flex flex-col">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <FolderOpen className="w-6 h-6 text-blue-400" />
-                  <h2 className="text-xl font-semibold text-white">{t('files.title')}</h2>
-                </div>
-                {files.length > 0 && (
-                  <button
-                    onClick={() => {
-                      onFilesChange([]);
-                      setSelectedFileId(null);
-                    }}
-                    className="px-3 py-1.5 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-md transition-colors flex items-center gap-1.5"
-                  >
-                    <X className="w-3 h-3" />
-                    Clear All ({files.length})
-                  </button>
-                )}
-              </div>
-              <div className="flex-grow flex gap-4 min-h-[450px]">
-                {/* File List */}
-                <div className="w-1/3 border-r border-gray-600 pr-4 flex flex-col">
-                  <ul className="space-y-1 flex-grow overflow-y-auto max-h-80">
-                    {files.map(file => (
-                      <li key={file.id}>
-                        <button onClick={() => setSelectedFileId(file.id)} className={`w-full flex items-center justify-between gap-2 p-2 rounded-md text-left text-sm transition-colors ${selectedFileId === file.id ? 'bg-blue-600/50 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}>
-                          <div className="flex flex-col gap-1 flex-grow min-w-0">
-                            <span className="truncate">{file.name}</span>
-                            <div className="flex items-center gap-2">
-                              {file.isFragment ? (
-                                <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                                  Fragment
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
-                                  Complete
-                                </span>
-                              )}
-                              <span className="text-xs text-gray-400">{file.content.length} chars</span>
-                            </div>
-                          </div>
-                          <X onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }} className="w-4 h-4 text-gray-500 hover:text-red-400 shrink-0" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="space-y-2 pt-2 border-t border-gray-600">
-                    <input title={t('files.addFromUpload')} type="file" ref={fileInputRef} onChange={handleFileSelectedForUpload} className="hidden" accept=".txt,.md,.js,.ts,.jsx,.tsx,.json,.html,.css" />
-                    <button onClick={handleAddNewFile} className="w-full text-sm flex items-center gap-2 p-2 justify-center rounded-md bg-gray-700 hover:bg-gray-600"><Plus className="w-4 h-4" /> {t('files.addFile')}</button>
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full text-sm flex items-center gap-2 p-2 justify-center rounded-md bg-gray-700 hover:bg-gray-600"><Upload className="w-4 h-4" /> {t('files.addFromUpload')}</button>
-                  </div>
-                </div>
-                {/* Editor */}
-                <div className="w-2/3 flex flex-col gap-2">
-                  {selectedFile ? (
-                    <>
-                      <input type="text" value={selectedFile.name} onChange={(e) => handleUpdateFile({ ...selectedFile, name: e.target.value })} placeholder={t('files.fileName')} className="p-2 bg-gray-900 border border-gray-600 rounded-md text-sm shrink-0" />
-                      <textarea value={selectedFile.content} onChange={(e) => handleUpdateFile({ ...selectedFile, content: e.target.value })} placeholder={t('files.fileContent')} className="w-full h-full p-2 bg-gray-900 border border-gray-600 rounded-md resize-none text-sm font-mono flex-grow" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-center text-gray-500 border-2 border-dashed border-gray-700 rounded-lg p-4">
-                      {t('files.emptyState')}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-700 space-y-3">
-                <div className="flex gap-2">
-                  <input type="text" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} placeholder={t('dataSources.github.placeholder')} className="flex-grow p-2 bg-gray-900 border border-gray-600 rounded-md text-sm" disabled={!!isFetching} />
-                  <button onClick={handleFetchGitHub} disabled={!!isFetching || !repoUrl} className="p-2 px-3 bg-gray-700 rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center gap-2 text-sm"><Github className="w-4 h-4" />{isFetching === 'github' && <Loader2 className="w-4 h-4 animate-spin" />}</button>
-                  <button onClick={() => setIsSearchModalOpen(true)} disabled={!!isFetching} className="p-2 px-3 bg-gray-700 rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center gap-2 text-sm">
-                    {isFetching === 'github-search' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{t('githubSearch.button')}</span>
-                  </button>
-                </div>
-                {!hasRealData && !isExample && (
-                  <div className="text-center">
-                    <button onClick={onShowExample} disabled={isLoading || !!isFetching} className="text-sm text-purple-400 hover:underline">
-                      {t('showExample')}
+            {/* Editor */}
+            <div className="w-2/3 flex flex-col">
+              {showLookAtni ? (
+                <div className="h-full flex flex-col">
+                  <div className="p-2 bg-gray-900/50 border-b border-gray-700 text-sm w-full flex items-center justify-between">
+                    <span className="text-white font-medium">LookAtni Extractor</span>
+                    <button
+                      onClick={() => setShowLookAtni(false)}
+                      className="text-gray-400 hover:text-white p-1"
+                    >
+                      ✕
                     </button>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Side: Analysis Options */}
-            <div className="space-y-6">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">{t('analysisTitle')}</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                  {analysisTypes.map(at => (
-                    <AnalysisButton
-                      key={at.type}
-                      type={at.type}
-                      label={at.label}
-                      description={at.description}
-                      onAnalyze={onAnalyze}
-                      isLoading={isLoading || files.length === 0 || !!isFetching}
-                      color={at.color as any}
-                      icon={at.icon}
+                  <div className="flex-grow overflow-hidden">
+                    <LookAtniDirectExtractor
+                      onFilesExtracted={handleLookAtniFilesExtracted}
+                      onFragmentsSelected={handleLookAtniFragmentsSelected}
                     />
-                  ))}
+                  </div>
                 </div>
-              </div>
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                {tokenPercentage > 70 ? (
-                  <TokenUsageAlert limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
-                ) : (
-                  <SubtleTokenUsage limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
-                )}
-              </div>
+              ) : activeFileData ? (
+                <>
+                  <input
+                    title='File name'
+                    type="text"
+                    value={activeFileData.name}
+                    onChange={(e) => handleUpdateFileName(activeFileData.id, e.target.value)}
+                    className="p-2 bg-gray-900/50 border-b border-gray-700 text-sm w-full focus:outline-none"
+                  />
+                  <textarea
+                    value={activeFileData.content}
+                    onChange={(e) => handleUpdateFileContent(activeFileData.id, e.target.value)}
+                    placeholder={t('placeholder')}
+                    className="w-full h-full p-3 bg-gray-900/30 text-gray-300 resize-none focus:outline-none font-mono text-sm"
+                  />
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 p-4">
+                  <FileText className="w-12 h-12 mb-4" />
+                  <h3 className="font-semibold text-lg text-gray-400">{t('noFiles.title')}</h3>
+                  <p className="text-sm">{t('noFiles.subtitle')}</p>
+                </div>
+              )}
             </div>
-          </motion.div>
-        )}
+          </div>
+        </div>
+
+        {/* Right Side: Analysis Options */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+            {analysisTypes.map(item => {
+              const colors = colorMap[item.color as keyof typeof colorMap];
+              return (
+                <button
+                  key={item.type}
+                  onClick={() => handleAnalyze(item.type)}
+                  disabled={isLoading || isExample}
+                  className={`p-4 flex flex-col text-left rounded-lg border ${colors.border} ${colors.hoverBg} transition-all duration-300 hover:shadow-lg ${colors.shadow} group disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <div className="flex items-center gap-3">
+                    <item.icon className={`w-6 h-6 ${colors.text} transition-transform duration-300 group-hover:scale-110`} />
+                    <h3 className={`text-lg font-semibold ${colors.text}`}>{item.label}</h3>
+                  </div>
+                  <p className="text-sm text-gray-400 mt-2 flex-grow">{item.description}</p>
+                </button>
+              )
+            })}
+          </div>
+          <div className="p-3 bg-gray-800/50 border border-gray-700 rounded-xl">
+            <SubtleTokenUsage limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
+          </div>
+          <div className="flex items-center gap-3">
+            <button onClick={() => setIsGitHubModalOpen(true)} disabled={isLoading || isExample} className="flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700/80 text-gray-200 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50">
+              <Code className="w-4 h-4" /> {t('importFromGithub')}
+            </button>
+            <button onClick={() => handleShowExample()} className="flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-transparent border border-purple-600 text-purple-300 rounded-md hover:bg-purple-900/40 transition-colors">
+              <Sparkles className="w-4 h-4" /> {t('actions.showExample')}
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleUploadLocalFiles}
+              disabled={isLoading || isExample}
+              className="flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-md hover:from-blue-700 hover:to-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload className="w-4 h-4" /> Upload Local Files
+            </button>
+            <button
+              onClick={handleExtractFromProject}
+              disabled={isLoading || isExample || !hasLookAtniBlob}
+              className={`flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${hasLookAtniBlob
+                ? 'from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700'
+                : 'from-gray-500 to-gray-600'
+                }`}
+            >
+              <Sparkles className="w-4 h-4" /> Extract from Project
+            </button>
+          </div>
+        </div>
       </div>
       <GitHubSearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-        onImport={handleImportRepo}
+        isOpen={isGitHubModalOpen}
+        onClose={() => setIsGitHubModalOpen(false)}
+        onImport={handleImportFromGitHub}
         githubPat={settings.githubPat}
       />
-    </>
+    </motion.div>
   );
 };
 

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Database, GitBranch, Save, Settings, User } from 'lucide-react';
-import React, { useEffect, useRef, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useNotification } from '../../contexts/NotificationContext';
@@ -49,7 +50,7 @@ const TabButton: React.FC<{ label: string; icon: React.ElementType; isActive: bo
 );
 
 const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ isOpen, onClose, settings, onSaveSettings, profile, onSaveProfile, isExample }) => {
-  const { t } = useTranslation(['settings', 'common']);
+  const { t } = useTranslation(['settings', 'common', 'tabs']);
   const { addNotification } = useNotification();
   const { showConfirmation } = useConfirmation();
   const { resetApplication } = useAppContext();

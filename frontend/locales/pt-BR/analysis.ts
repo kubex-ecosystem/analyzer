@@ -58,7 +58,31 @@ export const analysisPtBR: AnalysisTranslations = {
       title: "Conclusão",
       recommendation: "Recomendação",
       confidence: "Confiança"
+    },
+    maturity: {
+      title: "Maturidade do Projeto"
+    },
+    usageMetadata: {
+      ariaLabel: "Informações de uso de tokens",
+      total: "Total",
+      tokens: "tokens"
+    },
+    exampleModeNotice: "Você está no modo de exemplo. As alterações não serão salvas."
+  },
+  export: {
+    json: "JSON",
+    jsonAriaLabel: "Exportar análise como JSON",
+    log: "Log",
+    logAriaLabel: "Exportar análise como texto",
+    logContent: {
+      mainTitle: "Análise de Projeto"
     }
+  },
+  feedback: {
+    question: "Esta análise foi útil?",
+    useful: "Útil",
+    notUseful: "Não útil",
+    thanks: "Obrigado pelo seu feedback!"
   },
   comparison: {
     title: "Análise de Evolução",

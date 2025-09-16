@@ -46,31 +46,42 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   const loadNamespace = useCallback(async (namespace: string) => {
     const namespaceKey = `${locale}-${namespace}`;
-    if (loadedNamespaces[namespaceKey] || loadingNamespaces[namespaceKey]) {
-      return;
-    }
 
-    setLoadingNamespaces(prev => ({ ...prev, [namespaceKey]: true }));
-    try {
-      // Use the TypeScript translations instead of fetching JSON
-      const currentLocaleTranslations = localeTranslations[locale];
-      const namespaceData = currentLocaleTranslations[namespace as TranslationNamespace];
+    // Use ref to check current state to avoid dependency on state
+    setLoadingNamespaces(prev => {
+      if (prev[namespaceKey]) return prev; // Already loading
+      return { ...prev, [namespaceKey]: true };
+    });
 
-      if (!namespaceData) {
-        throw new Error(`Namespace ${namespace} not found for locale ${locale}`);
+    setLoadedNamespaces(prev => {
+      if (prev[namespaceKey]) return prev; // Already loaded
+
+      try {
+        // Use the TypeScript translations instead of fetching JSON
+        const currentLocaleTranslations = localeTranslations[locale];
+        const namespaceData = currentLocaleTranslations[namespace as TranslationNamespace];
+
+        if (!namespaceData) {
+          throw new Error(`Namespace ${namespace} not found for locale ${locale}`);
+        }
+
+        setTranslations(prevTranslations => ({
+          ...prevTranslations,
+          [namespace]: namespaceData,
+        }));
+
+        setLoadingNamespaces(prevLoading => ({ ...prevLoading, [namespaceKey]: false }));
+
+        return { ...prev, [namespaceKey]: true };
+      } catch (error) {
+        console.error(error);
+        setLoadingNamespaces(prevLoading => ({ ...prevLoading, [namespaceKey]: false }));
+        return prev;
       }
+    });
+  }, [locale]); // Only depend on locale
 
-      setTranslations(prev => ({
-        ...prev,
-        [namespace]: namespaceData,
-      }));
-      setLoadedNamespaces(prev => ({ ...prev, [namespaceKey]: true }));
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoadingNamespaces(prev => ({ ...prev, [namespaceKey]: false }));
-    }
-  }, [locale, loadedNamespaces, loadingNamespaces]); useEffect(() => {
+  useEffect(() => {
     if (isInitialLoad) {
       loadNamespace('common').finally(() => {
         setIsInitialLoad(false);

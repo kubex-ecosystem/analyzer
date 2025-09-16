@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({
   currentProvider,
   onProviderChange
 }) => {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['common', 'auth', 'history', 'profile']);
   const { logout } = useAuth();
 
   return (

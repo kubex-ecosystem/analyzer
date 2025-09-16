@@ -35,7 +35,8 @@ export const commonPtBR: TranslationMessages = {
     cancel: "Cancelar",
     confirm: "Confirmar",
     connect: "Conectar",
-    notConnected: "Não Conectado"
+    notConnected: "Não Conectado",
+    close: "Fechar"
   },
   priority: {
     Low: "Baixa",
@@ -64,6 +65,12 @@ export const commonPtBR: TranslationMessages = {
     analyzing: "Analisando",
     saving: "Salvando"
   },
+  maturityLevels: {
+    PROTOTYPE: "Protótipo",
+    MVP: "MVP",
+    PRODUCTION: "Produção",
+    OPTIMIZED: "Otimizado"
+  },
   feedback: {
     success: "Sucesso",
     error: "Erro",
@@ -89,6 +96,10 @@ export const commonPtBR: TranslationMessages = {
     language: "Idioma",
     theme: "Tema",
     appearance: "Aparência"
+  },
+  history: {
+    compareProjectMismatchError: "Não é possível comparar análises de projetos diferentes",
+    compareMismatchError: "Não é possível comparar análises de tipos diferentes"
   },
   showExample: "Mostre-me um exemplo",
   analysisTitle: "Título da Análise",
