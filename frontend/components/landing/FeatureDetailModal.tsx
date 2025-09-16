@@ -57,7 +57,7 @@ const FeatureDetailModal: React.FC<FeatureDetailModalProps> = ({ feature, onClos
             {/* Content */}
             <div className="p-6 overflow-y-auto">
               <p className="text-gray-300 whitespace-pre-line leading-relaxed">
-                {t(feature.detailKey)}
+                {t('feature.detailKey')}
               </p>
             </div>
           </motion.div>

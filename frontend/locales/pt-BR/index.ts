@@ -1,5 +1,6 @@
 import { LocaleTranslations } from '../types';
 import { analysisPtBR } from './analysis';
+import { apiKeysPtBR } from './apiKeys';
 import { authPtBR } from './auth';
 import { chatPtBR } from './chat';
 import { commonPtBR } from './common';
@@ -11,8 +12,10 @@ import { githubSearch } from './githubSearch';
 import { historyPtBR } from './history';
 import { importExport } from './importExport';
 import { inputPtBR } from './input';
+import { integrationsPtBR } from './integrations';
 import { kanbanPtBR } from './kanban';
 import { landingPtBR } from './landing';
+import { languagePtBR } from './language';
 import { notifications } from './notifications';
 import { profilePtBR } from './profile';
 import { settingsPtBR } from './settings';
@@ -38,5 +41,8 @@ export const ptBR: LocaleTranslations = {
   profile: profilePtBR,
   settings: settingsPtBR,
   tabs: tabsPtBR,
-  tokenUsage: tokenUsage
+  tokenUsage: tokenUsage,
+  language: languagePtBR,
+  apiKeys: apiKeysPtBR,
+  integrations: integrationsPtBR
 };

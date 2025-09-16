@@ -48,5 +48,32 @@ export const landingEnUS: LandingTranslations = {
       title: "Get Insights",
       description: "Receive a detailed report with recommendations"
     }
+  },
+  featureDetails: {
+    GENERAL: {
+      color: "blue",
+      title: "General Details",
+      description: "Overview of the project's architecture and design"
+    },
+    SECURITY: {
+      color: "red",
+      title: "Security Details",
+      description: "Assessment of potential security vulnerabilities"
+    },
+    SCALABILITY: {
+      color: "green",
+      title: "Scalability Details",
+      description: "Evaluation of the system's growth potential"
+    },
+    CODE_QUALITY: {
+      color: "purple",
+      title: "Code Quality Details",
+      description: "Code standards, maintainability, and best practices"
+    },
+    DOCUMENTATION_REVIEW: {
+      color: "orange",
+      title: "Documentation Review Details",
+      description: "Quality and completeness of the project's documentation"
+    }
   }
 };

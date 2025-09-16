@@ -48,5 +48,32 @@ export const landingPtBR: LandingTranslations = {
       title: "Receba Insights",
       description: "Obtenha um relatório detalhado com recomendações"
     }
+  },
+  featureDetails: {
+    GENERAL: {
+      color: "blue",
+      title: "Detalhes Gerais",
+      description: "Informações gerais sobre o projeto e sua estrutura"
+    },
+    SECURITY: {
+      color: "red",
+      title: "Detalhes de Segurança",
+      description: "Análise de vulnerabilidades e práticas de segurança"
+    },
+    SCALABILITY: {
+      color: "green",
+      title: "Detalhes de Escalabilidade",
+      description: "Avaliação da capacidade de crescimento do sistema"
+    },
+    CODE_QUALITY: {
+      color: "purple",
+      title: "Detalhes de Qualidade de Código",
+      description: "Padrões de código, manutenibilidade e boas práticas"
+    },
+    DOCUMENTATION_REVIEW: {
+      color: "orange",
+      title: "Detalhes da Revisão de Documentação",
+      description: "Qualidade e completude da documentação do projeto"
+    }
   }
 };

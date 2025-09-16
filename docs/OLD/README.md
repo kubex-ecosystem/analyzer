@@ -1,11 +1,19 @@
-# ![GemX Analyzer](/docs/assets/top_banner_md_a.png)
+# ![GemX-Analyzer](/docs/assets/images/top_banner_md_a.png)
 
-[🇧🇷 Read in Portuguese](./README.pt-BR.md)
+## **Your continuous code and product improvement — with intelligence, and a closed loop.**
 
-**A continuous improvement platform for code and product — with a closed loop.**
-From `.lkt.txt` to applying diffs and PRs **hands-free**: grompt ↔ lookatni ↔ analyzer ↔ GoBE/gdbase/logz.
+[![Go Version](https://img.shields.io/badge/Go-1.25+-blue.svg)](https://golang.org)
+[![React](https://img.shields.io/badge/React-19+-blue.svg)](https://reactjs.org)
+[![AI](https://img.shields.io/badge/AI-Enabled-blue.svg)](https://github.com/kubex-ecosystem/analyzer)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/kubex-ecosystem/analyzer/blob/main/LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](development/contributing.md)
+[![GitHub Stars](https://img.shields.io/github/stars/kubex-ecosystem/grompt?style=social)](https://github.com/kubex-ecosystem/analyzer/stargazers)
+
+---
 
 > _“Your quality SRE that opens safe PRs, measures impact (DORA/CHI/HIR), and self-adjusts based on policies — with no vendor lock-in.”_
+
+---
 
 ## ✨ Why it exists
 

@@ -103,6 +103,29 @@ export interface TranslationMessages {
   showExample: string;
   analysisTitle: string;
   save: string;
+  cancel: string;
+  close: string;
+  confirm: string;
+  connect: string;
+  connected: string;
+  delete: string;
+  disconnect: string;
+  edit: string;
+  editing: string;
+  error: string;
+  info: string;
+  load: string;
+  loading: string;
+  no: string;
+  noData: string;
+  notConnected: string;
+  ok: string;
+  open: string;
+  success: string;
+  view: string;
+  viewing: string;
+  warning: string;
+  yes: string;
 }
 
 export interface AnalysisTranslations {
@@ -523,6 +546,33 @@ export interface LandingTranslations {
       description: string;
     };
   };
+  featureDetails: {
+    GENERAL: {
+      color: string;
+      title: string;
+      description: string;
+    };
+    SECURITY: {
+      color: string;
+      title: string;
+      description: string;
+    };
+    SCALABILITY: {
+      color: string;
+      title: string;
+      description: string;
+    };
+    CODE_QUALITY: {
+      color: string;
+      title: string;
+      description: string;
+    };
+    DOCUMENTATION_REVIEW: {
+      color: string;
+      title: string;
+      description: string;
+    };
+  };
 }
 
 export interface SettingsTranslations {
@@ -619,7 +669,10 @@ export interface DataSourcesTranslations {
 
 // GitHub Search namespace
 export interface GithubSearchTranslations {
+  title: string;
   button: string;
+  placeholder: string;
+  searchButton: string;
 }
 
 // Token Usage namespace
@@ -667,6 +720,31 @@ export interface NotificationsTranslations {
   noGithubPat: string;
 }
 
+// Language namespace
+export interface LanguageTranslations {
+  label: string;
+}
+
+// API Keys namespace
+export interface ApiKeysTranslations {
+  gemini: {
+    title: string;
+    label: string;
+    description: string;
+    placeholder: string;
+    testButton: string;
+  };
+}
+
+// Integrations namespace
+export interface IntegrationsTranslations {
+  description: string;
+  github: {
+    patLabel: string;
+    patPlaceholder: string;
+  };
+}
+
 // Main locale type combining all translations
 export interface LocaleTranslations {
   common: TranslationMessages;
@@ -688,6 +766,9 @@ export interface LocaleTranslations {
   settings: SettingsTranslations;
   tabs: TabsTranslations;
   tokenUsage: TokenUsageTranslations;
+  language: LanguageTranslations;
+  apiKeys: ApiKeysTranslations;
+  integrations: IntegrationsTranslations;
 }
 
 export type SupportedLocale = 'en-US' | 'pt-BR';

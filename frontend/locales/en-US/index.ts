@@ -1,5 +1,6 @@
 import { LocaleTranslations } from '../types';
 import { analysisEnUS } from './analysis';
+import { apiKeysEnUS } from './apiKeys';
 import { authEnUS } from './auth';
 import { chatEnUS } from './chat';
 import { commonEnUS } from './common';
@@ -11,8 +12,10 @@ import { githubSearch } from './githubSearch';
 import { historyEnUS } from './history';
 import { importExport } from './importExport';
 import { inputEnUS } from './input';
+import { integrationsEnUS } from './integrations';
 import { kanbanEnUS } from './kanban';
 import { landingEnUS } from './landing';
+import { languageEnUS } from './language';
 import { notifications } from './notifications';
 import { profileEnUS } from './profile';
 import { settingsEnUS } from './settings';
@@ -38,5 +41,8 @@ export const enUS: LocaleTranslations = {
   profile: profileEnUS,
   settings: settingsEnUS,
   tabs: tabsEnUS,
-  tokenUsage: tokenUsage
+  tokenUsage: tokenUsage,
+  language: languageEnUS,
+  apiKeys: apiKeysEnUS,
+  integrations: integrationsEnUS
 };
