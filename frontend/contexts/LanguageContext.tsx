@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { translations as localeTranslations, SupportedLocale, TranslationNamespace } from '../locales';
 
-type Locale = 'en-US' | 'pt-BR';
+type Locale = SupportedLocale;
 type Translations = Record<string, any>;
 
 interface LanguageContextType {
@@ -51,14 +52,17 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
 
     setLoadingNamespaces(prev => ({ ...prev, [namespaceKey]: true }));
     try {
-      const response = await fetch(`/locales/${locale}/${namespace}.json`);
-      if (!response.ok) {
-        throw new Error(`Failed to load translations for ${locale}/${namespace}`);
+      // Use the TypeScript translations instead of fetching JSON
+      const currentLocaleTranslations = localeTranslations[locale];
+      const namespaceData = currentLocaleTranslations[namespace as TranslationNamespace];
+
+      if (!namespaceData) {
+        throw new Error(`Namespace ${namespace} not found for locale ${locale}`);
       }
-      const data = await response.json();
+
       setTranslations(prev => ({
         ...prev,
-        [namespace]: data,
+        [namespace]: namespaceData,
       }));
       setLoadedNamespaces(prev => ({ ...prev, [namespaceKey]: true }));
     } catch (error) {
@@ -66,9 +70,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
     } finally {
       setLoadingNamespaces(prev => ({ ...prev, [namespaceKey]: false }));
     }
-  }, [locale, loadedNamespaces, loadingNamespaces]);
-
-  useEffect(() => {
+  }, [locale, loadedNamespaces, loadingNamespaces]); useEffect(() => {
     if (isInitialLoad) {
       loadNamespace('common').finally(() => {
         setIsInitialLoad(false);

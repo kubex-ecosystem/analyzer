@@ -11,6 +11,7 @@ O **GemX Analyzer** é uma aplicação web de página única (SPA) projetada par
 A aplicação é construída com uma arquitetura moderna de frontend, priorizando a reatividade, a persistência de dados no lado do cliente e uma experiência de usuário fluida.
 
 ### Stack Principal
+
 - **Framework:** React 19
 - **Linguagem:** TypeScript
 - **Build Tool:** Vite
@@ -19,21 +20,25 @@ A aplicação é construída com uma arquitetura moderna de frontend, priorizand
 - **Ícones:** Lucide React
 
 ### Gerenciamento de Estado
+
 - **Estado Global:** O estado global (autenticação, notificações, idioma) é gerenciado através da **React Context API**, com provedores dedicados (`AuthProvider`, `NotificationProvider`, `LanguageProvider`).
 - **Persistência de Dados:** O estado crítico e os dados do usuário (histórico de análises, configurações, quadro Kanban) são persistidos no cliente usando um hook customizado `usePersistentState`.
   - **Estratégia de Armazenamento:** A implementação prioriza o **IndexedDB** por sua capacidade de armazenamento assíncrono e maior. Ele possui um fallback gracioso para o **localStorage** caso o IndexedDB não esteja disponível, garantindo robustez.
 
 ### Integração com a IA (Gemini API)
+
 - A comunicação com a API Gemini é abstraída em uma camada de serviço (`services/gemini/`).
 - A aplicação utiliza o modelo `gemini-2.5-flash` para as análises.
 - Para garantir respostas estruturadas e consistentes, a aplicação define um `responseSchema` no formato JSON para as chamadas à API, o que minimiza a necessidade de parsing complexo de texto no cliente.
 
 ### Internacionalização (i18n)
+
 - A aplicação suporta múltiplos idiomas (atualmente `en-US` e `pt-BR`).
 - A tradução é gerenciada por um `LanguageContext` e um hook customizado `useTranslation`.
-- Os textos são armazenados em arquivos JSON localizados em `public/locales/`, organizados por namespace (ex: `common.json`, `dashboard.json`).
+- Os textos são armazenados em módulos TypeScript localizados em `locales/`, organizados por namespace (ex: `common.ts`, `dashboard.ts`) com type safety completo.
 
 ### Estrutura de Diretórios
+
 ```
 /
 ├── components/     # Componentes React reutilizáveis, organizados por feature

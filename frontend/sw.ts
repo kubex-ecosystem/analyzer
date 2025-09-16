@@ -6,19 +6,7 @@ const CACHE_NAME = 'gemx-analyzer-cache-v1';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',
-  '/index.css',
-  // en-US
-  '/locales/en-US/common.json',
-  '/locales/en-US/input.json',
-  '/locales/en-US/dashboard.json',
-  '/locales/en-US/landing.json',
-  '/locales/en-US/settings.json',
-  // pt-BR
-  '/locales/pt-BR/common.json',
-  '/locales/pt-BR/input.json',
-  '/locales/pt-BR/dashboard.json',
-  '/locales/pt-BR/landing.json',
-  '/locales/pt-BR/settings.json'
+  '/index.css'
 ];
 
 const swOriginIgnore = [
@@ -66,11 +54,11 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || swOriginIgnore.filter((v, i) => event.request.url.includes(v)).length > 0) {
     return;
   }
-  
+
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cachedResponse = await cache.match(event.request);
-      
+
       const fetchPromise = fetch(event.request).then((networkResponse) => {
         if (networkResponse.ok) {
           cache.put(event.request, networkResponse.clone());
