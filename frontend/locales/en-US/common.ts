@@ -89,5 +89,8 @@ export const commonEnUS: TranslationMessages = {
     language: "Language",
     theme: "Theme",
     appearance: "Appearance"
-  }
+  },
+  showExample: "Show me an example",
+  analysisTitle: "Analysis Title",
+  save: "Save"
 };

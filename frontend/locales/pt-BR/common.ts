@@ -89,5 +89,8 @@ export const commonPtBR: TranslationMessages = {
     language: "Idioma",
     theme: "Tema",
     appearance: "Aparência"
-  }
+  },
+  showExample: "Mostre-me um exemplo",
+  analysisTitle: "Título da Análise",
+  save: "Salvar"
 };

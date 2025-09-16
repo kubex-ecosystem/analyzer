@@ -89,6 +89,9 @@ export interface TranslationMessages {
     theme: string;
     appearance: string;
   };
+  showExample: string;
+  analysisTitle: string;
+  save: string;
 }
 
 export interface AnalysisTranslations {
@@ -390,6 +393,14 @@ export interface HistoryTranslations {
 
 export interface ProfileTranslations {
   title: string;
+  avatar: {
+    change: string;
+  };
+  nameLabel: string;
+  namePlaceholder: string;
+  emailLabel: string;
+  emailPlaceholder: string;
+  save: string;
 }
 
 export interface TabsTranslations {
@@ -399,6 +410,49 @@ export interface TabsTranslations {
   data: string;
 }
 
+// Files namespace
+export interface FilesTranslations {
+  title: string;
+  addFromUpload: string;
+  addFile: string;
+  emptyState: string;
+}
+
+// Data Sources namespace
+export interface DataSourcesTranslations {
+  github: {
+    placeholder: string;
+  };
+}
+
+// GitHub Search namespace
+export interface GithubSearchTranslations {
+  button: string;
+}
+
+// Token Usage namespace
+export interface TokenUsageTranslations {
+  monthlyUsage: string;
+}
+
+// Import Export namespace
+export interface ImportExportTranslations {
+  title: string;
+  description: string;
+  warning: string;
+  importLabel: string;
+  exportLabel: string;
+  confirm: {
+    title: string;
+    message: string;
+  };
+}
+
+// Notifications namespace
+export interface NotificationsTranslations {
+  importSuccess: string;
+}
+
 // Main locale type combining all translations
 export interface LocaleTranslations {
   common: TranslationMessages;
@@ -406,14 +460,20 @@ export interface LocaleTranslations {
   auth: AuthTranslations;
   chat: ChatTranslations;
   dashboard: DashboardTranslations;
+  dataSources: DataSourcesTranslations;
   example: ExampleTranslations;
+  files: FilesTranslations;
+  githubSearch: GithubSearchTranslations;
   history: HistoryTranslations;
+  importExport: ImportExportTranslations;
   input: InputTranslations;
   kanban: KanbanTranslations;
   landing: LandingTranslations;
+  notifications: NotificationsTranslations;
   profile: ProfileTranslations;
   settings: SettingsTranslations;
   tabs: TabsTranslations;
+  tokenUsage: TokenUsageTranslations;
 }
 
 export type SupportedLocale = 'en-US' | 'pt-BR';

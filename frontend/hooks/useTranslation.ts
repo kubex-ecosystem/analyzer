@@ -61,7 +61,7 @@ const getDeepValue = (obj: any, path: string[]): any => {
         const potentialNamespace = path[0];
 
         // Check if the first part is a valid namespace that we haven't loaded yet
-        const validNamespaces = ['common', 'analysis', 'auth', 'chat', 'dashboard', 'example', 'history', 'input', 'kanban', 'landing', 'profile', 'settings', 'tabs'];
+        const validNamespaces = ['common', 'analysis', 'auth', 'chat', 'dashboard', 'dataSources', 'example', 'files', 'githubSearch', 'history', 'importExport', 'input', 'kanban', 'landing', 'notifications', 'profile', 'settings', 'tabs', 'tokenUsage'];
 
         if (validNamespaces.includes(potentialNamespace) && translations[potentialNamespace] === undefined) {
           // Load the namespace and return empty for now
