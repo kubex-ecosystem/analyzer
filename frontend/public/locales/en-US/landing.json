@@ -1,0 +1,18 @@
+{
+  "common": {
+    "close": ""
+  },
+  "feature": {
+    "detailKey": ""
+  },
+  "landing": {
+    "dynamicPhrases": "",
+    "cta": "",
+    "featuresTitle": "",
+    "featuresSubtitle": ""
+  },
+  "header": {
+    "title": "",
+    "subtitle": ""
+  }
+}

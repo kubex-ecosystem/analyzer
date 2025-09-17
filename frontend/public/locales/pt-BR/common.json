@@ -1,0 +1,51 @@
+{
+  "common": {
+    "cancel": "",
+    "confirm": "",
+    "difficulty": "",
+    "priority": ""
+  },
+  "loader": {
+    "steps": "",
+    "ariaLabel": "",
+    "message": "",
+    "subMessage": ""
+  },
+  "network": {
+    "online": "",
+    "offline": ""
+  },
+  "tokenUsage": {
+    "monthlyUsage": "",
+    "title": "",
+    "usageText": ""
+  },
+  "actions": {
+    "view": ""
+  },
+  "history": {
+    "compareProjectMismatchError": "",
+    "compareMismatchError": "",
+    "title": ""
+  },
+  "close": "",
+  "kanban": {
+    "notes": ""
+  },
+  "header": {
+    "title": ""
+  },
+  "auth": {
+    "logout": ""
+  },
+  "profile": {
+    "title": ""
+  },
+  "navigation": {
+    "dashboard": "",
+    "newAnalysis": "",
+    "currentAnalysis": "",
+    "kanban": "",
+    "chat": ""
+  }
+}

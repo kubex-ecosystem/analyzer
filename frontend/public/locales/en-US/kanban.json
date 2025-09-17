@@ -1,0 +1,29 @@
+{
+  "kanban": {
+    "addCard": "",
+    "editCard": "",
+    "exampleModeNotice": "",
+    "card": {
+      "title": "",
+      "description": "",
+      "priority": "",
+      "difficulty": ""
+    },
+    "originalDescription": "",
+    "notes": "",
+    "notesPlaceholder": "",
+    "deleteConfirm": {
+      "title": "",
+      "message": "",
+      "confirm": ""
+    },
+    "title": "",
+    "projectHeader": ""
+  },
+  "common": {
+    "close": "",
+    "delete": "",
+    "save": "",
+    "cancel": ""
+  }
+}

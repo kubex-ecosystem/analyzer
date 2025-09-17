@@ -1,0 +1,21 @@
+{
+  "selectItem": "",
+  "deleteItem": "",
+  "notifications": {
+    "invalidFile": ""
+  },
+  "clearConfirm": {
+    "title": "",
+    "message": ""
+  },
+  "title": "",
+  "closePanel": "",
+  "empty": {
+    "title": "",
+    "subtitle": ""
+  },
+  "clearAll": "",
+  "importFile": "",
+  "importAnalysis": "",
+  "compare": ""
+}

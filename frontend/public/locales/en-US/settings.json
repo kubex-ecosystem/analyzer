@@ -1,0 +1,76 @@
+{
+  "importExport": {
+    "emptyFile": "",
+    "noData": "",
+    "invalidFile": "",
+    "confirm": {
+      "title": "",
+      "message": ""
+    },
+    "importLabel": "",
+    "title": "",
+    "description": "",
+    "warning": "",
+    "exportLabel": ""
+  },
+  "notifications": {
+    "exportSuccess": "",
+    "exportError": "",
+    "importSuccess": "",
+    "importAborted": "",
+    "importError": "",
+    "apiKeyTestSuccess": "",
+    "apiKeyTestEmpty": "",
+    "apiKeyTestFailure": "",
+    "profileSaved": "",
+    "settingsSaved": ""
+  },
+  "integrations": {
+    "description": "",
+    "github": {
+      "title": "",
+      "description": "",
+      "patLabel": "",
+      "patPlaceholder": ""
+    }
+  },
+  "clearHistoryOnDisable": {
+    "title": "",
+    "message": "",
+    "cleared": ""
+  },
+  "apiKeys": {
+    "gemini": {
+      "testing": "",
+      "testSuccess": "",
+      "testFailure": "",
+      "testButton": "",
+      "title": "",
+      "description": "",
+      "label": "",
+      "placeholder": ""
+    }
+  },
+  "tabs": {
+    "preferences": "",
+    "integrations": "",
+    "profile": "",
+    "data": ""
+  },
+  "saveHistory": {
+    "label": "",
+    "description": ""
+  },
+  "dashboardInsights": {
+    "label": "",
+    "description": ""
+  },
+  "language": {
+    "label": ""
+  },
+  "title": "",
+  "profile": {
+    "save": ""
+  },
+  "save": ""
+}
