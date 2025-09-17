@@ -64,7 +64,7 @@ ARGUMENTS := $(MAKECMDGOALS)
 INSTALL_SCRIPT = $(ROOT_DIR)support/main.sh
 CMD_STR := $(strip $(firstword $(ARGUMENTS)))
 ARGS := $(filter-out $(strip $(CMD_STR)), $(ARGUMENTS))
-I18N_SRC ?= ./src
+I18N_SRC ?= ./frontend/src
 
 # Default target: help
 .DEFAULT_GOAL := help
@@ -144,7 +144,7 @@ pub-docs:
 	@echo "Publishing documentation..."
 	@bash $(INSTALL_SCRIPT) pub-docs $(ARGS)
 	$(shell exit 0)
-	
+
 i18n.used:
 	rg -no --pcre2 "t\\(\\s*['\"\`]([A-Za-z][\\w-]+)\\.([A-Za-z0-9_.-]+)['\"\`]\\s*(?:,|\\))" $(I18N_SRC) \
 	| awk -F: '{print $$3}' \
