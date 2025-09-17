@@ -70,3 +70,5 @@ docs/prompt/
 support/docs/site/
 internal/services/server/build/*
 !internal/services/server/build/style.css
+
+tasks/

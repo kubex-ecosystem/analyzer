@@ -3,19 +3,16 @@ package wi18nast
 // Package wi18nast implements internationalization (i18n) support.
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-
-	sitter "github.com/smacker/go-tree-sitter"
-	"github.com/smacker/go-tree-sitter/typescript/typescript"
 )
 
 type OnAnalyze func(file string, usages []Usage)
@@ -139,18 +136,21 @@ func (wt *Watcher) debouncer() {
 
 }
 
-// ---------- Parser (tree-sitter) ----------
+// ---------- Parser (regex-based) ----------
 
 type Parser struct {
-	parser   *sitter.Parser
-	language *sitter.Language
+	// Regex patterns for i18n usage detection
+	tCallPattern          *regexp.Regexp
+	useTranslationPattern *regexp.Regexp
+	transPattern          *regexp.Regexp
 }
 
 func NewParser() *Parser {
-	p := sitter.NewParser()
-	lang := typescript.GetLanguage()
-	p.SetLanguage(lang)
-	return &Parser{parser: p, language: lang}
+	return &Parser{
+		tCallPattern:          regexp.MustCompile(`\bt\s*\(\s*['"](.*?)['"]`),
+		useTranslationPattern: regexp.MustCompile(`useTranslation\s*\(`),
+		transPattern:          regexp.MustCompile(`<Trans\b|<Translation\b`),
+	}
 }
 
 func (p *Parser) ParseFile(filePath string) ([]Usage, error) {
@@ -159,139 +159,108 @@ func (p *Parser) ParseFile(filePath string) ([]Usage, error) {
 		return nil, fmt.Errorf("read %s: %w", filePath, err)
 	}
 
-	tree, err := p.parser.ParseCtx(context.Background(), nil, b)
-	if err != nil {
-		return nil, fmt.Errorf("parse AST: %w", err)
-	}
-	defer tree.Close()
-
 	src := string(b)
-	lines := strings.Split(src, "n")
+	lines := strings.Split(src, "\n")
 
 	var usages []Usage
-	p.walk(tree.RootNode(), src, lines, filePath, &usages)
+	p.parseWithRegex(src, lines, filePath, &usages)
 	return usages, nil
-
 }
 
-func (p *Parser) walk(n *sitter.Node, src string, lines []string, file string, out *[]Usage) {
-	if n == nil {
-		return
-	}
-	if n.Type() == "call_expression" {
-		if u, ok := p.fromCall(n, src, lines, file); ok {
-			*out = append(*out, u)
+func (p *Parser) parseWithRegex(src string, lines []string, file string, out *[]Usage) {
+	// Find t() calls
+	matches := p.tCallPattern.FindAllStringSubmatchIndex(src, -1)
+	for _, match := range matches {
+		if len(match) >= 4 {
+			start := match[0]
+			key := src[match[2]:match[3]]
+			line, col := p.getLineColumn(src, start)
+
+			usage := Usage{
+				FilePath:  file,
+				Line:      line,
+				Column:    col,
+				CallType:  "t()",
+				Key:       key,
+				Component: p.findComponentFromLines(lines, line),
+				Nearby:    snippet(lines, line, 2),
+				At:        time.Now(),
+			}
+			*out = append(*out, usage)
 		}
 	}
-	for i := 0; i < int(n.ChildCount()); i++ {
-		p.walk(n.Child(i), src, lines, file, out)
+
+	// Find useTranslation hooks
+	matches = p.useTranslationPattern.FindAllStringIndex(src, -1)
+	for _, match := range matches {
+		start := match[0]
+		line, col := p.getLineColumn(src, start)
+
+		usage := Usage{
+			FilePath:  file,
+			Line:      line,
+			Column:    col,
+			CallType:  "useTranslation",
+			Key:       "hook_usage",
+			Component: p.findComponentFromLines(lines, line),
+			Nearby:    snippet(lines, line, 2),
+			At:        time.Now(),
+		}
+		*out = append(*out, usage)
+	}
+
+	// Find Trans components
+	matches = p.transPattern.FindAllStringIndex(src, -1)
+	for _, match := range matches {
+		start := match[0]
+		line, col := p.getLineColumn(src, start)
+
+		usage := Usage{
+			FilePath:  file,
+			Line:      line,
+			Column:    col,
+			CallType:  "Trans",
+			Key:       "component_usage",
+			Component: p.findComponentFromLines(lines, line),
+			Nearby:    snippet(lines, line, 2),
+			At:        time.Now(),
+		}
+		*out = append(*out, usage)
 	}
 }
 
-func (p *Parser) fromCall(node *sitter.Node, src string, lines []string, file string) (Usage, bool) {
-	code := node.Content([]byte(src))
-	if !isI18nCall(code) {
-		return Usage{}, false
+func (p *Parser) getLineColumn(src string, pos int) (int, int) {
+	line := 1
+	col := 1
+	for i := 0; i < pos && i < len(src); i++ {
+		if src[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
 	}
+	return line, col
+}
 
-	u := Usage{
-		FilePath: file,
-		Line:     int(node.StartPoint().Row) + 1,
-		Column:   int(node.StartPoint().Column) + 1,
-		At:       time.Now(),
+func (p *Parser) findComponentFromLines(lines []string, targetLine int) string {
+	// Look backwards for function/component declaration
+	for i := targetLine - 1; i >= 0 && i >= targetLine-20; i-- {
+		if i < len(lines) {
+			line := strings.TrimSpace(lines[i])
+			if strings.Contains(line, "function ") || strings.Contains(line, "const ") && strings.Contains(line, "=>") {
+				// Extract component name with simple regex
+				funcPattern := regexp.MustCompile(`(?:function|const)\s+(\w+)`)
+				if matches := funcPattern.FindStringSubmatch(line); len(matches) > 1 {
+					return matches[1]
+				}
+			}
+		}
 	}
-
-	// tipo + key
-	switch {
-	case strings.Contains(code, "t("):
-		u.CallType = "t()"
-		u.Key = extractKeyFromT(code)
-	case strings.Contains(code, "useTranslation"):
-		u.CallType = "useTranslation"
-		u.Key = "hook_usage"
-	default:
-		u.CallType = "Trans"
-	}
-
-	u.Component = findComponentName(node, src, file)
-	u.JSXCtx = findJSXContext(node, src)
-	u.Nearby = snippet(lines, u.Line, 2)
-	return u, true
-
+	return "unknown"
 }
 
 // ---------- helpers ----------
-
-func isI18nCall(code string) bool {
-	for _, s := range []string{"t(", "useTranslation", "Trans", "Translation"} {
-		if strings.Contains(code, s) {
-			return true
-		}
-	}
-	return false
-}
-
-func extractKeyFromT(code string) string {
-	start := strings.Index(code, "(")
-	end := strings.LastIndex(code, ")")
-	if start < 0 || end < 0 || end <= start+1 {
-		return ""
-	}
-	args := strings.TrimSpace(code[start+1 : end])
-	// pega só o 1º argumento
-	if c := strings.Index(args, ","); c >= 0 {
-		args = args[:c]
-	}
-	return strings.Trim(args, ` "'`)
-}
-
-func findComponentName(n *sitter.Node, src, file string) string {
-	cur := n.Parent()
-	for cur != nil {
-		typ := cur.Type()
-		if typ == "function_declaration" || typ == "arrow_function" {
-			if id := findChildByType(cur, "identifier"); id != nil {
-				return string(id.Content([]byte(src)))
-			}
-			break
-		}
-		cur = cur.Parent()
-	}
-	base := filepath.Base(file)
-	return strings.TrimSuffix(base, filepath.Ext(base))
-}
-
-func findJSXContext(n *sitter.Node, src string) string {
-	cur := n.Parent()
-	for cur != nil {
-		typ := cur.Type()
-		if typ == "jsx_element" || typ == "jsx_self_closing_element" {
-			raw := string(cur.Content([]byte(src)))
-			if i := strings.Index(raw, ">"); i != -1 {
-				raw = raw[:i+1]
-			}
-			if len(raw) > 100 {
-				raw = raw[:100] + "..."
-			}
-			return raw
-		}
-		cur = cur.Parent()
-	}
-	return ""
-}
-
-func findChildByType(n *sitter.Node, t string) *sitter.Node {
-	for i := 0; i < int(n.ChildCount()); i++ {
-		ch := n.Child(i)
-		if ch.Type() == t {
-			return ch
-		}
-		if f := findChildByType(ch, t); f != nil {
-			return f
-		}
-	}
-	return nil
-}
 
 func snippet(lines []string, center, radius int) []string {
 	var out []string
