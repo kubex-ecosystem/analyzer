@@ -1,0 +1,45 @@
+{
+  "kpi": {
+    "totalAnalyses": "",
+    "averageScore": "",
+    "commonType": "",
+    "tokensThisMonth": ""
+  },
+  "projects": {
+    "title": "",
+    "lastAnalyzed": "",
+    "averageScore": "",
+    "recentAnalyses": ""
+  },
+  "overview": {
+    "title": "",
+    "latestScore": "",
+    "keyStrengths": ""
+  },
+  "landing": {
+    "dynamicPhrases": ""
+  },
+  "header": {
+    "subtitle": ""
+  },
+  "dashboard": {
+    "emptyState": {
+      "cta": "",
+      "title": "",
+      "subtitle": "",
+      "kpi_total_description": "",
+      "kpi_score_description": "",
+      "kpi_type_description": "",
+      "kpi_tokens_description": ""
+    },
+    "kpi": {
+      "totalAnalyses": "",
+      "averageScore": "",
+      "commonType": "",
+      "tokensThisMonth": ""
+    },
+    "insight": {
+      "title": ""
+    }
+  }
+}

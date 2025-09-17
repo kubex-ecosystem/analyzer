@@ -1,0 +1,112 @@
+{
+  "analysisTypes": {
+    "GENERAL": {
+      "label": ""
+    },
+    "SECURITY": {
+      "label": ""
+    },
+    "SCALABILITY": {
+      "label": ""
+    },
+    "CODE_QUALITY": {
+      "label": ""
+    },
+    "DOCUMENTATION_REVIEW": {
+      "label": ""
+    }
+  },
+  "evolution": {
+    "metrics": {
+      "improvements": "",
+      "viabilityScore": "",
+      "strengths": ""
+    },
+    "title": "",
+    "subtitle": "",
+    "summary": "",
+    "usageAriaLabel": "",
+    "comparisonCost": "",
+    "breakdown": {
+      "title": "",
+      "achievements": "",
+      "noResolved": "",
+      "newChallenges": "",
+      "noNew": "",
+      "technicalDebt": "",
+      "noPersistent": ""
+    }
+  },
+  "localeCode": "",
+  "results": {
+    "usageMetadata": {
+      "tokens": "",
+      "ariaLabel": "",
+      "total": ""
+    },
+    "summary": {
+      "title": ""
+    },
+    "viability": {
+      "title": "",
+      "scoreLabel": "",
+      "assessmentLabel": "",
+      "scoreEvolution": ""
+    },
+    "roi": {
+      "title": "",
+      "assessmentLabel": "",
+      "effortLabel": "",
+      "gainsLabel": ""
+    },
+    "strengths": {
+      "title": ""
+    },
+    "improvements": {
+      "title": "",
+      "businessImpact": "",
+      "impact": ""
+    },
+    "nextSteps": {
+      "title": "",
+      "shortTerm": "",
+      "longTerm": ""
+    },
+    "exampleModeNotice": "",
+    "title": "",
+    "maturity": {
+      "title": ""
+    }
+  },
+  "export": {
+    "logContent": {
+      "mainTitle": ""
+    },
+    "jsonAriaLabel": "",
+    "json": "",
+    "logAriaLabel": "",
+    "log": ""
+  },
+  "common": {
+    "priority": "",
+    "difficulty": "",
+    "description": ""
+  },
+  "actions": {
+    "exitExample": "",
+    "viewKanbanBoard": "",
+    "createKanbanBoard": ""
+  },
+  "feedback": {
+    "question": "",
+    "useful": "",
+    "notUseful": "",
+    "thanks": ""
+  },
+  "maturityLevels": {
+    "PROTOTYPE": "",
+    "MVP": "",
+    "PRODUCTION": "",
+    "OPTIMIZED": ""
+  }
+}

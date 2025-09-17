@@ -13,6 +13,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
+	astx "github.com/kubex-ecosystem/analyzer/internal/astx"
 	wsocket "github.com/kubex-ecosystem/analyzer/internal/services/wsockets"
 	"github.com/kubex-ecosystem/analyzer/internal/types"
 )
@@ -20,9 +21,9 @@ import (
 // ===== MONITOR DE ARQUIVOS REAL-TIME =====
 
 type RealTimeMonitor struct {
-	parser        *I18nParser
+	parser        *astx.I18nParser
 	wsManager     *wsocket.WebSocketManager
-	aiProvider    AIProvider
+	aiProvider    *astx.MultiAIProvider
 	watcher       *fsnotify.Watcher
 	projectPath   string
 	currentStats  types.ProjectStats

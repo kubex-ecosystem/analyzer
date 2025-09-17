@@ -1,0 +1,61 @@
+{
+  "analysisTypes": {
+    "GENERAL": {
+      "label": "",
+      "description": ""
+    },
+    "SECURITY": {
+      "label": "",
+      "description": ""
+    },
+    "SCALABILITY": {
+      "label": "",
+      "description": ""
+    },
+    "CODE_QUALITY": {
+      "label": "",
+      "description": ""
+    },
+    "DOCUMENTATION_REVIEW": {
+      "label": "",
+      "description": ""
+    }
+  },
+  "notifications": {
+    "noGithubPat": "",
+    "fileLoaded": "",
+    "repoImportSuccess": "",
+    "lookAtniSuccess_one": "",
+    "lookAtniSuccess_many": "",
+    "lookAtniSuccess_other": "",
+    "fragmentsSelected_one": "",
+    "fragmentsSelected_many": "",
+    "fragmentsSelected_other": ""
+  },
+  "githubSearch": {
+    "emptyUsername": "",
+    "title": "",
+    "placeholder": "",
+    "searchButton": "",
+    "resultsTitle": "",
+    "importButton": "",
+    "noReposFound": ""
+  },
+  "title": "",
+  "subtitle": "",
+  "addFile": "",
+  "uploadFiles": "",
+  "input": {
+    "fileInput": {
+      "placeholder": ""
+    }
+  },
+  "noFiles": {
+    "title": "",
+    "subtitle": ""
+  },
+  "importFromGithub": "",
+  "actions": {
+    "showExample": ""
+  }
+}

@@ -14,7 +14,8 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/types"
 	"github.com/kubex-ecosystem/analyzer/internal/watcher"
 	_ "github.com/smacker/go-tree-sitter/javascript"
-	_ "github.com/smacker/go-tree-sitter/typescript"
+
+	// _ "github.com/smacker/go-tree-sitter/typescript"
 
 	sitter "github.com/smacker/go-tree-sitter"
 )
@@ -29,22 +30,23 @@ type I18nParser struct {
 
 func NewI18nParser() *I18nParser {
 	parser := sitter.NewParser()
-	lang, err := sitter.NewQuery([]byte(`
+	var lang sitter.Language
+
+	sitter.NewQuery([]byte(`
 (source_file
 	(call_expression
 		function: (identifier) @func_name
 		arguments: (arguments) @args)
-)`))
-	if err != nil {
-		log.Fatalf("Erro ao carregar linguagem: %v", err)
-	}
-	l := lang.(*sitter.Language)
+)`), &lang)
 
-	parser.SetLanguage(&l)
+	// l := clearla
+	// la
+	// lang.(*sitter.Language)
 
+	parser.SetLanguage(&lang)
 	return &I18nParser{
 		parser:   parser,
-		language: lang,
+		language: &lang,
 	}
 }
 
@@ -298,7 +300,7 @@ func AstXCmd() {
 	log.Printf("📊 Dashboard disponível em: http://localhost:%s", port)
 	log.Printf("🔌 WebSocket endpoint: ws://localhost:%s/ws", port)
 
-	if err := http.ListenAndServe(":"+port, corsRouter); err != nil {
+	if err := http.ListenAndServe(":"+port, enableCORS(mux.NewRouter())); err != nil {
 		log.Fatalf("Erro ao iniciar servidor: %v", err)
 	}
 }
