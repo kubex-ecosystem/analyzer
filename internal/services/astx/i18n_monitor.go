@@ -10,9 +10,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/kubex-ecosystem/analyzer/internal/services/watcher"
 	websocket "github.com/kubex-ecosystem/analyzer/internal/services/wsockets"
 	"github.com/kubex-ecosystem/analyzer/internal/types"
-	"github.com/kubex-ecosystem/analyzer/internal/watcher"
 	_ "github.com/smacker/go-tree-sitter/javascript"
 
 	// _ "github.com/smacker/go-tree-sitter/typescript"

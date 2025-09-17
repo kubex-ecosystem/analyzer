@@ -13,17 +13,19 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	astx "github.com/kubex-ecosystem/analyzer/internal/astx"
-	wsocket "github.com/kubex-ecosystem/analyzer/internal/services/wsockets"
+	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/types"
+
+	"github.com/kubex-ecosystem/analyzer/internal/services/astx"
+	wsocket "github.com/kubex-ecosystem/analyzer/internal/services/wsockets"
 )
 
 // ===== MONITOR DE ARQUIVOS REAL-TIME =====
 
 type RealTimeMonitor struct {
-	parser        *astx.I18nParser
+	parser        *types.Scorecard
 	wsManager     *wsocket.WebSocketManager
-	aiProvider    *astx.MultiAIProvider
+	aiProvider    *registry.Registry
 	watcher       *fsnotify.Watcher
 	projectPath   string
 	currentStats  types.ProjectStats
@@ -37,13 +39,13 @@ func NewRealTimeMonitor(projectPath string, wsManager *wsocket.WebSocketManager)
 		return nil, err
 	}
 
-	parser := astx.NewI18nParser()
-	aiProvider := astx.NewMultiAIProvider()
+	parser := types.Scorecard{}
+	// aiProvider := registry.Load(projectPath)
 
 	monitor := &RealTimeMonitor{
-		parser:      parser,
-		wsManager:   wsManager,
-		aiProvider:  aiProvider,
+		parser:    parser,
+		wsManager: wsManager,
+		// aiProvider:  aiProvider,
 		watcher:     watcher,
 		projectPath: projectPath,
 	}
@@ -308,14 +310,13 @@ func (rtm *RealTimeMonitor) EnrichUsagesWithAI(usages []types.I18nUsage) {
 }
 
 func (rtm *RealTimeMonitor) EnrichWithAI(usage *types.I18nUsage) {
-	aiContext, err := rtm.aiProvider.AnalyzeI18nUsage(*usage)
-	if err != nil {
-		log.Printf("Erro ao enriquecer com IA: %v", err)
-		return
+	// Mock de enriquecimento com IA
+	usage.AIContext = &types.AIContextData{
+		AIContext: &types.AIContext{
+			Suggestions:  []string{"Sugestão 1", "Sugestão 2"},
+			QualityScore: 8, // de 0 a 10
+		},
 	}
-
-	usage.AIContext = aiContext
-	usage.Timestamp = time.Now()
 }
 
 // ===== HTTP HANDLERS =====
