@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import { Chat } from '@google/genai';
+//import { Chat } from '@google/genai';
 import { useCallback, useMemo, useState } from 'react';
 
 // Contexts & Hooks
@@ -14,25 +14,25 @@ import { usePersistentState } from './hooks/usePersistentState';
 import { useTranslation } from './hooks/useTranslation';
 
 // Components
-import EvolutionDisplay from './components/analysis/EvolutionDisplay';
-import SuggestionsDisplay from './components/analysis/SuggestionsDisplay';
-import ChatPanel from './components/chat/ChatPanel';
-import ConfirmationModal from './components/common/ConfirmationModal';
-import Loader from './components/common/Loader';
-import NetworkStatusIndicator from './components/common/NetworkStatusIndicator';
-import NotificationContainer from './components/common/NotificationContainer';
-import Dashboard from './components/dashboard/Dashboard';
-import HistoryPanel from './components/history/HistoryPanel';
-import ProjectInput from './components/input/ProjectInput';
-import KanbanBoard from './components/kanban/KanbanBoard';
-import LandingPage from './components/landing/LandingPage';
-import Header from './components/layout/Header';
-import NavigationBar from './components/layout/NavigationBar';
-import UserSettingsModal from './components/settings/UserSettingsModal';
+import EvolutionDisplay from '@/components/analysis/EvolutionDisplay';
+import SuggestionsDisplay from '@/components/analysis/SuggestionsDisplay';
+import ChatPanel from '@/components/chat/ChatPanel';
+import ConfirmationModal from '@/components/common/ConfirmationModal';
+import Loader from '@/components/common/Loader';
+import NetworkStatusIndicator from '@/components/common/NetworkStatusIndicator';
+import NotificationContainer from '@/components/common/NotificationContainer';
+import Dashboard from '@/components/dashboard/Dashboard';
+import HistoryPanel from '@/components/history/HistoryPanel';
+import ProjectInput from '@/components/input/ProjectInput';
+import KanbanBoard from '@/components/kanban/KanbanBoard';
+import LandingPage from '@/components/landing/LandingPage';
+import Header from '@/components/layout/Header';
+import NavigationBar from '@/components/layout/NavigationBar';
+import UserSettingsModal from '@/components/settings/UserSettingsModal';
 
 // Services & Data
 // NEW: Unified AI Service - supports both direct Gemini and Gateway
-import { AIProvider, AIService } from './services/unified-ai';
+import { AIProvider, AIService } from '@/services/unified-ai';
 
 // Types
 import {
@@ -44,6 +44,7 @@ import {
   ViewType
 } from './types';
 
+import { Chat } from '@google/genai';
 import './index.css';
 
 const createInitialKanbanState = (analysis: ProjectAnalysis): KanbanState => {
@@ -275,16 +276,7 @@ Based *only* on the information provided above, please answer the user's questio
   const renderContent = () => {
     switch (view) {
       case ViewType.Dashboard:
-        return <Dashboard
-          history={history}
-          usageTracking={usageTracking}
-          onNavigate={handleNavigate}
-          onLoadHistoryItem={handleLoadHistoryItem}
-          selectedProject={selectedProject}
-          onSelectProject={setSelectedProject}
-          isExample={isExample}
-          showEmptyState={history.length === 0 && !isExample}
-        />;
+        return <Dashboard />;
       case ViewType.Input:
         return <ProjectInput />;
       case ViewType.Analysis:
@@ -312,7 +304,7 @@ Based *only* on the information provided above, please answer the user's questio
       case ViewType.Chat:
         return <ChatPanel />;
       default:
-        return <Dashboard history={history} usageTracking={usageTracking} onNavigate={handleNavigate} onLoadHistoryItem={handleLoadHistoryItem} selectedProject={selectedProject} onSelectProject={setSelectedProject} isExample={isExample} showEmptyState={history.length === 0 && !isExample} />;
+        return <Dashboard />;
     }
   };
 
@@ -342,17 +334,7 @@ Based *only* on the information provided above, please answer the user's questio
       </main>
 
       <HistoryPanel />
-
-      <UserSettingsModal
-        isOpen={isUserSettingsModalOpen}
-        onClose={() => setIsUserSettingsModalOpen(false)}
-        settings={settings}
-        onSaveSettings={setSettings}
-        profile={userProfile}
-        onSaveProfile={setUserProfile}
-        isExample={isExample}
-      />
-
+      <UserSettingsModal />
       <ConfirmationModal />
       <NotificationContainer />
       <NetworkStatusIndicator />
