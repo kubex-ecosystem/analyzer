@@ -26,7 +26,6 @@ export interface Notification {
   duration?: number;
 }
 
-
 export interface FeatureFlags {
   enableExperimentalFeatures: boolean;
   enableBetaFeatures: boolean;

@@ -8,7 +8,6 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { fetchRepoForAnalysis } from '../../services/integrations/github';
 import { AnalysisType, ProjectFile } from '../../types';
 import SubtleTokenUsage from '../common/SubtleTokenUsage';
-import TokenUsageAlert from '../common/TokenUsageAlert';
 import GitHubSearchModal from './GitHubSearchModal';
 import LookAtniDirectExtractor from './LookAtniDirectExtractor';
 
@@ -193,19 +192,20 @@ const ProjectInput: React.FC = () => {
 
   const activeFileData = files.find(f => f.id === activeFileId);
 
+  //<TokenUsageAlert limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-      <TokenUsageAlert limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         {/* Left Side: File Management and Editor */}
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl flex flex-col h-[70vh]">
+        <div className="bg-gray-800/50 border border-gray-700 rounded-xl flex flex-col h-[75vh]">
           <div className="p-4 border-b border-gray-700">
             <h2 className="text-xl font-semibold text-white">{t('title')}</h2>
             <p className="text-sm text-gray-400">{t('subtitle')}</p>
           </div>
           <div className="flex-grow flex">
             {/* File List */}
-            <div className="w-1/3 border-r border-gray-700 p-2 space-y-1 overflow-y-auto">
+            <div className="w-1/3 border-r border-gray-700 p-2 space-y-1 overflow-y-auto h-full bg-gray-900/30">
               {files.map(file => (
                 <button key={file.id} onClick={() => setActiveFileId(file.id)} className={`w-full text-left p-2 rounded-md text-sm flex items-center justify-between ${activeFileId === file.id ? 'bg-blue-600/30 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}>
                   <span className="truncate">{file.name}</span>
