@@ -10,9 +10,11 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	websocket "github.com/kubex-ecosystem/analyzer/internal/services/wsockets"
 	"github.com/kubex-ecosystem/analyzer/internal/types"
 	"github.com/kubex-ecosystem/analyzer/internal/watcher"
-	_ "github.com/smacker/go-tree-sitter"
+	_ "github.com/smacker/go-tree-sitter/javascript"
+	_ "github.com/smacker/go-tree-sitter/typescript"
 
 	sitter "github.com/smacker/go-tree-sitter"
 )
@@ -273,7 +275,7 @@ func AstXCmd() {
 `, projectPath, port, port, port)
 
 	// Inicializa WebSocket Manager
-	wsManager := socket..NewWebSocketManager()
+	wsManager := websocket.NewWebSocketManager()
 	go wsManager.Run()
 
 	// Inicializa Monitor
@@ -285,11 +287,11 @@ func AstXCmd() {
 	// Inicia monitoramento
 	monitor.Start()
 
-	// Setup HTTP routes
-	router := monitor
+	// // Setup HTTP routes
+	// router := monitor
 
 	// Middleware de CORS
-	corsRouter := enableCORS(monitor)
+	// corsRouter := enableCORS(monitor)
 
 	// Inicia servidor
 	log.Printf("🌐 Servidor iniciado na porta %s", port)
