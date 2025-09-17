@@ -1,39 +1,15 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Database, GitBranch, Save, Settings, User } from 'lucide-react';
-import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
-import { useAppContext } from '../../contexts/AppContext';
-import { useConfirmation } from '../../contexts/ConfirmationContext';
+import React, { useEffect, useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import { useTranslation } from '../../hooks/useTranslation';
 
 import ProfileTab from '../user/ProfileModal';
-import SettingsTabs from './SettingsModal';
+import DataTab from './DataTab';
+import IntegrationsTab from './IntegrationsTab';
+import PreferencesTab from './PreferencesTab';
 
-import { defaultSettings, defaultUserProfile } from '../../constants';
-import { get, set } from '../../lib/idb';
-import { clearAllAppData } from '../../lib/storage';
-import { AllChatHistories, AppSettings, HistoryItem, KanbanState, UserProfile } from '../../types';
-
-interface UserSettingsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  settings: AppSettings;
-  onSaveSettings: (settings: AppSettings) => void;
-  profile: UserProfile;
-  onSaveProfile: (profile: UserProfile) => void;
-  isExample: boolean;
-}
-
-interface BackupData {
-  timestamp: string;
-  version: string;
-  settings: AppSettings;
-  profile: UserProfile;
-  history: HistoryItem[];
-  kanban: KanbanState | null;
-  chats: AllChatHistories;
-}
 
 const TabButton: React.FC<{ label: string; icon: React.ElementType; isActive: boolean; onClick: () => void }> = ({ label, icon: Icon, isActive, onClick }) => (
   <button
@@ -49,12 +25,17 @@ const TabButton: React.FC<{ label: string; icon: React.ElementType; isActive: bo
   </button>
 );
 
-const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ isOpen, onClose, settings, onSaveSettings, profile, onSaveProfile, isExample }) => {
-  const { t } = useTranslation(['settings', 'common', 'tabs']);
-  const { addNotification } = useNotification();
-  const { showConfirmation } = useConfirmation();
-  const { resetApplication } = useAppContext();
-  const importFileRef = useRef<HTMLInputElement>(null);
+const UserSettingsModal: React.FC = () => {
+  const { t } = useTranslation(['settings', 'common']);
+  const {
+    isUserSettingsModalOpen,
+    setIsUserSettingsModalOpen,
+    settings,
+    setSettings,
+    userProfile: profile,
+    setUserProfile,
+    isExample
+  } = useProjectContext();
 
   const [activeTab, setActiveTab] = useState('profile');
   const [currentSettings, setCurrentSettings] = useState(settings);
@@ -62,127 +43,21 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ isOpen, onClose, 
 
   // Reset local state when modal opens or props change
   useEffect(() => {
-    if (isOpen) {
+    if (isUserSettingsModalOpen) {
       setCurrentSettings(settings);
       setCurrentProfile(profile);
     }
-  }, [isOpen, settings, profile]);
-
-  const handleSaveProfile = () => {
-    onSaveProfile(currentProfile);
-    addNotification({ message: t('notifications.profileSaved'), type: 'success' });
-  };
-
-  const handleSaveSettings = () => {
-    onSaveSettings(currentSettings);
-    addNotification({ message: t('notifications.settingsSaved'), type: 'success' });
-  };
+  }, [isUserSettingsModalOpen, settings, profile]);
 
   const handleSave = () => {
     if (activeTab === 'profile') {
-      handleSaveProfile();
+      setUserProfile(currentProfile);
+      addNotification({ message: t('notifications.profileSaved'), type: 'success' });
     } else {
-      handleSaveSettings();
+      setSettings(currentSettings);
+      addNotification({ message: t('notifications.settingsSaved'), type: 'success' });
     }
-    onClose();
-  };
-
-  const handleExport = async () => {
-    try {
-      const history = await get<HistoryItem[]>('analysisHistory') || [];
-      const kanban = await get<KanbanState | null>('kanbanState') || null;
-      const chats = await get<AllChatHistories>('allChatHistories') || {};
-
-      if (history.length === 0 && !kanban && Object.keys(chats).length === 0) {
-        addNotification({ message: t('importExport.noData'), type: 'info' });
-        return;
-      }
-
-      const backupData: BackupData = {
-        timestamp: new Date().toISOString(),
-        version: '1.0.0', // Basic versioning
-        settings: settings,
-        profile: profile,
-        history: history,
-        kanban: kanban,
-        chats: chats,
-      };
-
-      const jsonString = JSON.stringify(backupData, null, 2);
-      const blob = new Blob([jsonString], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const date = new Date().toISOString().split('T')[0];
-      a.download = `gemx_backup_${date}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      addNotification({ message: t('notifications.exportSuccess'), type: 'success' });
-    } catch (error: any) {
-      console.error('Export failed:', error);
-      addNotification({ message: t('notifications.exportError'), type: 'error' });
-    }
-  };
-
-  const handleImport = async (file: File) => {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      try {
-        const content = event.target?.result as string;
-        if (!content) {
-          throw new Error(t('importExport.emptyFile'));
-        }
-        const importedData: BackupData = JSON.parse(content);
-
-        // Basic validation
-        if (!importedData.version || !importedData.settings || !importedData.profile || !Array.isArray(importedData.history)) {
-          throw new Error(t('importExport.invalidFile'));
-        }
-
-        showConfirmation({
-          title: t('importExport.confirm.title'),
-          message: t('importExport.confirm.message'),
-          confirmText: t('importExport.importLabel'),
-          onConfirm: async () => {
-            try {
-              await clearAllAppData();
-
-              // Merge imported settings with defaults to ensure compatibility
-              const finalSettings = { ...defaultSettings, ...importedData.settings };
-              const finalProfile = { ...defaultUserProfile, ...importedData.profile };
-
-              await set('appSettings', finalSettings);
-              await set('userProfile', finalProfile);
-              await set('analysisHistory', importedData.history);
-              await set('kanbanState', importedData.kanban);
-              await set('allChatHistories', importedData.chats);
-
-              addNotification({ message: t('notifications.importSuccess'), type: 'success' });
-
-              // Use the context to trigger a "hard reset" without a full page reload
-              resetApplication();
-
-            } catch (error: any) {
-              addNotification({ message: error.message, type: 'error' });
-            }
-          },
-          onCancel: () => {
-            addNotification({ message: t('notifications.importAborted'), type: 'info' });
-          }
-        });
-
-      } catch (error: any) {
-        console.error('Import failed:', error);
-        addNotification({ message: error.message || t('notifications.importError'), type: 'error' });
-      } finally {
-        if (importFileRef.current) importFileRef.current.value = '';
-      }
-    };
-    reader.readAsText(file);
+    setIsUserSettingsModalOpen(false);
   };
 
   const tabs = [
@@ -192,32 +67,18 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ isOpen, onClose, 
     { id: 'data', label: t('tabs.data'), icon: Database },
   ];
 
+  const { addNotification } = useNotification();
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'profile':
         return <ProfileTab profile={currentProfile} onProfileChange={setCurrentProfile} />;
       case 'preferences':
+        return <PreferencesTab settings={currentSettings} onSettingsChange={setCurrentSettings} />;
       case 'integrations':
-        return <SettingsTabs settings={currentSettings} onSettingsChange={setCurrentSettings} />;
+        return <IntegrationsTab settings={currentSettings} onSettingsChange={setCurrentSettings} />;
       case 'data':
-        return (
-          <div className="p-4 space-y-4">
-            <h3 className="text-lg font-semibold text-white">{t('importExport.title')}</h3>
-            <p className="text-sm text-gray-400">{t('importExport.description')}</p>
-            <div className="p-4 bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 rounded-lg text-sm">
-              {t('importExport.warning')}
-            </div>
-            <div className="flex gap-4">
-              <input title='Import JSON file' type="file" ref={importFileRef} onChange={(e) => e.target.files && handleImport(e.target.files[0])} className="hidden" accept=".json" />
-              <button onClick={() => importFileRef.current?.click()} className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-md hover:bg-blue-700">
-                {t('importExport.importLabel')}
-              </button>
-              <button onClick={handleExport} disabled={isExample} className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-gray-700 rounded-md hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                {t('importExport.exportLabel')}
-              </button>
-            </div>
-          </div>
-        );
+        return <DataTab isExample={isExample} />;
       default:
         return null;
     }
@@ -225,12 +86,12 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ isOpen, onClose, 
 
   return (
     <AnimatePresence>
-      {isOpen && (
+      {isUserSettingsModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={() => setIsUserSettingsModalOpen(false)}
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
           <motion.div
@@ -256,7 +117,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({ isOpen, onClose, 
               ))}
             </div>
 
-            <div className="overflow-y-auto grow p-4">
+            <div className="overflow-y-auto grow p-6">
               {renderTabContent()}
             </div>
 

@@ -24,6 +24,7 @@ const ProjectInput: React.FC = () => {
     usageTracking,
     isExample
   } = useProjectContext();
+
   const { t } = useTranslation(['input', 'common', 'tokenUsage']);
   const [activeFileId, setActiveFileId] = useState<number | null>(null);
   const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
