@@ -1,14 +1,17 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Database, Link as LinkIcon, Settings as SettingsIcon, User, X } from 'lucide-react';
+import { BarChart3, Beaker, Database, Link as LinkIcon, Settings as SettingsIcon, Shield, User, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { useUser } from '../../contexts/UserContext';
 import ProfileModal from '../user/ProfileModal';
+import AdvancedTab from './AdvancedTab';
+import AnalyticsTab from './AnalyticsTab';
 import DataTab from './DataTab';
+import GeneralTab from './GeneralTab';
 import IntegrationsTab from './IntegrationsTab';
-import PreferencesTab from './PreferencesTab';
+import SecurityTab from './SecurityTab';
 
-type Tab = 'profile' | 'preferences' | 'integrations' | 'data';
+type Tab = 'profile' | 'general' | 'analytics' | 'security' | 'integrations' | 'advanced' | 'data';
 
 const UserSettingsModal: React.FC = () => {
   const { isExample } = useProjectContext();
@@ -17,8 +20,11 @@ const UserSettingsModal: React.FC = () => {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
-    { id: 'preferences', label: 'Preferences', icon: SettingsIcon },
+    { id: 'general', label: 'General', icon: SettingsIcon },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'security', label: 'Security', icon: Shield },
     { id: 'integrations', label: 'Integrations', icon: LinkIcon },
+    { id: 'advanced', label: 'Advanced', icon: Beaker },
     { id: 'data', label: 'Data', icon: Database },
   ];
 
@@ -70,8 +76,11 @@ const UserSettingsModal: React.FC = () => {
               {/* Content */}
               <div className="w-3/4 p-6 overflow-y-auto">
                 {activeTab === 'profile' && <ProfileModal />}
-                {activeTab === 'preferences' && <PreferencesTab />}
+                {activeTab === 'general' && <GeneralTab />}
+                {activeTab === 'analytics' && <AnalyticsTab />}
+                {activeTab === 'security' && <SecurityTab />}
                 {activeTab === 'integrations' && <IntegrationsTab />}
+                {activeTab === 'advanced' && <AdvancedTab />}
                 {activeTab === 'data' && <DataTab isExample={isExample} />}
               </div>
             </div>
