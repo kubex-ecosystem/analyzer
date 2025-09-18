@@ -13,7 +13,7 @@ export interface UserSettings {
 
   // API Configuration
   userApiKey?: string;
-  apiProvider?: 'openai' | 'claude' | 'gemini' | 'ollama' | 'custom';
+  apiProvider?: 'openai' | 'claude' | 'gemini' | 'ollama' | 'groq' | 'custom';
   customApiEndpoint?: string;
 
   // Token limits and usage

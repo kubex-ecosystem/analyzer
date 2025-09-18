@@ -1,8 +1,8 @@
 import { Check, Loader2, Shield, X } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/UserContext';
-import { testApiKey } from '../../services/gemini/api';
+import { Provider, unifiedAI } from '../../services/unified-ai';
 import { UserSettings } from '../../types';
 
 interface SecurityTabProps {
@@ -16,8 +16,43 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
   const [apiKey, setApiKey] = useState(userSettings.userApiKey || '');
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testStatus, setTestStatus] = useState<'success' | 'failure' | null>(null);
+  const [availableProviders, setAvailableProviders] = useState<Provider[]>([]);
+  const [isLoadingProviders, setIsLoadingProviders] = useState(true);
 
-  const handleFieldChange = (key: keyof UserSettings, value: any) => {
+  // Carregar providers disponíveis do backend
+  useEffect(() => {
+    const loadProviders = async () => {
+      try {
+        const providers = await unifiedAI.getProviders();
+        setAvailableProviders(providers);
+
+        addNotification({
+          message: `🔌 Found ${providers.length} available providers: ${providers.map(p => p.name).join(', ')}`,
+          type: 'success'
+        });
+      } catch (error) {
+        console.error('Failed to load providers:', error);
+        // Fallback para providers padrão se não conseguir carregar do backend
+        const fallbackProviders: Provider[] = [
+          { id: 'openai', name: 'OpenAI', models: [], available: true },
+          { id: 'claude', name: 'Claude', models: [], available: true },
+          { id: 'gemini', name: 'Google Gemini', models: [], available: true },
+          { id: 'ollama', name: 'Ollama', models: [], available: true },
+          { id: 'groq', name: 'Groq', models: [], available: true }
+        ];
+        setAvailableProviders(fallbackProviders);
+
+        addNotification({
+          message: '⚠️ Using default providers - backend connection failed',
+          type: 'info'
+        });
+      } finally {
+        setIsLoadingProviders(false);
+      }
+    };
+
+    loadProviders();
+  }, [addNotification]); const handleFieldChange = (key: keyof UserSettings, value: any) => {
     updateUserSetting(key, value);
 
     // Feedback para mudanças de configuração
@@ -50,22 +85,41 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
   };
 
   const handleTestApiKey = async () => {
-    setIsTestingKey(true);
-    const isValid = await testApiKey(apiKey);
-    setTestStatus(isValid ? 'success' : 'failure');
-    setIsTestingKey(false);
-
-    // Feedback para teste de API key
-    if (isValid) {
+    if (!userSettings.apiProvider || !apiKey) {
       addNotification({
-        message: '✅ API key is valid and working correctly',
-        type: 'success'
-      });
-    } else {
-      addNotification({
-        message: '❌ API key test failed - please verify your key',
+        message: '❌ Please select a provider and enter an API key',
         type: 'error'
       });
+      return;
+    }
+
+    setIsTestingKey(true);
+
+    try {
+      // Use o unified AI service para testar a API key
+      const result = await unifiedAI.testProvider(userSettings.apiProvider, apiKey);
+      setTestStatus(result ? 'success' : 'failure');
+
+      if (result) {
+        addNotification({
+          message: `✅ ${userSettings.apiProvider.toUpperCase()} API key is valid and working correctly`,
+          type: 'success'
+        });
+      } else {
+        addNotification({
+          message: `❌ ${userSettings.apiProvider.toUpperCase()} API key test failed - please verify your key`,
+          type: 'error'
+        });
+      }
+    } catch (error) {
+      console.error('API key test error:', error);
+      setTestStatus('failure');
+      addNotification({
+        message: '❌ Failed to test API key - please check your connection',
+        type: 'error'
+      });
+    } finally {
+      setIsTestingKey(false);
     }
   };
 
@@ -94,18 +148,23 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
           <div className="flex items-start justify-between">
             <div>
               <label htmlFor="apiProvider" className="font-medium text-gray-200">API Provider</label>
-              <p className="text-sm text-gray-400">Choose your preferred AI provider.</p>
+              <p className="text-sm text-gray-400">
+                Choose your preferred AI provider.
+                {isLoadingProviders && <span className="text-blue-400"> Loading providers...</span>}
+              </p>
             </div>
             <select
               id="apiProvider"
               value={userSettings.apiProvider || 'gemini'}
               onChange={(e) => handleFieldChange('apiProvider', e.target.value as UserSettings['apiProvider'])}
               className="mt-1 px-3 py-1 bg-gray-700 border border-gray-600 rounded-md text-white"
+              disabled={isLoadingProviders}
             >
-              <option value="openai">OpenAI</option>
-              <option value="claude">Claude</option>
-              <option value="gemini">Google Gemini</option>
-              <option value="ollama">Ollama</option>
+              {availableProviders.map(provider => (
+                <option key={provider.id} value={provider.id} disabled={!provider.available}>
+                  {provider.name} {!provider.available && '(Unavailable)'}
+                </option>
+              ))}
               <option value="custom">Custom</option>
             </select>
           </div>
