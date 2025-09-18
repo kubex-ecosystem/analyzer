@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { FileText, ListChecks, Star, Zap } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useUser } from '../../contexts/UserContext';
 import { AnalysisType, ViewType } from '../../types';
 import DashboardEmptyState from './DashboardEmptyState';
 import DashboardInsightCard from './DashboardInsightCard';
@@ -29,9 +30,10 @@ const Dashboard: React.FC = () => {
     activeProjectId,
     setActiveProjectId,
     setCurrentView,
-    userProfile,
     activeProject
   } = useProjectContext();
+
+  const { name: userName } = useUser();
 
   const projectOptions = useMemo(() => projects.filter(p => p.id !== 'example-project-id'), [projects]);
 
@@ -77,7 +79,7 @@ const Dashboard: React.FC = () => {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Welcome, {userProfile.name}!</h1>
+          <h1 className="text-3xl font-bold text-white">Welcome, {userName || 'User'}!</h1>
           <p className="text-gray-400">Here's a summary of your projects.</p>
         </div>
         <div className="w-full sm:w-auto">

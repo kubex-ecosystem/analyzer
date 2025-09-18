@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Database, Link as LinkIcon, Settings as SettingsIcon, User, X } from 'lucide-react';
 import React, { useState } from 'react';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useUser } from '../../contexts/UserContext';
 import ProfileModal from '../user/ProfileModal';
 import DataTab from './DataTab';
 import IntegrationsTab from './IntegrationsTab';
@@ -10,8 +11,13 @@ import PreferencesTab from './PreferencesTab';
 type Tab = 'profile' | 'preferences' | 'integrations' | 'data';
 
 const UserSettingsModal: React.FC = () => {
-  const { isUserSettingsModalOpen, setIsUserSettingsModalOpen, settings, setSettings, isExample } = useProjectContext();
+  const { isExample } = useProjectContext();
+  const { isUserSettingsModalOpen, setIsUserSettingsModalOpen, userSettings: settings, setUserSettings: setSettings } = useUser();
   const [activeTab, setActiveTab] = useState<Tab>('profile');
+
+  // Função para adaptar UserSettings para AppSettings (temporário)
+  const adaptToAppSettings = (userSettings: any) => userSettings;
+  const adaptFromAppSettings = (appSettings: any) => setSettings(appSettings);
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -54,8 +60,8 @@ const UserSettingsModal: React.FC = () => {
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id as Tab)}
                       className={`w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md ${activeTab === tab.id
-                          ? 'bg-purple-900/50 text-white'
-                          : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
+                        ? 'bg-purple-900/50 text-white'
+                        : 'text-gray-400 hover:bg-gray-700/50 hover:text-white'
                         }`}
                     >
                       <tab.icon className="w-4 h-4" />
@@ -68,8 +74,8 @@ const UserSettingsModal: React.FC = () => {
               {/* Content */}
               <div className="w-3/4 p-6 overflow-y-auto">
                 {activeTab === 'profile' && <ProfileModal />}
-                {activeTab === 'preferences' && <PreferencesTab settings={settings} onSettingsChange={setSettings} />}
-                {activeTab === 'integrations' && <IntegrationsTab settings={settings} onSettingsChange={setSettings} />}
+                {activeTab === 'preferences' && <PreferencesTab settings={adaptToAppSettings(settings)} onSettingsChange={adaptFromAppSettings} />}
+                {activeTab === 'integrations' && <IntegrationsTab settings={adaptToAppSettings(settings)} onSettingsChange={adaptFromAppSettings} />}
                 {activeTab === 'data' && <DataTab isExample={isExample} />}
               </div>
             </div>

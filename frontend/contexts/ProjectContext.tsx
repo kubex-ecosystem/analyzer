@@ -82,10 +82,12 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
     incrementTokenUsage,
     canUseTokens,
     name: userName,
+    email: userEmail,
     getUserTrackingMetadata
   } = useUser();
 
   // ===== STATE MANAGEMENT =====
+  const [userProfile, setUserProfile] = useState<{ name: string }>({ name: userName || 'User' });
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = usePersistentState<string | null>('activeProjectId', null);
 
@@ -152,7 +154,24 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
           const userProjects = projects.filter((p: Project) => p.id !== exampleProject.id);
           const recentHistory = userProjects.flatMap((p: Project) => p.history).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
           if (recentHistory.length > 0) {
-            const insight = await generateDashboardInsight({ name: userName || 'User' }, recentHistory, userSettings.userApiKey);
+            // Check token usage limits
+            if (!canUseTokens(500)) {
+              setDashboardInsight(null);
+              setIsInsightLoading(false);
+              return;
+            }
+
+            const metadata = getUserTrackingMetadata();
+
+            // Criar um UserProfile a partir dos dados do usuário
+            const userProfile = {
+              name: userName || 'User',
+              email: userEmail || '',
+              preferences: userSettings,
+            };
+
+            const insight = await generateDashboardInsight(userProfile, recentHistory, userSettings.userApiKey);
+
             setDashboardInsight(insight);
           }
         } catch (error: any) {

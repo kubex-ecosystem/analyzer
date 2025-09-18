@@ -95,7 +95,7 @@ AFTER:  Real APIs → Resilient Service Layer → WebSocket Updates → UI with 
 
 This directory contains the complete documentation for Kortex, built with MkDocs Material.
 
-## 🚀 Quick Start
+[[[[[   ## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -183,16 +183,6 @@ export const defaultSettings: AppSettings = {
   jiraUserEmail: '',
   jiraApiToken: '',
   enableDashboardInsights: true,
-  integrations: {
-    github: {
-      githubIntegrationEnabled: false,
-      githubRepositories: [],
-    },
-    jira: {
-      jiraIntegrationEnabled: false,
-      jiraProjects: [],
-    }
-  }
 };
 
 export const defaultUserProfile: UserProfile = {
@@ -200,3 +190,4 @@ export const defaultUserProfile: UserProfile = {
   email: '',
   avatar: '',
 };
+

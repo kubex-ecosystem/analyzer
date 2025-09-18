@@ -30,6 +30,10 @@ interface UserContextType {
   usageTracking: UsageTracking;
   setUsageTracking: (tracking: UsageTracking | ((prev: UsageTracking) => UsageTracking)) => void;
 
+  // Modal states
+  isUserSettingsModalOpen: boolean;
+  setIsUserSettingsModalOpen: (isOpen: boolean) => void;
+
   // Utility functions
   updateUserSetting: <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => void;
   incrementTokenUsage: (tokens: number) => void;
@@ -84,6 +88,9 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [userSettings, setUserSettings] = useState<UserSettings>(defaultUserSettings);
   const [integrations, setIntegrations] = useState<IntegrationSettings | null>(null);
   const [usageTracking, setUsageTracking] = useState<UsageTracking>(defaultUsageTracking);
+
+  // Modal state
+  const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
 
   // Utility function to update individual setting
   const updateUserSetting = useCallback(<K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
@@ -291,6 +298,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Usage tracking
     usageTracking,
     setUsageTracking,
+
+    // Modal states
+    isUserSettingsModalOpen,
+    setIsUserSettingsModalOpen,
 
     // Utility functions
     updateUserSetting,

@@ -9,7 +9,7 @@ interface GitHubSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (owner: string, repo: string) => void;
-  githubPat?: string;
+  githubPat: string;
 }
 
 const GitHubSearchModal: React.FC<GitHubSearchModalProps> = ({ isOpen, onClose, onImport, githubPat }) => {

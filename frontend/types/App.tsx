@@ -37,18 +37,12 @@ export interface AppSettings {
   enableTelemetry: boolean;
   autoAnalyze: boolean;
   saveHistory: boolean;
-  tokenLimit: number;
-  userApiKey?: string;
-  githubPat?: string;
-  jiraInstanceUrl?: string;
-  jiraUserEmail?: string;
-  jiraApiToken?: string;
 
   // Dashboard settings
-  enableDashboardInsights: boolean;
+  enableDashboardInsights?: boolean;
 
   // IntegrationsTabProps
-  integrations: IntegrationSettings;
+  integrations?: IntegrationSettings;
 }
 
 
@@ -57,4 +51,9 @@ export interface UserProfile {
   name: string;
   email?: string;
   avatar?: string;
+  plan?: 'free' | 'pro' | 'enterprise';
+  isEmailVerified?: boolean;
+
+  // Other profile-related fields
+
 }

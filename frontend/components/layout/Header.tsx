@@ -2,13 +2,13 @@ import { Github, History, PlusCircle, Settings } from 'lucide-react';
 import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useUser } from '../../contexts/UserContext';
 import { ViewType } from '../../types';
-import { SubtleTokenUsage } from '../common';
 
 const Header: React.FC = () => {
   const { user } = useAuth();
+  const { setIsUserSettingsModalOpen } = useUser();
   const {
-    setIsUserSettingsModalOpen,
     setIsHistoryPanelOpen,
     activeProject,
     setCurrentView,
@@ -19,11 +19,6 @@ const Header: React.FC = () => {
     setActiveProjectId(null);
     setCurrentView(ViewType.Input);
   };
-
-  const {
-    usageMetadata,
-    label
-  } = useTo();
 
   return (
     <header className="py-4 border-b border-gray-800/50">
@@ -40,9 +35,12 @@ const Header: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-4">
+          {/* New Project */}
           {user && (
             <>
+              {/* New Project */}
               <button
+                title='Create new project'
                 onClick={handleNewProject}
                 className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-700/80 border border-gray-600 rounded-lg hover:bg-gray-700 text-gray-300 hover:text-white transition-colors"
                 aria-label="Create new project"
@@ -50,15 +48,21 @@ const Header: React.FC = () => {
                 <PlusCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">New Project</span>
               </button>
+
+              {/* History */}
               <button
+                title='View history'
                 onClick={() => setIsHistoryPanelOpen(true)}
-                disabled={!activeProject}
+                // disabled={!activeProject}
                 className="p-2 text-gray-400 rounded-full hover:bg-gray-700 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="View history"
               >
                 <History className="w-5 h-5" />
               </button>
+
+              {/* Settings */}
               <button
+                title='Open settings'
                 onClick={() => setIsUserSettingsModalOpen(true)}
                 className="p-2 text-gray-400 rounded-full hover:bg-gray-700 hover:text-white"
                 aria-label="Open settings"

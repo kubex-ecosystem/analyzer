@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { initialProjectContext } from '../../constants';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
+import { useUser } from '../../contexts/UserContext';
 import { exampleProject } from '../../data/exampleAnalysis';
 import { fetchRepoContents } from '../../services/integrations/github';
 import { AnalysisType } from '../../types';
@@ -58,9 +59,10 @@ const ProjectInput: React.FC = () => {
   const {
     handleAnalyze,
     isAnalyzing,
-    settings,
     activeProject,
   } = useProjectContext();
+
+  const { userSettings, integrations } = useUser();
 
   const [projectContext, setProjectContext] = useState('');
   const [projectName, setProjectName] = useState('');
@@ -99,7 +101,12 @@ const ProjectInput: React.FC = () => {
       setProjectName(`${owner}/${repo}`);
     }
     try {
-      const content = await fetchRepoContents(`https://github.com/${owner}/${repo}`, settings.githubPat);
+      const githubPat = integrations?.github?.githubPat;
+      if (!githubPat) {
+        addNotification({ message: 'GitHub PAT is required for fetching repositories', type: 'error' });
+        return;
+      }
+      const content = await fetchRepoContents(`https://github.com/${owner}/${repo}`, githubPat);
       setProjectContext(content);
       addNotification({ message: `Successfully imported repository: ${owner}/${repo}`, type: 'success' });
     } catch (error: any) {
@@ -233,7 +240,7 @@ const ProjectInput: React.FC = () => {
         isOpen={isGithubModalOpen}
         onClose={() => setIsGithubModalOpen(false)}
         onImport={handleImportFromGithub}
-        githubPat={settings.githubPat}
+        githubPat={integrations?.github?.githubPat || ''}
       />
     </>
   );
