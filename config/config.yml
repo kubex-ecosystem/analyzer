@@ -13,11 +13,17 @@ providers:
   #   key_env: "AIzaSyDmybu7EzXMt20jLB8WVi09kTErJYR_HKI"
   #   default_model: "gemini-2.5-flash"
 
-  # openai:
-  #   type: openai
-  #   base_url: https://api.openai.com
-  #   key_env: OPENAI_API_KEY
-  #   default_model: gpt-4o-mini
+  gemini:
+    type: gemini
+    base_url: https://generativelanguage.googleapis.com
+    key_env: "AIzaSyDmybu7EzXMt20jLB8WVi09kTErJYR_HKI"
+    default_model: "gemini-2.0-flash-exp"
+
+  openai:
+    type: openai
+    base_url: https://api.openai.com
+    key_env: OPENAI_API_KEY
+    default_model: gpt-4o-mini
 
   # anthropic:
   #   type: anthropic

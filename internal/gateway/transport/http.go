@@ -233,9 +233,23 @@ func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Stream the response
+	// Create SSE coalescer to improve streaming UX
+	coalescer := NewSSECoalescer(func(content string) {
+		data, _ := json.Marshal(map[string]interface{}{
+			"content": content,
+			"done":    false,
+		})
+		fmt.Fprintf(w, "data: %s\n\n", data)
+		flusher.Flush()
+	})
+	defer coalescer.Close()
+
+	// Stream the response with coalescence
 	for chunk := range ch {
 		if chunk.Error != "" {
+			// Flush any pending content before error
+			coalescer.Close()
+
 			// Send error event
 			data, _ := json.Marshal(map[string]interface{}{
 				"error": chunk.Error,
@@ -247,16 +261,14 @@ func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if chunk.Content != "" {
-			// Send content chunk
-			data, _ := json.Marshal(map[string]interface{}{
-				"content": chunk.Content,
-				"done":    false,
-			})
-			fmt.Fprintf(w, "data: %s\n\n", data)
-			flusher.Flush()
+			// Add to coalescer instead of immediate flush
+			coalescer.AddChunk(chunk.Content)
 		}
 
 		if chunk.Done {
+			// Flush any remaining content before final chunk
+			coalescer.Close()
+
 			// Send final chunk with usage info
 			data, _ := json.Marshal(map[string]interface{}{
 				"done":  true,

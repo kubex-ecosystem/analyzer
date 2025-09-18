@@ -85,9 +85,9 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
   };
 
   const handleTestApiKey = async () => {
-    if (!userSettings.apiProvider || !apiKey) {
+    if (!userSettings.apiProvider) {
       addNotification({
-        message: '❌ Please select a provider and enter an API key',
+        message: '❌ Please select a provider first',
         type: 'error'
       });
       return;
@@ -96,44 +96,42 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
     setIsTestingKey(true);
 
     try {
-      // Use o unified AI service para testar a API key
-      const result = await unifiedAI.testProvider(userSettings.apiProvider, apiKey);
+      // Use o unified AI service para testar a conectividade do provider
+      const result = await unifiedAI.testProvider(userSettings.apiProvider);
       setTestStatus(result ? 'success' : 'failure');
 
       if (result) {
         addNotification({
-          message: `✅ ${userSettings.apiProvider.toUpperCase()} API key is valid and working correctly`,
+          message: `✅ ${userSettings.apiProvider.toUpperCase()} provider is working correctly`,
           type: 'success'
         });
       } else {
         addNotification({
-          message: `❌ ${userSettings.apiProvider.toUpperCase()} API key test failed - please verify your key`,
+          message: `❌ ${userSettings.apiProvider.toUpperCase()} provider test failed - check backend configuration`,
           type: 'error'
         });
       }
     } catch (error) {
-      console.error('API key test error:', error);
+      console.error('Provider test error:', error);
       setTestStatus('failure');
       addNotification({
-        message: '❌ Failed to test API key - please check your connection',
+        message: '❌ Failed to test provider - please check your connection',
         type: 'error'
       });
     } finally {
       setIsTestingKey(false);
     }
-  };
-
-  const renderTestButton = () => {
+  }; const renderTestButton = () => {
     if (isTestingKey) {
       return <div className="flex items-center gap-2 text-blue-400"><Loader2 className="w-4 h-4 animate-spin" /> Testing...</div>;
     }
     if (testStatus === 'success') {
-      return <div className="flex items-center gap-2 text-green-400"><Check className="w-4 h-4" /> Valid</div>;
+      return <div className="flex items-center gap-2 text-green-400"><Check className="w-4 h-4" /> Working</div>;
     }
     if (testStatus === 'failure') {
-      return <div className="flex items-center gap-2 text-red-400"><X className="w-4 h-4" /> Invalid</div>;
+      return <div className="flex items-center gap-2 text-red-400"><X className="w-4 h-4" /> Failed</div>;
     }
-    return 'Test Key';
+    return 'Test Provider';
   };
 
   return (
@@ -189,8 +187,11 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
 
           {/* API Key */}
           <div>
-            <label htmlFor="userApiKey" className="text-sm font-medium text-gray-300">Your API Key</label>
-            <p className="text-sm text-gray-400 mb-2">Provide your own API key. Stored locally and securely in your browser.</p>
+            <label htmlFor="userApiKey" className="text-sm font-medium text-gray-300">Your API Key (Optional)</label>
+            <p className="text-sm text-gray-400 mb-2">
+              Store your API key locally for reference. The backend uses its own configured keys for AI providers.
+              Test button validates backend provider connectivity.
+            </p>
             <div className="flex gap-2">
               <input
                 type="password"
