@@ -1,11 +1,19 @@
 {
   "name": "gemx-analyzer",
+  "markdown": "github",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kubex-ecosystem/gemx/analyzer.git"
+  },
+  "homepage": "https://kubex-ecosystem.github.io/gemx/analyzer/",
+  "packageManager": "npm@^10.9.2",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:static": "vite build --static",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,19 +1,19 @@
+import { Github, History, PlusCircle, Settings } from 'lucide-react';
 import React from 'react';
-import { Github, History, Settings, PlusCircle } from 'lucide-react';
-import { useProjectContext } from '../../contexts/ProjectContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useProjectContext } from '../../contexts/ProjectContext';
 import { ViewType } from '../../types';
 
 const Header: React.FC = () => {
   const { user } = useAuth();
-  const { 
+  const {
     setIsUserSettingsModalOpen,
     setIsHistoryPanelOpen,
     activeProject,
     setCurrentView,
     setActiveProjectId
   } = useProjectContext();
-  
+
   const handleNewProject = () => {
     setActiveProjectId(null);
     setCurrentView(ViewType.Input);
@@ -23,10 +23,10 @@ const Header: React.FC = () => {
     <header className="py-4 border-b border-gray-800/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/logo.svg" alt="GemX Logo" className="w-9 h-9 transition-transform hover:scale-110"/>
+          <img src="/logo.svg" alt="GemX Logo" className="w-9 h-9 transition-transform hover:scale-110" />
           <div>
             <h1 className="text-xl font-bold text-white">GemX Analyzer</h1>
-             {activeProject && (
+            {activeProject && (
               <p className="text-xs text-purple-400 font-mono -mt-1 truncate max-w-xs" title={activeProject.name}>
                 {activeProject.name}
               </p>
@@ -62,7 +62,7 @@ const Header: React.FC = () => {
             </>
           )}
           <a
-            href="https://github.com/faelmori/gemx-analyzer"
+            href="https://github.com/kubex-ecosystem/analyzer"
             target="_blank"
             rel="noopener noreferrer"
             className="text-gray-400 hover:text-white transition-transform hover:scale-110"
