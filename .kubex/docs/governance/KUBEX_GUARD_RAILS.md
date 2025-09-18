@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD033 -->
 # KUBEX Guard Rails - Demo Mode and Onboarding System
 
 import React, { useState, useEffect } from 'react';
@@ -694,7 +695,7 @@ EXEMPLO DE ESTRUTURA MCP:
                       <button
                         key={option}
                         onClick={() => setPurpose(option)}
-                        className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                        className={`+"`"+`px-3 py-2 rounded-lg text-sm border transition-colors ${
                           purpose === option
                             ? 'bg-blue-600 text-white border-blue-600'
                             : `${currentTheme.buttonSecondary} ${currentTheme.border}`
