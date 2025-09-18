@@ -8,50 +8,26 @@ Esta página fornece instruções detalhadas para instalar e configurar o GemxAn
 
 A forma mais simples de instalar o GemxAnalyzer é baixando o binário pré-compilado para sua plataforma:
 
-#### Windows
-
-```powershell
-# PowerShell
-Invoke-WebRequest -Uri "https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt_windows_amd64.exe" -OutFile "grompt.exe"
-.\grompt.exe --help
-```
-
-#### Linux
+#### Linux (exemplo local)
 
 ```bash
-# Download e instalação
-curl -L https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt_linux_amd64 -o grompt
-chmod +x grompt
-sudo mv grompt /usr/local/bin/
+make build-dev linux amd64
+./dist/analyzer_linux_amd64 gateway serve --config ./config/config.example.yml
 ```
 
-#### macOS
+#### Windows/macOS
 
-```bash
-# macOS Intel
-curl -L https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt_darwin_amd64 -o grompt
-
-# macOS Apple Silicon (M1/M2)
-curl -L https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt_darwin_arm64 -o grompt
-
-# Tornar executável e mover para PATH
-chmod +x grompt
-sudo mv grompt /usr/local/bin/
-```
+Baixe o binário correspondente em Releases. O nome segue o padrão `analyzer_<os>_<arch>`.
 
 ### Opção 2: Instalar via Make
 
 ```bash
 git clone https://github.com/kubex-ecosystem/analyzer
-cd grompt
-make install
+cd analyzer
+make build-dev linux amd64
 ```
 
-Este comando irá:
-
-1. Compilar o binário para sua plataforma
-2. Instalar em `/usr/local/bin/grompt`
-3. Tornar disponível globalmente
+Este comando compila um binário local em `dist/analyzer_linux_amd64`.
 
 ### Opção 3: Compilar do Código Fonte
 
@@ -66,13 +42,13 @@ Este comando irá:
 ```bash
 # 1. Clonar o repositório
 git clone https://github.com/kubex-ecosystem/analyzer.git
-cd grompt
+cd analyzer
 
 # 2. Compilar
-make build
+make build-dev linux amd64
 
 # 3. Executar
-./dist/grompt --help
+./dist/analyzer_linux_amd64 version
 ```
 
 #### Compilação para Outras Plataformas
@@ -96,7 +72,7 @@ make build-all
 ### 1. Verificar Instalação
 
 ```bash
-grompt --version
+./dist/analyzer_linux_amd64 version
 ```
 
 ### 2. Configurar Variáveis de Ambiente (Opcional)
@@ -129,11 +105,8 @@ export DEBUG=false
 ### 3. Primeiro Teste
 
 ```bash
-# Testar em modo demo (sem API keys)
-grompt
-
-# Testar CLI
-grompt ask "Olá mundo!" --provider demo
+# Subir gateway (modo demo)
+analyzer gateway serve --config ./config/config.example.yml
 ```
 
 ## 🔧 Configuração Avançada
@@ -144,13 +117,13 @@ Por padrão, o GemxAnalyzer roda na porta 8080. Para alterar:
 
 ```bash
 export PORT=3000
-grompt
+analyzer gateway serve --config ./config/config.example.yml
 ```
 
 Ou diretamente:
 
 ```bash
-grompt --port 3000
+analyzer gateway serve --port 3000
 ```
 
 ### Configuração de Debug
@@ -159,7 +132,7 @@ Para habilitação de logs detalhados:
 
 ```bash
 export DEBUG=true
-grompt
+analyzer gateway serve
 ```
 
 ### Configuração para Ollama Local
@@ -185,16 +158,16 @@ export OLLAMA_MODEL="llama2"
 #### "Permission denied" no Linux/macOS
 
 ```bash
-chmod +x grompt
+chmod +x analyzer_linux_amd64
 ```
 
-#### "grompt: command not found"
+#### "analyzer: command not found"
 
 Certifique-se que o binário está no PATH:
 
 ```bash
 echo $PATH
-which grompt
+which analyzer
 ```
 
 #### Porta já em uso
@@ -204,7 +177,7 @@ which grompt
 lsof -i :8080
 
 # Usar porta diferente
-grompt --port 8081
+analyzer gateway serve --port 8081
 ```
 
 #### Problemas de Firewall
@@ -220,17 +193,17 @@ sudo ufw allow 8080
 ### Logs de Debug
 
 ```bash
-DEBUG=true grompt
+DEBUG=true analyzer gateway serve
 ```
 
 ### Testar Conectividade
 
 ```bash
 # Testar se o servidor está rodando
-curl http://localhost:8080/api/health
+curl http://localhost:8080/healthz
 
-# Testar provedores de IA
-grompt ask "teste" --provider openai --dry-run
+# Testar providers/chat
+curl -s -X POST localhost:8080/v1/chat -H 'Content-Type: application/json' -d '{"provider":"oai","model":"gpt-4o-mini","messages":[{"role":"user","content":"teste"}],"stream":false}' | jq
 ```
 
 ## 📋 Requisitos do Sistema
@@ -248,22 +221,22 @@ grompt ask "teste" --provider openai --dry-run
 ### Verificar Versão Atual
 
 ```bash
-grompt --version
+./dist/analyzer_linux_amd64 version
 ```
 
 ### Atualizar para Nova Versão
 
 ```bash
-# Download manual
-curl -L https://github.com/kubex-ecosystem/analyzer/releases/latest/download/grompt_linux_amd64 -o grompt-new
-chmod +x grompt-new
-sudo mv grompt-new /usr/local/bin/grompt
+# Download manual (ajuste para seu OS/arch)
+curl -L https://github.com/kubex-ecosystem/analyzer/releases/latest/download/analyzer_linux_amd64 -o analyzer-new
+chmod +x analyzer-new
+sudo mv analyzer-new /usr/local/bin/analyzer
 
 # Ou recompilar do código
-cd grompt
+cd analyzer
 git pull
-make build
-sudo cp dist/grompt /usr/local/bin/
+make build-dev linux amd64
+sudo cp dist/analyzer_linux_amd64 /usr/local/bin/analyzer
 ```
 
 ---

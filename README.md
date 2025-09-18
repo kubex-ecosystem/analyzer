@@ -110,7 +110,7 @@ chmod +x grompt
 
 ```bash
 git clone https://github.com/kubex-ecosystem/analyzer
-cd grompt
+cd analyzer
 make build
 ./dist/grompt -h
 ```
@@ -119,7 +119,7 @@ Or you can install directly from make command:
 
 ```bash
 git clone https://github.com/kubex-ecosystem/analyzer
-cd grompt
+cd analyzer
 make install
 grompt -h
 ```
@@ -431,7 +431,7 @@ export OLLAMA_ENDPOINT=http://localhost:11434  # Ollama local models
 ```bash
 # Clone the repository
 git clone https://github.com/kubex-ecosystem/analyzer.git
-cd grompt
+cd analyzer
 
 # Development mode
 make build-dev
