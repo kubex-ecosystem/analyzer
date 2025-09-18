@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { ViewType } from '../../types';
+import { SubtleTokenUsage } from '../common';
 
 const Header: React.FC = () => {
   const { user } = useAuth();
@@ -18,6 +19,11 @@ const Header: React.FC = () => {
     setActiveProjectId(null);
     setCurrentView(ViewType.Input);
   };
+
+  const {
+    usageMetadata,
+    label
+  } = useTo();
 
   return (
     <header className="py-4 border-b border-gray-800/50">
