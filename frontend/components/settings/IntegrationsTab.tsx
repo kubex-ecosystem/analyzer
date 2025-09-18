@@ -42,6 +42,7 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
     };
 
     // Ativar integração se ambos os campos estão preenchidos
+    const wasEnabled = updatedTrello.trelloIntegrationEnabled;
     updatedTrello.trelloIntegrationEnabled = Boolean(
       updatedTrello.trelloApiKey && updatedTrello.trelloToken
     );
@@ -51,6 +52,21 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
       trello: updatedTrello
     };
     setIntegrations(updatedIntegrations);
+
+    // Feedback para mudanças na integração do Trello
+    if (value.length > 0) {
+      addNotification({
+        message: `🔗 Trello ${field === 'trelloApiKey' ? 'API key' : 'token'} updated`,
+        type: 'success'
+      });
+    }
+
+    if (!wasEnabled && updatedTrello.trelloIntegrationEnabled) {
+      addNotification({
+        message: '🎯 Trello integration activated! Both credentials provided.',
+        type: 'success'
+      });
+    }
   };
 
   const handleJiraChange = (field: 'jiraInstanceUrl' | 'jiraUserEmail' | 'jiraApiToken', value: string) => {
@@ -62,6 +78,7 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
     };
 
     // Ativar integração se todos os campos essenciais estão preenchidos
+    const wasEnabled = updatedJira.jiraIntegrationEnabled;
     updatedJira.jiraIntegrationEnabled = Boolean(
       updatedJira.jiraInstanceUrl && updatedJira.jiraUserEmail && updatedJira.jiraApiToken
     );
@@ -71,6 +88,26 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
       jira: updatedJira
     };
     setIntegrations(updatedIntegrations);
+
+    // Feedback para mudanças na integração do Jira
+    if (value.length > 0) {
+      const fieldNames = {
+        jiraInstanceUrl: 'instance URL',
+        jiraUserEmail: 'user email',
+        jiraApiToken: 'API token'
+      };
+      addNotification({
+        message: `🔗 Jira ${fieldNames[field]} updated`,
+        type: 'success'
+      });
+    }
+
+    if (!wasEnabled && updatedJira.jiraIntegrationEnabled) {
+      addNotification({
+        message: '🎯 Jira integration activated! All credentials provided.',
+        type: 'success'
+      });
+    }
   }; const testConnection = async (service: 'github' | 'trello' | 'jira') => {
     setTestingConnection(service);
 
@@ -82,12 +119,12 @@ const IntegrationsTab: React.FC<IntegrationsTabProps> = () => {
 
     if (success) {
       addNotification({
-        message: `${service.charAt(0).toUpperCase() + service.slice(1)} connection successful!`,
+        message: `✅ ${service.charAt(0).toUpperCase() + service.slice(1)} connection successful!`,
         type: 'success'
       });
     } else {
       addNotification({
-        message: `Failed to connect to ${service}. Please check your credentials.`,
+        message: `❌ Failed to connect to ${service}. Please check your credentials.`,
         type: 'error'
       });
     }

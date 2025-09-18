@@ -1,5 +1,6 @@
 import { AlertTriangle, Beaker, Zap } from 'lucide-react';
 import React from 'react';
+import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/UserContext';
 import { UserSettings } from '../../types';
 
@@ -9,9 +10,24 @@ interface AdvancedTabProps {
 
 const AdvancedTab: React.FC<AdvancedTabProps> = () => {
   const { userSettings, updateUserSetting } = useUser();
+  const { addNotification } = useNotification();
 
   const handleFieldChange = (key: keyof UserSettings, value: any) => {
     updateUserSetting(key, value);
+
+    // Feedback para mudanças de funcionalidades experimentais
+    const feedbackMessages = {
+      enableBetaFeatures: value ? 'Beta features enabled' : 'Beta features disabled',
+      enableExperimentalFeatures: value ? 'Experimental features enabled' : 'Experimental features disabled',
+    };
+
+    const message = feedbackMessages[key as keyof typeof feedbackMessages];
+    if (message) {
+      addNotification({
+        message: `⚗️ ${message}`,
+        type: 'success'
+      });
+    }
   };
 
   return (

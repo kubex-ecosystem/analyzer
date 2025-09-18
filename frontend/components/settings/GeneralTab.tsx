@@ -31,6 +31,22 @@ const GeneralTab: React.FC<GeneralTabProps> = () => {
       });
     } else {
       updateUserSetting(key, value);
+
+      // Feedback específico para cada configuração
+      const feedbackMessages = {
+        theme: `Theme changed to ${value === 'system' ? 'system default' : value} mode`,
+        autoAnalyze: `Auto analyze ${value ? 'enabled' : 'disabled'}`,
+        enableDashboardInsights: `Dashboard insights ${value ? 'enabled' : 'disabled'}`,
+        enableTelemetry: `Telemetry ${value ? 'enabled' : 'disabled'}`,
+      };
+
+      const message = feedbackMessages[key as keyof typeof feedbackMessages];
+      if (message) {
+        addNotification({
+          message: `✅ ${message}`,
+          type: 'success'
+        });
+      }
     }
   };
 

@@ -19,6 +19,20 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
 
   const handleFieldChange = (key: keyof UserSettings, value: any) => {
     updateUserSetting(key, value);
+
+    // Feedback para mudanças de configuração
+    const feedbackMessages = {
+      apiProvider: `API provider changed to ${value}`,
+      customApiEndpoint: `Custom API endpoint updated`,
+    };
+
+    const message = feedbackMessages[key as keyof typeof feedbackMessages];
+    if (message) {
+      addNotification({
+        message: `🔧 ${message}`,
+        type: 'success'
+      });
+    }
   };
 
   const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,6 +40,13 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
     setApiKey(newKey);
     updateUserSetting('userApiKey', newKey);
     setTestStatus(null);
+
+    if (newKey.length > 0) {
+      addNotification({
+        message: '🔑 API key updated',
+        type: 'success'
+      });
+    }
   };
 
   const handleTestApiKey = async () => {
@@ -33,6 +54,19 @@ const SecurityTab: React.FC<SecurityTabProps> = () => {
     const isValid = await testApiKey(apiKey);
     setTestStatus(isValid ? 'success' : 'failure');
     setIsTestingKey(false);
+
+    // Feedback para teste de API key
+    if (isValid) {
+      addNotification({
+        message: '✅ API key is valid and working correctly',
+        type: 'success'
+      });
+    } else {
+      addNotification({
+        message: '❌ API key test failed - please verify your key',
+        type: 'error'
+      });
+    }
   };
 
   const renderTestButton = () => {
