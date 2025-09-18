@@ -15,6 +15,7 @@ type Handler struct{ reg *registry.Registry }
 func New(reg *registry.Registry) *Handler { return &Handler{reg: reg} }
 
 type adviseReq struct {
+	Mode        string         `json:"mode"`
 	Provider    string         `json:"provider"`
 	Model       string         `json:"model"`
 	Scorecard   map[string]any `json:"scorecard"`
@@ -23,8 +24,7 @@ type adviseReq struct {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	mode := Mode(r.URL.Query().Get("mode"))
+	mode := r.URL.Query().Get("mode")
 	if mode == "" {
 		http.Error(w, "mode required: exec|code|ops|community", http.StatusBadRequest)
 		return
@@ -41,7 +41,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sys := systemPrompt(mode)
+	sys := SystemPrompt(in.Mode)
 	user := userPrompt(in.Scorecard, in.Hotspots)
 
 	headers := map[string]string{
@@ -77,18 +77,20 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if c.Content != "" {
 			w.Write([]byte("data: "))
 			w.Write(enc(map[string]any{"content": c.Content}))
-			w.Write([]byte("nn"))
-			flusher.Flush()
+			w.Write([]byte("\n\n"))
+			if flusher != nil {
+				flusher.Flush()
+			}
+			if c.Done {
+				w.Write([]byte("data: "))
+				w.Write(enc(map[string]any{"done": true, "usage": c.Usage, "mode": mode}))
+				w.Write([]byte("nn"))
+				flusher.Flush()
+			}
 		}
-		if c.Done {
-			w.Write([]byte("data: "))
-			w.Write(enc(map[string]any{"done": true, "usage": c.Usage, "mode": mode}))
-			w.Write([]byte("nn"))
-			flusher.Flush()
-		}
-	}
-	_ = start
+		_ = start
 
+	}
 }
 
 func userPrompt(scorecard map[string]any, hotspots []string) string {

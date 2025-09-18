@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import * as React from 'react';
+
+import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 const Loader: React.FC = () => {
   const steps = [
-      "Parsing file structure...",
-      "Evaluating architecture...",
-      "Checking code quality...",
-      "Identifying potential improvements...",
-      "Compiling the report..."
-    ];
+    "Parsing file structure...",
+    "Evaluating architecture...",
+    "Checking code quality...",
+    "Identifying potential improvements...",
+    "Compiling the report..."
+  ];
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
