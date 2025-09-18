@@ -41,7 +41,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sys := SystemPrompt(in.Mode)
+	sys := systemPrompt(in.Mode)
 	user := userPrompt(in.Scorecard, in.Hotspots)
 
 	headers := map[string]string{
@@ -90,6 +90,23 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = start
 
+	}
+}
+
+// systemPrompt retorna o prompt de sistema apropriado para o modo requerido.
+// Inclui casos para exec|code|ops|community e um fallback genérico.
+func systemPrompt(mode string) string {
+	switch mode {
+	case "exec":
+		return "You are an expert in repository execution and operational guidance. Provide clear, concise instructions focusing on runtime behavior, command usage, and how to reproduce issues."
+	case "code":
+		return "You are a code reviewer and refactorer. Provide focused suggestions to improve code quality, architecture, maintainability, and testing. Highlight concrete code changes when appropriate."
+	case "ops":
+		return "You are an infrastructure and operations expert. Suggest improvements for deployment, CI/CD, monitoring, reliability, and security relevant to this repository."
+	case "community":
+		return "You are a community and contributor experience advisor. Recommend improvements for documentation, contributing guidelines, issue templates, and onboarding for new contributors."
+	default:
+		return "You are a general repository advisor. Provide concise, actionable recommendations to improve the repository across code, operations, and contributor experience."
 	}
 }
 
