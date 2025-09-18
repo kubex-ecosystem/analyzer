@@ -12,12 +12,8 @@ type Tab = 'profile' | 'preferences' | 'integrations' | 'data';
 
 const UserSettingsModal: React.FC = () => {
   const { isExample } = useProjectContext();
-  const { isUserSettingsModalOpen, setIsUserSettingsModalOpen, userSettings: settings, setUserSettings: setSettings } = useUser();
+  const { isUserSettingsModalOpen, setIsUserSettingsModalOpen } = useUser();
   const [activeTab, setActiveTab] = useState<Tab>('profile');
-
-  // Função para adaptar UserSettings para AppSettings (temporário)
-  const adaptToAppSettings = (userSettings: any) => userSettings;
-  const adaptFromAppSettings = (appSettings: any) => setSettings(appSettings);
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -74,8 +70,8 @@ const UserSettingsModal: React.FC = () => {
               {/* Content */}
               <div className="w-3/4 p-6 overflow-y-auto">
                 {activeTab === 'profile' && <ProfileModal />}
-                {activeTab === 'preferences' && <PreferencesTab settings={adaptToAppSettings(settings)} onSettingsChange={adaptFromAppSettings} />}
-                {activeTab === 'integrations' && <IntegrationsTab settings={adaptToAppSettings(settings)} onSettingsChange={adaptFromAppSettings} />}
+                {activeTab === 'preferences' && <PreferencesTab />}
+                {activeTab === 'integrations' && <IntegrationsTab />}
                 {activeTab === 'data' && <DataTab isExample={isExample} />}
               </div>
             </div>
