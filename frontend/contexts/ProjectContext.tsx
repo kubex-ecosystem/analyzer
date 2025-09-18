@@ -1,16 +1,11 @@
 // FIX: Added full content for contexts/ProjectContext.tsx to resolve module errors.
-import React, {
-  createContext, ReactNode,   // ===== CHAT MANAGEMENT =====
-  useEffect(() => {
-    if (currentAnalysis && userSettings.userApiKey) {
-      try {
-        const newChat = createChat(userSettings.userApiKey, currentAnalysis);
-        setChatInstance(newChat);
-      } catch (error) {
-        addNotification({ message: 'Failed to initialize chat', type: 'error' });
-      }
-    }
-  }, [currentAnalysis, userSettings.userApiKey, addNotification]);, useContext, useEffect, useState } from 'react';
+import * as React from 'react';
+
+import {
+  createContext, ReactNode,
+  useCallback, // ===== CHAT MANAGEMENT =====, [currentAnalysis, userSettings.userApiKey, addNotification]);, useContext, useEffect, useState } from 'react';
+  useContext, useEffect, useState
+} from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { exampleProject } from '../data/exampleAnalysis';
 import { usePersistentState } from '../hooks/usePersistentState';
@@ -20,7 +15,7 @@ import {
   compareAnalyses,
   createChat,
   generateDashboardInsight,
-  generateSelfCritique
+  generateSelfCritique,
 } from '../services/gemini/api';
 import {
   AnalysisType,
@@ -138,26 +133,26 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
 
   // ===== CHAT MANAGEMENT =====
   useEffect(() => {
-    if (currentAnalysis && settings.userApiKey) {
+    if (currentAnalysis && userSettings.userApiKey) {
       try {
-        const newChat = createChat(settings.userApiKey, currentAnalysis);
+        const newChat = createChat(userSettings.userApiKey, currentAnalysis);
         setChatInstance(newChat);
       } catch (error: any) {
         addNotification({ message: error.message, type: 'error' });
       }
     }
-  }, [currentAnalysis, settings.userApiKey, addNotification]);
+  }, [currentAnalysis, userSettings.userApiKey, addNotification]);
 
   // ===== DASHBOARD INSIGHTS =====
   useEffect(() => {
     const fetchInsight = async () => {
-      if (currentView === ViewType.Dashboard && settings.enableDashboardInsights && settings.userApiKey && projects.length > 1) {
+      if (currentView === ViewType.Dashboard && userSettings.enableDashboardInsights && userSettings.userApiKey && projects.length > 1) {
         setIsInsightLoading(true);
         try {
-          const userProjects = projects.filter(p => p.id !== exampleProject.id);
-          const recentHistory = userProjects.flatMap(p => p.history).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
+          const userProjects = projects.filter((p: Project) => p.id !== exampleProject.id);
+          const recentHistory = userProjects.flatMap((p: Project) => p.history).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
           if (recentHistory.length > 0) {
-            const insight = await generateDashboardInsight(userProfile, recentHistory, settings.userApiKey);
+            const insight = await generateDashboardInsight({ name: userName || 'User' }, recentHistory, userSettings.userApiKey);
             setDashboardInsight(insight);
           }
         } catch (error: any) {
@@ -170,11 +165,11 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
       }
     };
     fetchInsight();
-  }, [currentView, projects, settings.enableDashboardInsights, settings.userApiKey, userProfile]);
+  }, [currentView, projects, userSettings.enableDashboardInsights, userSettings.userApiKey]);
 
   // ===== ACTIONS / HANDLERS =====
   const handleAnalyze = async (projectName: string, context: string, analysisType: AnalysisType) => {
-    if (!settings.userApiKey) {
+    if (!userSettings.userApiKey) {
       addNotification({ message: 'Please set your Gemini API key in the settings.', type: 'error' });
       return;
     }
@@ -197,7 +192,7 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
 
       if (analysisType === AnalysisType.SelfCritique) {
         if (!currentAnalysis) throw new Error("No analysis available to critique.");
-        const critiqueResult = await generateSelfCritique(currentAnalysis, settings.userApiKey);
+        const critiqueResult = await generateSelfCritique(currentAnalysis, userSettings.userApiKey);
         const updatedProject = {
           ...projectToUpdate,
           critiques: { ...projectToUpdate.critiques, [currentHistoryItem!.id]: critiqueResult }
@@ -207,7 +202,7 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
         setCurrentView(ViewType.Analysis); // Stay on the analysis view to see the critique button
         return; // Exit early
       } else {
-        analysisResult = await analyzeProject(context, analysisType, settings.userApiKey);
+        analysisResult = await analyzeProject(context, analysisType, userSettings.userApiKey);
       }
 
       const newHistoryItem: HistoryItem = {
@@ -218,7 +213,7 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
 
       const updatedProject = {
         ...projectToUpdate,
-        history: settings.saveHistory ? [...projectToUpdate.history, newHistoryItem] : [newHistoryItem],
+        history: userSettings.saveHistory ? [...projectToUpdate.history, newHistoryItem] : [newHistoryItem],
         chatHistories: { ...projectToUpdate.chatHistories, [newHistoryItem.id]: [] },
         updatedAt: new Date().toISOString(),
       };
@@ -283,7 +278,7 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
     setIsHistoryPanelOpen(false);
     try {
       const [previous, current] = [item1, item2].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      const evolutionResult = await compareAnalyses(previous.analysis, current.analysis, settings.userApiKey);
+      const evolutionResult = await compareAnalyses(previous.analysis, current.analysis, userSettings.userApiKey || '');
 
       // This is a bit of a hack: we create a temporary history item to display the evolution.
       const evolutionHistoryItem: HistoryItem = {
@@ -384,12 +379,6 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
     isChatLoading,
     isHistoryPanelOpen,
     setIsHistoryPanelOpen,
-    isUserSettingsModalOpen,
-    setIsUserSettingsModalOpen,
-    settings,
-    setSettings,
-    userProfile,
-    setUserProfile,
     currentAnalysis,
     activeHistoryId,
     evolutionAnalysis,

@@ -51,10 +51,7 @@ export interface AppSettings {
   integrations: IntegrationSettings;
 }
 
-export interface UsageTracking {
-  totalTokens: number;
-  monthlyTokens: number;
-}
+
 
 export interface UserProfile {
   name: string;

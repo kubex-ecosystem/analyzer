@@ -34,6 +34,11 @@ export interface UsageTracking {
   dailyTokens: number;
   monthlyTokens: number;
   lastResetDate: string;
+  analysisCount?: number;
+  projectCount?: number;
+  kanbanBoardCount?: number;
+  chatSessionCount?: number;
+  dashboardViewCount?: number;
 }
 
 // Metadados para rastreabilidade sem dados sensíveis
