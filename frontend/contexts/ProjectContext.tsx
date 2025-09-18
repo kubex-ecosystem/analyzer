@@ -66,11 +66,42 @@ interface ProjectContextType {
   handleDeleteHistoryItem: (id: number) => Promise<void>;
   handleCreateKanbanBoard: () => void;
   handleClearHistory: () => void;
+  handleImportHistory: (data: any) => Promise<void>;
+  handleExportHistory: (file: File) => Promise<void>;
 
   // Dashboard
   dashboardInsight: DashboardInsight | null;
   isInsightLoading: boolean;
 }
+
+const handleExportHistory = async (file: File): Promise<void> => {
+  const text = await file.text();
+  try {
+    const data = JSON.parse(text);
+    if (!data.id || !data.name) {
+      throw new Error("Invalid project data.");
+    }
+    const project: Project = data;
+    // Trigger file download
+  } catch (error) {
+    console.error("Failed to import history:", error);
+    throw new Error("Invalid file format.");
+  }
+};
+
+const handleImportHistory = async (data: any): Promise<void> => {
+  try {
+    const project: Project = data;
+    if (!project.id || !project.name) {
+      throw new Error("Invalid project data.");
+    }
+    // Save to IndexedDB
+    await setProject(project);
+  } catch (error) {
+    console.error("Failed to import history:", error);
+    throw new Error("Invalid file format.");
+  }
+};
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
@@ -405,6 +436,8 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
     setKanbanState,
     currentChatHistory,
     suggestedQuestions,
+    handleImportHistory,
+    handleExportHistory,
     handleAnalyze,
     handleSendMessage,
     handleSelectHistoryItem,

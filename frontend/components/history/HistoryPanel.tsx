@@ -1,15 +1,18 @@
+import * as React from 'react';
+
 import { AnimatePresence, motion } from 'framer-motion';
 import { GitCompareArrows, History as HistoryIcon, Trash2, X } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 
 const HistoryPanel: React.FC = () => {
   const {
+    handleImportHistory,
+    handleExportHistory,
+
     isHistoryPanelOpen,
     setIsHistoryPanelOpen,
     activeProject,
-    handleImportHistory,
-    handleExportHistory,
     handleSelectHistoryItem,
     handleCompareHistoryItems,
     handleDeleteHistoryItem,
@@ -39,6 +42,32 @@ const HistoryPanel: React.FC = () => {
       setSelectedForCompare([]);
     }
   }
+
+  const handleImportHistoryClick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e) return;
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      try {
+        await handleImportHistory(file);
+        e.target.value = ''; // Reset the input
+      } catch (error) {
+        console.error('Error importing history:', error);
+        alert('Failed to import history. Please check the file format.');
+      }
+    }
+  }
+
+  const handleExportHistoryClick = async (e: any) => {
+    if (!e) return;
+    if (e.activeProject && e.activeProject.id) {
+      try {
+        const exported = await handleExportHistory(e.activeProject.id);
+      } catch (error) {
+        console.error('Error exporting history:', error);
+        alert('Failed to export history. Please try again later.');
+      }
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -108,17 +137,37 @@ const HistoryPanel: React.FC = () => {
             </div>
 
             {/* Footer */}
-            {history.length > 0 && (
-              <div className="p-4 bg-gray-900/50 border-t border-gray-700 space-y-3">
+            {/* {history.length > 0 && ( */}
+            <div className="p-4 bg-gray-900/50 border-t border-gray-700 space-y-3">
+              <div className="flex gap-2">
+                <label className="w-full">
+                  <span className="sr-only">Import History</span>
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleImportHistoryClick}
+                    className="w-full px-4 py-2 text-sm text-gray-300 bg-gray-700 border border-gray-600 rounded-md cursor-pointer hover:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </label>
                 <button
-                  onClick={handleCompareClick}
-                  disabled={!canCompare}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title='Export History'
+                  onClick={handleExportHistoryClick}
+                  disabled={!activeProject || history.length === 0}
+                  className="w-full px-4 py-2 text-sm font-semibold text-white bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-700/80 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <GitCompareArrows className="w-4 h-4" /> {`Compare Selected (${selectedForCompare.length})`}
+                  Export History
                 </button>
               </div>
-            )}
+
+              <button
+                onClick={handleCompareClick}
+                disabled={!canCompare}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <GitCompareArrows className="w-4 h-4" /> {`Compare Selected (${selectedForCompare.length})`}
+              </button>
+            </div>
+            {/* )} */}
           </motion.div>
         </motion.div>
       )}
