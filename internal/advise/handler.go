@@ -23,6 +23,7 @@ type adviseReq struct {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
 	mode := Mode(r.URL.Query().Get("mode"))
 	if mode == "" {
 		http.Error(w, "mode required: exec|code|ops|community", http.StatusBadRequest)
@@ -88,4 +89,15 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	_ = start
 
+}
+
+func userPrompt(scorecard map[string]any, hotspots []string) string {
+	scorecardStr, _ := json.MarshalIndent(scorecard, "", "  ")
+	hotspotsStr, _ := json.MarshalIndent(hotspots, "", "  ")
+
+	return `Here are the scorecard results for a software repository:
+` + "```json\n" + string(scorecardStr) + "\n```\n" + `
+Here are some identified hotspots in the repository that may need attention:
+` + "```json\n" + string(hotspotsStr) + "\n```\n" + `
+Based on the above scorecard results and hotspots, please provide specific, actionable advice to improve the repository. Focus on practical steps that can be taken to address any issues or weaknesses identified. Be concise and prioritize the most impactful recommendations.`
 }

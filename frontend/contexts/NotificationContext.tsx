@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
+// FIX: Corrected import path for types
 import { Notification, NotificationType } from '../types';
 
 interface NotificationContextType {

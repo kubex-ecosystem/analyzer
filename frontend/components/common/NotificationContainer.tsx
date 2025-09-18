@@ -1,5 +1,5 @@
+import React from 'react';
 import { AnimatePresence } from 'framer-motion';
-import * as React from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import NotificationToast from './NotificationToast';
 

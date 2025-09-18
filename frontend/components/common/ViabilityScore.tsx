@@ -1,5 +1,5 @@
+import React from 'react';
 import { motion } from 'framer-motion';
-import * as React from 'react';
 
 interface ViabilityScoreProps {
   score: number; // score out of 10
@@ -51,7 +51,7 @@ const ViabilityScore: React.FC<ViabilityScoreProps> = ({ score }) => {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <motion.span
+        <motion.span 
           className="text-4xl font-bold text-white"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

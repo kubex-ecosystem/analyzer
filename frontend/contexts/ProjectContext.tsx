@@ -1,425 +1,414 @@
-import { Chat } from '@google/genai';
-import * as React from 'react';
-import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
-import { defaultSettings, defaultUserProfile, initialProjectContext } from '../constants';
-import { exampleAnalysis, exampleHistory } from '../data/exampleAnalysis';
-import { usePersistentState } from '../hooks/usePersistentState';
-import { useTranslation } from '../hooks/useTranslation';
-import { analyzeProject, compareAnalyses, createChatSession, generateDashboardInsight, generateSuggestedQuestions } from '../services/gemini';
+// FIX: Added full content for contexts/ProjectContext.tsx to resolve module errors.
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import {
-  AllChatHistories,
-  AnalysisType,
-  AppSettings,
-  ChatMessage,
-  DashboardInsight,
-  EvolutionAnalysis, HistoryItem, KanbanState,
+  Project,
   ProjectAnalysis,
-  ProjectFile,
-  UsageTracking, UserProfile,
-  ViewType
+  HistoryItem,
+  AppSettings,
+  UserProfile,
+  ViewType,
+  AnalysisType,
+  KanbanState,
+  KanbanCard,
+  KanbanTaskSuggestion,
+  EvolutionAnalysis,
+  SelfCritiqueAnalysis,
+  DashboardInsight
 } from '../types';
-import { useLanguage } from './LanguageContext';
+import {
+  analyzeProject,
+  createChat,
+  compareAnalyses,
+  generateSelfCritique,
+  generateDashboardInsight
+} from '../services/gemini/api';
+import { usePersistentState } from '../hooks/usePersistentState';
 import { useNotification } from './NotificationContext';
+import { defaultSettings, defaultUserProfile } from '../constants';
+import { exampleProject } from '../data/exampleAnalysis';
+import { getAllProjects, setProject, deleteProject as dbDeleteProject } from '../lib/idb';
+import { v4 as uuidv4 } from 'uuid';
+// FIX: Replaced deprecated ChatMessage with Content and Chat
+import { Content, Chat } from '@google/genai';
 
-// Helper functions
-const createInitialKanbanState = (analysis: ProjectAnalysis): KanbanState => {
-  const backlogCards = analysis.improvements.map((imp, index) => ({
-    id: `card-${Date.now()}-${index}`,
-    title: imp.title,
-    description: imp.description,
-    priority: imp.priority,
-    difficulty: imp.difficulty,
-    tags: [imp.priority],
-    notes: '',
-  }));
-  return {
-    projectName: analysis.projectName,
-    columns: {
-      backlog: { id: 'backlog', title: 'Backlog', cards: backlogCards },
-      todo: { id: 'todo', title: 'To Do', cards: [] },
-      inProgress: { id: 'inProgress', title: 'In Progress', cards: [] },
-      done: { id: 'done', title: 'Done', cards: [] },
-    },
-  };
-};
-
-const parseContextToFiles = (context: string): ProjectFile[] => {
-  if (!context) return [];
-  const fileRegex = /\/\/ \/ (.*?) \/ \/\//g;
-  const parts = context.split(fileRegex);
-  if (parts.length <= 1) {
-    return [{ id: Date.now(), name: 'project_context.txt', content: context.trim() }];
-  }
-  const files: ProjectFile[] = [];
-  for (let i = 1; i < parts.length; i += 2) {
-    const name = parts[i].trim();
-    const content = parts[i + 1]?.trim() || '';
-    if (name) files.push({ id: Date.now() + i, name, content });
-  }
-  return files;
-};
-
-// State backup type for example mode
-interface PreExampleState {
-  history: HistoryItem[];
-  kanbanState: KanbanState | null;
-  projectFiles: ProjectFile[];
-}
-
-
-// Context Types
 interface ProjectContextType {
-  isLoading: boolean;
-  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  isChatLoading: boolean;
-  projectFiles: ProjectFile[];
-  setProjectFiles: React.Dispatch<React.SetStateAction<ProjectFile[]>>;
-  currentAnalysis: ProjectAnalysis | null;
-  evolutionAnalysis: EvolutionAnalysis | null;
-  history: HistoryItem[];
-  kanbanState: KanbanState | null;
-  setKanbanState: React.Dispatch<React.SetStateAction<KanbanState | null>>;
-  settings: AppSettings;
-  setSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
-  userProfile: UserProfile;
-  setUserProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
-  usageTracking: UsageTracking;
+  projects: Project[];
+  activeProjectId: string | null;
+  setActiveProjectId: (id: string | null) => void;
+  activeProject: Project | null;
   isExample: boolean;
-  selectedProject: string | null;
-  setSelectedProject: React.Dispatch<React.SetStateAction<string | null>>;
-  deletingHistoryId: number | null;
+  currentView: ViewType;
+  setCurrentView: (view: ViewType) => void;
+  isAnalyzing: boolean;
+  isChatLoading: boolean;
   isHistoryPanelOpen: boolean;
-  setIsHistoryPanelOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setIsHistoryPanelOpen: (isOpen: boolean) => void;
   isUserSettingsModalOpen: boolean;
-  setIsUserSettingsModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  chatHistory: ChatMessage[];
+  setIsUserSettingsModalOpen: (isOpen: boolean) => void;
+  settings: AppSettings;
+  setSettings: (settings: AppSettings) => void;
+  userProfile: UserProfile;
+  setUserProfile: (profile: UserProfile) => void;
+  
+  // Analysis and data
+  currentAnalysis: ProjectAnalysis | null;
+  activeHistoryId: number | null;
+  evolutionAnalysis: EvolutionAnalysis | null;
+  kanbanState: KanbanState | null;
+  setKanbanState: (state: KanbanState) => void;
+  
+  // Chat
+  currentChatHistory: Content[];
   suggestedQuestions: string[];
-  isSuggestionsLoading: boolean;
+
+  // Actions
+  handleAnalyze: (projectName: string, context: string, analysisType: AnalysisType) => Promise<void>;
+  handleSendMessage: (message: string) => Promise<void>;
+  handleSelectHistoryItem: (id: number) => void;
+  handleCompareHistoryItems: (id1: number, id2: number) => Promise<void>;
+  handleDeleteHistoryItem: (id: number) => Promise<void>;
+  handleCreateKanbanBoard: () => void;
+  handleClearHistory: () => void;
+  
+  // Dashboard
   dashboardInsight: DashboardInsight | null;
   isInsightLoading: boolean;
-  view: ViewType;
-  setView: React.Dispatch<React.SetStateAction<ViewType>>;
-  handleAnalyze: (analysisType: AnalysisType) => Promise<ProjectAnalysis | void>;
-  handleCompare: (ids: number[]) => Promise<EvolutionAnalysis | void>;
-  handleShowExample: () => void;
-  handleExitExample: () => void;
-  handleLoadHistoryItem: (item: HistoryItem) => void;
-  handleDeleteHistoryItem: (id: number) => void;
-  handleClearHistory: () => void;
-  handleSendChatMessage: (message: string) => Promise<void>;
-  handleNavigateToKanban: () => void;
-  handleImportAnalysis: (analysis: ProjectAnalysis) => void;
-  fetchDashboardInsight: () => Promise<void>;
 }
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [projectFiles, setProjectFiles] = usePersistentState<ProjectFile[]>('projectFiles', []);
-  const [currentAnalysis, setCurrentAnalysis] = useState<ProjectAnalysis | null>(null);
-  const [evolutionAnalysis, setEvolutionAnalysis] = useState<EvolutionAnalysis | null>(null);
-  const [history, setHistory] = usePersistentState<HistoryItem[]>('analysisHistory', []);
-  const [kanbanState, setKanbanState] = usePersistentState<KanbanState | null>('kanbanState', null);
+export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { addNotification } = useNotification();
+  
+  // ===== STATE MANAGEMENT =====
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [activeProjectId, setActiveProjectId] = usePersistentState<string | null>('activeProjectId', null);
+  
   const [settings, setSettings] = usePersistentState<AppSettings>('appSettings', defaultSettings);
   const [userProfile, setUserProfile] = usePersistentState<UserProfile>('userProfile', defaultUserProfile);
-  const [usageTracking, setUsageTracking] = usePersistentState<UsageTracking>('usageTracking', { totalTokens: 0, monthlyTokens: 0 });
-  const [isExample, setIsExample] = useState(false);
-  const [preExampleState, setPreExampleState] = useState<PreExampleState | null>(null);
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
+
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isChatLoading, setIsChatLoading] = useState(false);
   const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
   const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
-  const [deletingHistoryId, setDeletingHistoryId] = useState<number | null>(null);
-  const [view, setView] = useState<ViewType>(ViewType.Dashboard);
+  
+  const [currentView, setCurrentView] = useState<ViewType>(ViewType.Dashboard);
+  const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null);
+  const [chatInstance, setChatInstance] = useState<Chat | null>(null);
 
-  // Chat State
-  const [chatSession, setChatSession] = useState<Chat | null>(null);
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const [currentHistoryId, setCurrentHistoryId] = useState<number | null>(null);
-  const [allChatHistories, setAllChatHistories] = usePersistentState<AllChatHistories>('allChatHistories', {});
-  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
-  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
-
-  // Dashboard State
   const [dashboardInsight, setDashboardInsight] = useState<DashboardInsight | null>(null);
   const [isInsightLoading, setIsInsightLoading] = useState(false);
 
-  const chatHistory = useMemo(() => currentHistoryId ? allChatHistories[currentHistoryId] || [] : [], [allChatHistories, currentHistoryId]);
-  const projectContext = useMemo(() => projectFiles.map(file => `// / ${file.name} / //\n${file.content}`).join('\n\n---\n\n'), [projectFiles]);
+  // ===== DERIVED STATE =====
+  const activeProject = projects.find(p => p.id === activeProjectId) ?? null;
+  const isExample = activeProject?.id === exampleProject.id;
+  
+  const currentHistoryItem = activeProject?.history.find(h => h.id === activeHistoryId) ?? activeProject?.history[activeProject.history.length - 1] ?? null;
+  const currentAnalysis = currentHistoryItem?.analysis ?? null;
+  const currentChatHistory = (activeProject && activeHistoryId && activeProject.chatHistories[activeHistoryId]) || (currentAnalysis ? [{ role: 'model', parts: [{text: "Hello! Ask me anything about this analysis."}] }] : []);
+  const evolutionAnalysis = activeHistoryId === -1 ? (currentAnalysis as unknown as EvolutionAnalysis) : null;
+  const suggestedQuestions = currentAnalysis?.suggestedQuestions || [];
+  const kanbanState = activeProject?.kanban ?? null;
 
-  const { addNotification } = useNotification();
-  const { locale } = useLanguage();
-  const { t } = useTranslation(['common', 'input', 'example', 'notifications', 'analysis']);
+  // ===== DATA FETCHING & PERSISTENCE =====
+  useEffect(() => {
+    const loadProjects = async () => {
+        const storedProjects = await getAllProjects();
+        if (storedProjects.length === 0) {
+            setProjects([exampleProject]);
+        } else {
+            setProjects([exampleProject, ...storedProjects]);
+        }
+    };
+    loadProjects();
+  }, []);
 
-  const setChatHistoryForCurrentId = useCallback((updater: React.SetStateAction<ChatMessage[]>) => {
-    if (!currentHistoryId) return;
-    setAllChatHistories(prev => {
-      const currentMessages = prev[currentHistoryId] || [];
-      const newMessages = typeof updater === 'function' ? updater(currentMessages) : updater;
-      return { ...prev, [currentHistoryId]: newMessages };
-    });
-  }, [currentHistoryId, setAllChatHistories]);
+  const updateProject = useCallback(async (updatedProject: Project) => {
+    if (isExample) return;
+    const newProjects = projects.map(p => p.id === updatedProject.id ? updatedProject : p);
+    setProjects(newProjects);
+    await setProject(updatedProject);
+  }, [projects, isExample]);
 
-  const fetchSuggestedQuestions = useCallback(async (analysis: ProjectAnalysis) => {
-    if (!analysis) return;
-    setIsSuggestionsLoading(true);
-    setSuggestedQuestions([]);
-    try {
-      const questions = await generateSuggestedQuestions(analysis, locale, settings.userApiKey);
-      setSuggestedQuestions(questions);
-    } finally {
-      setIsSuggestionsLoading(false);
+  // ===== CHAT MANAGEMENT =====
+  useEffect(() => {
+    if (currentAnalysis && settings.userApiKey) {
+      try {
+        const newChat = createChat(settings.userApiKey, currentAnalysis);
+        setChatInstance(newChat);
+      } catch (error: any) {
+        addNotification({ message: error.message, type: 'error' });
+      }
     }
-  }, [locale, settings.userApiKey]);
+  }, [currentAnalysis, settings.userApiKey, addNotification]);
 
-  const fetchDashboardInsight = useCallback(async () => {
-    if (history.length < 3 || isInsightLoading) return;
-    setIsInsightLoading(true);
-    try {
-      const insight = await generateDashboardInsight(history, userProfile, locale, settings.userApiKey);
-      setDashboardInsight(insight);
-    } finally {
-      setIsInsightLoading(false);
-    }
-  }, [history, userProfile, locale, settings.userApiKey, isInsightLoading]);
+  // ===== DASHBOARD INSIGHTS =====
+  useEffect(() => {
+    const fetchInsight = async () => {
+        if (currentView === ViewType.Dashboard && settings.enableDashboardInsights && settings.userApiKey && projects.length > 1) {
+            setIsInsightLoading(true);
+            try {
+                const userProjects = projects.filter(p => p.id !== exampleProject.id);
+                const recentHistory = userProjects.flatMap(p => p.history).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 5);
+                if (recentHistory.length > 0) {
+                    const insight = await generateDashboardInsight(userProfile, recentHistory, settings.userApiKey);
+                    setDashboardInsight(insight);
+                }
+            } catch (error: any) {
+                // Fail silently, it's not a critical feature
+                console.warn("Could not generate dashboard insight:", error.message);
+                setDashboardInsight(null);
+            } finally {
+                setIsInsightLoading(false);
+            }
+        }
+    };
+    fetchInsight();
+  }, [currentView, projects, settings.enableDashboardInsights, settings.userApiKey, userProfile]);
 
-  const handleAnalyze = useCallback(async (analysisType: AnalysisType) => {
-    if (projectFiles.length === 0) {
-      addNotification({ message: t('notifications.emptyContext'), type: 'error' });
+  // ===== ACTIONS / HANDLERS =====
+  const handleAnalyze = async (projectName: string, context: string, analysisType: AnalysisType) => {
+    if (!settings.userApiKey) {
+      addNotification({ message: 'Please set your Gemini API key in the settings.', type: 'error' });
       return;
     }
-    setIsLoading(true);
+    
+    setIsAnalyzing(true);
     try {
-      const result = await analyzeProject(projectContext, analysisType, locale, settings.userApiKey);
-      const newId = Date.now();
-      const newHistoryItem: HistoryItem = { id: newId, projectName: result.projectName, analysisType: result.analysisType, timestamp: new Date().toLocaleString(locale), analysis: result, projectContext };
-      setCurrentAnalysis(result);
-      setCurrentHistoryId(newId);
-      if (settings.saveHistory) setHistory(prev => [...prev, newHistoryItem]);
-      if (result.usageMetadata) setUsageTracking(prev => ({ ...prev, totalTokens: prev.totalTokens + result.usageMetadata!.totalTokenCount }));
-      setIsExample(false);
-      setView(ViewType.Analysis);
-      fetchSuggestedQuestions(result);
-      return result; // To allow setting view in caller
+        let projectToUpdate: Project | null = activeProject;
+        if (!projectToUpdate) {
+            const newProject: Project = {
+                id: uuidv4(), name: projectName, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+                history: [], kanban: null, chatHistories: {}, contextFiles: []
+            };
+            setProjects(prev => [...prev, newProject]);
+            setActiveProjectId(newProject.id);
+            projectToUpdate = newProject;
+            await setProject(newProject);
+        }
+        
+        let analysisResult: ProjectAnalysis;
+
+        if (analysisType === AnalysisType.SelfCritique) {
+            if (!currentAnalysis) throw new Error("No analysis available to critique.");
+            const critiqueResult = await generateSelfCritique(currentAnalysis, settings.userApiKey);
+            const updatedProject = {
+                ...projectToUpdate,
+                critiques: { ...projectToUpdate.critiques, [currentHistoryItem!.id]: critiqueResult }
+            };
+            await updateProject(updatedProject);
+            addNotification({ message: 'Self-critique completed successfully!', type: 'success' });
+            setCurrentView(ViewType.Analysis); // Stay on the analysis view to see the critique button
+            return; // Exit early
+        } else {
+           analysisResult = await analyzeProject(context, analysisType, settings.userApiKey);
+        }
+        
+        const newHistoryItem: HistoryItem = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            analysis: analysisResult,
+        };
+
+        const updatedProject = {
+            ...projectToUpdate,
+            history: settings.saveHistory ? [...projectToUpdate.history, newHistoryItem] : [newHistoryItem],
+            chatHistories: { ...projectToUpdate.chatHistories, [newHistoryItem.id]: [] },
+            updatedAt: new Date().toISOString(),
+        };
+
+        await updateProject(updatedProject);
+        setActiveHistoryId(newHistoryItem.id);
+        setCurrentView(ViewType.Analysis);
+        addNotification({ message: 'Analysis complete!', type: 'success' });
     } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
+        addNotification({ message: error.message, type: 'error' });
     } finally {
-      setIsLoading(false);
+        setIsAnalyzing(false);
     }
-  }, [projectContext, locale, settings.userApiKey, settings.saveHistory, addNotification, setHistory, setUsageTracking, t, fetchSuggestedQuestions]);
+  };
 
-  const handleCompare = useCallback(async (ids: number[]) => {
-    if (ids.length !== 2) {
-      addNotification({ message: t('notifications.selectTwo'), type: 'error' });
-      return;
+  const handleSendMessage = async (message: string) => {
+    if (!chatInstance || !activeProject || !activeHistoryId) return;
+
+    const userMessage: Content = { role: 'user', parts: [{ text: message }] };
+    const currentHistory = activeProject.chatHistories[activeHistoryId] || [];
+    const updatedHistory = [...currentHistory, userMessage];
+
+    // Optimistically update UI
+    const optimisticallyUpdatedProject = { ...activeProject, chatHistories: { ...activeProject.chatHistories, [activeHistoryId]: updatedHistory }};
+    updateProject(optimisticallyUpdatedProject);
+
+    setIsChatLoading(true);
+    try {
+        const result = await chatInstance.sendMessage({ message });
+        const modelMessage: Content = { role: 'model', parts: [{ text: result.text }] };
+        const finalHistory = [...updatedHistory, modelMessage];
+        
+        const finalUpdatedProject = { ...activeProject, chatHistories: { ...activeProject.chatHistories, [activeHistoryId]: finalHistory }};
+        updateProject(finalUpdatedProject);
+
+    } catch (error: any) {
+        addNotification({ message: `Chat error: ${error.message}`, type: 'error' });
+        // Revert optimistic update on error
+        updateProject(activeProject);
+    } finally {
+        setIsChatLoading(false);
     }
-    const itemsToCompare = history.filter(h => ids.includes(h.id));
-    if (itemsToCompare.length !== 2) return;
+  };
+  
+  const handleSelectHistoryItem = (id: number) => {
+    setActiveHistoryId(id);
+    setCurrentView(ViewType.Analysis);
+    setIsHistoryPanelOpen(false);
+  };
 
-    setIsLoading(true);
+  const handleCompareHistoryItems = async (id1: number, id2: number) => {
+    if (!activeProject) return;
+    const item1 = activeProject.history.find(h => h.id === id1);
+    const item2 = activeProject.history.find(h => h.id === id2);
+
+    if (!item1 || !item2) {
+        addNotification({ message: "Could not find selected history items.", type: 'error' });
+        return;
+    }
+
+    setIsAnalyzing(true);
     setIsHistoryPanelOpen(false);
     try {
-      const [item1, item2] = itemsToCompare;
-      const result = await compareAnalyses(item1, item2, locale, settings.userApiKey);
-      setEvolutionAnalysis(result);
-      if (result.usageMetadata) setUsageTracking(prev => ({ ...prev, totalTokens: prev.totalTokens + result.usageMetadata!.totalTokenCount }));
-      setView(ViewType.Evolution);
-      return result;
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [history, locale, settings.userApiKey, addNotification, setUsageTracking]);
+        const [previous, current] = [item1, item2].sort((a,b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        const evolutionResult = await compareAnalyses(previous.analysis, current.analysis, settings.userApiKey);
 
-  const handleShowExample = () => {
-    // 1. Backup user's current state before loading the example.
-    setPreExampleState({
-      history: history,
-      kanbanState: kanbanState,
-      projectFiles: projectFiles,
+        // This is a bit of a hack: we create a temporary history item to display the evolution.
+        const evolutionHistoryItem: HistoryItem = {
+            id: -1, // Special ID to signify comparison
+            timestamp: new Date().toISOString(),
+            analysis: evolutionResult as unknown as ProjectAnalysis,
+        };
+
+        const updatedProject = {
+            ...activeProject,
+            history: [...activeProject.history, evolutionHistoryItem]
+        };
+        // We don't save this temporary item to DB
+        setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+        
+        setActiveHistoryId(evolutionHistoryItem.id);
+        setCurrentView(ViewType.Evolution);
+        addNotification({ message: 'Comparison complete!', type: 'success' });
+    } catch (error: any) {
+        addNotification({ message: error.message, type: 'error' });
+    } finally {
+        setIsAnalyzing(false);
+    }
+  };
+
+  const handleDeleteHistoryItem = async (id: number) => {
+      if (!activeProject || isExample) return;
+      const updatedHistory = activeProject.history.filter(h => h.id !== id);
+      const updatedChatHistories = { ...activeProject.chatHistories };
+      delete updatedChatHistories[id];
+      const updatedProject = { ...activeProject, history: updatedHistory, chatHistories: updatedChatHistories };
+      await updateProject(updatedProject);
+      addNotification({ message: "History item deleted.", type: 'success' });
+  };
+  
+  const handleCreateKanbanBoard = () => {
+    if (!activeProject || !currentAnalysis?.suggestedKanbanTasks || isExample) return;
+    
+    const newCards: Record<string, KanbanCard> = {};
+    const cardIds: string[] = [];
+
+    currentAnalysis.suggestedKanbanTasks.forEach((task: KanbanTaskSuggestion) => {
+        const id = uuidv4();
+        newCards[id] = { id, ...task };
+        cardIds.push(id);
     });
 
-    // 2. Load example data into the state.
-    setProjectFiles(parseContextToFiles(initialProjectContext));
-    const example = exampleAnalysis(t as any);
-    setCurrentAnalysis(example);
-    setHistory(exampleHistory(t as any, locale));
-    setKanbanState(createInitialKanbanState(example));
-    setIsExample(true);
-    setView(ViewType.Analysis);
-    addNotification({ message: t('notifications.exampleLoaded'), type: 'info' });
-    fetchSuggestedQuestions(example);
+    const newKanbanState: KanbanState = {
+        cards: newCards,
+        columns: {
+            backlog: { id: 'backlog', title: 'Backlog', cardIds: cardIds },
+            todo: { id: 'todo', title: 'To Do', cardIds: [] },
+            inProgress: { id: 'inProgress', title: 'In Progress', cardIds: [] },
+            done: { id: 'done', title: 'Done', cardIds: [] },
+        },
+        columnOrder: ['backlog', 'todo', 'inProgress', 'done'],
+    };
+
+    const updatedProject = { ...activeProject, kanban: newKanbanState };
+    updateProject(updatedProject);
+    setCurrentView(ViewType.Kanban);
+    addNotification({ message: "Kanban board created successfully!", type: 'success' });
   };
-
-  const handleExitExample = () => {
-    setIsExample(false);
-    setCurrentAnalysis(null);
-    setCurrentHistoryId(null);
-    setSuggestedQuestions([]);
-
-    // Restore the user's state from the backup.
-    if (preExampleState) {
-      setHistory(preExampleState.history);
-      setKanbanState(preExampleState.kanbanState);
-      setProjectFiles(preExampleState.projectFiles);
-      setPreExampleState(null); // Clear the backup.
-    } else {
-      // Fallback just in case, though this path shouldn't be taken in normal flow.
-      setHistory([]);
-      setKanbanState(null);
-      setProjectFiles([]);
-    }
-
-    setView(ViewType.Input);
-  };
-
-  const handleLoadHistoryItem = (item: HistoryItem) => {
-    setProjectFiles(parseContextToFiles(item.projectContext));
-    setCurrentAnalysis(item.analysis);
-    setCurrentHistoryId(item.id);
-    setIsHistoryPanelOpen(false);
-    setIsExample(false);
-    setChatSession(null);
-    setSuggestedQuestions([]);
-    setView(ViewType.Analysis);
-    fetchSuggestedQuestions(item.analysis);
-  };
-
-  const handleDeleteHistoryItem = (id: number) => {
-    setDeletingHistoryId(id);
-    setTimeout(() => {
-      setHistory(prev => prev.filter(item => item.id !== id));
-      setAllChatHistories(prev => {
-        const newHistories = { ...prev };
-        delete newHistories[id];
-        return newHistories;
-      });
-      setDeletingHistoryId(null);
-    }, 500);
-  };
+  
+  const setKanbanState = (state: KanbanState) => {
+      if (!activeProject || isExample) return;
+      const updatedProject = { ...activeProject, kanban: state };
+      updateProject(updatedProject);
+  }
 
   const handleClearHistory = () => {
-    setHistory([]);
-    setAllChatHistories({});
+      if (!activeProject || isExample) return;
+      const updatedProject = { ...activeProject, history: [], chatHistories: {} };
+      updateProject(updatedProject);
   };
-
-  const handleSendChatMessage = useCallback(async (message: string) => {
-    if (!currentAnalysis || !currentHistoryId) {
-      addNotification({ message: t('notifications.noAnalysisForChat'), type: 'error' });
-      return;
+  
+  // Clean up comparison analysis when view changes
+  useEffect(() => {
+    if (currentView !== ViewType.Evolution && activeProject?.history.some(h => h.id === -1)) {
+        const cleanedHistory = activeProject.history.filter(h => h.id !== -1);
+        const updatedProject = { ...activeProject, history: cleanedHistory };
+        setProjects(projects.map(p => p.id === updatedProject.id ? updatedProject : p));
+        // Reset to latest analysis
+        setActiveHistoryId(cleanedHistory[cleanedHistory.length - 1]?.id ?? null);
     }
+  }, [currentView, activeProject, projects]);
 
-    let session = chatSession;
-    if (!session) {
-      const createSystemInstruction = (analysis: ProjectAnalysis): string => {
-        const formatImprovements = (improvements: ProjectAnalysis['improvements']) =>
-          improvements.map(imp => `- ${imp.title} (Priority: ${imp.priority}, Difficulty: ${imp.difficulty}): ${imp.description}`).join('\n');
-        const formatNextSteps = (steps: ProjectAnalysis['nextSteps']['shortTerm']) =>
-          steps.map(step => `- ${step.title} (Difficulty: ${step.difficulty}): ${step.description}`).join('\n');
-        return `You are a helpful and knowledgeable project assistant. Your purpose is to answer questions about a specific project analysis that has been performed. Here is the full context of the project analysis you must use to answer all questions. Do not invent information outside of this context. **Project Name:** ${analysis.projectName}. **Analysis Type:** ${analysis.analysisType}. **Executive Summary:** ${analysis.summary}. **Key Strengths:** ${analysis.strengths.map(s => `- ${s}`).join('\n')}. **Suggested Improvements:** ${formatImprovements(analysis.improvements)}. **Next Steps:** Short-Term: ${formatNextSteps(analysis.nextSteps.shortTerm)}, Long-Term: ${formatNextSteps(analysis.nextSteps.longTerm)}. **Viability Assessment:** Score: ${analysis.viability.score}/10, Assessment: ${analysis.viability.assessment}. **ROI Analysis:** Assessment: ${analysis.roiAnalysis.assessment}, Potential Gains: ${analysis.roiAnalysis.potentialGains.map(g => `  - ${g}`).join('\n')}, Estimated Effort: ${analysis.roiAnalysis.estimatedEffort}. **Project Maturity:** Level: ${analysis.maturity.level}, Assessment: ${analysis.maturity.assessment}. Based *only* on the information provided above, please answer the user's questions about the project "${analysis.projectName}". Be concise and direct.`.trim();
-      };
-      const systemInstruction = createSystemInstruction(currentAnalysis);
-      session = createChatSession(systemInstruction, settings.userApiKey);
-      setChatSession(session);
-    }
 
-    const userMessage: ChatMessage = { role: 'user', parts: [{ text: message }] };
-    setChatHistoryForCurrentId(prev => [...prev, userMessage]);
-    setIsChatLoading(true);
-
-    try {
-      const stream = await session.sendMessageStream({ message });
-      let modelResponse = '';
-      setChatHistoryForCurrentId(prev => [...prev, { role: 'model', parts: [{ text: '' }] }]);
-      for await (const chunk of stream) {
-        modelResponse += chunk.text;
-        setChatHistoryForCurrentId(prev => {
-          const newHistory = [...prev];
-          newHistory[newHistory.length - 1] = { role: 'model', parts: [{ text: modelResponse }] };
-          return newHistory;
-        });
-      }
-    } catch (error: any) {
-      addNotification({ message: error.message || t('notifications.chatError'), type: 'error' });
-      setChatHistoryForCurrentId(prev => prev.slice(0, -1));
-    } finally {
-      setIsChatLoading(false);
-    }
-  }, [chatSession, currentAnalysis, currentHistoryId, settings.userApiKey, addNotification, setChatHistoryForCurrentId, t]);
-
-  const handleNavigateToKanban = () => {
-    if (currentAnalysis) {
-      if (isExample) {
-        setView(ViewType.Kanban);
-        return;
-      }
-      if (kanbanState && kanbanState.projectName === currentAnalysis.projectName) {
-        setView(ViewType.Kanban);
-      } else {
-        setKanbanState(createInitialKanbanState(currentAnalysis));
-        setView(ViewType.Kanban);
-      }
-    }
-  };
-
-  const handleImportAnalysis = (analysis: ProjectAnalysis) => {
-    // Debug: Ensure enum values are properly formatted
-    const sanitizeEnumValue = (value: any) => {
-      if (typeof value === 'string') return value;
-      if (typeof value === 'object' && value !== null) {
-        // If we receive an enum object, get the first value
-        const keys = Object.keys(value);
-        return keys.length > 0 ? value[keys[0]] : 'Medium';
-      }
-      return 'Medium'; // Default fallback
-    };
-
-    // Sanitize the analysis object
-    const sanitizedAnalysis = {
-      ...analysis,
-      improvements: analysis.improvements?.map(imp => ({
-        ...imp,
-        priority: sanitizeEnumValue(imp.priority),
-        difficulty: sanitizeEnumValue(imp.difficulty)
-      })) || [],
-      nextSteps: {
-        ...analysis.nextSteps,
-        shortTerm: analysis.nextSteps?.shortTerm?.map(step => ({
-          ...step,
-          difficulty: sanitizeEnumValue(step.difficulty)
-        })) || [],
-        longTerm: analysis.nextSteps?.longTerm?.map(step => ({
-          ...step,
-          difficulty: sanitizeEnumValue(step.difficulty)
-        })) || []
-      }
-    };
-
-    const newId = Date.now();
-    const newHistoryItem: HistoryItem = {
-      id: newId,
-      projectName: sanitizedAnalysis.projectName,
-      analysisType: sanitizedAnalysis.analysisType,
-      timestamp: new Date().toLocaleString(locale),
-      analysis: sanitizedAnalysis,
-      projectContext: `// Imported Analysis: ${sanitizedAnalysis.projectName} on ${new Date().toLocaleDateString(locale)}`
-    };
-    setHistory(prev => [...prev, newHistoryItem]);
-    addNotification({ message: t('notifications.analysisImportSuccess', { projectName: sanitizedAnalysis.projectName }), type: 'success' });
-  };
-
-  const value = {
-    isLoading, setIsLoading, isChatLoading, projectFiles, setProjectFiles, currentAnalysis, evolutionAnalysis, history, kanbanState, setKanbanState, settings, setSettings, userProfile, setUserProfile, usageTracking, isExample, selectedProject, setSelectedProject, deletingHistoryId, isHistoryPanelOpen, setIsHistoryPanelOpen, isUserSettingsModalOpen, setIsUserSettingsModalOpen, chatHistory, suggestedQuestions, isSuggestionsLoading, dashboardInsight, isInsightLoading, view, setView,
+  const value: ProjectContextType = {
+    projects,
+    activeProjectId,
+    setActiveProjectId,
+    activeProject,
+    isExample,
+    currentView,
+    setCurrentView,
+    isAnalyzing,
+    isChatLoading,
+    isHistoryPanelOpen,
+    setIsHistoryPanelOpen,
+    isUserSettingsModalOpen,
+    setIsUserSettingsModalOpen,
+    settings,
+    setSettings,
+    userProfile,
+    setUserProfile,
+    currentAnalysis,
+    activeHistoryId,
+    evolutionAnalysis,
+    kanbanState,
+    setKanbanState,
+    currentChatHistory,
+    suggestedQuestions,
     handleAnalyze,
-    handleCompare, handleShowExample, handleExitExample, handleLoadHistoryItem, handleDeleteHistoryItem, handleClearHistory, handleSendChatMessage, handleNavigateToKanban, handleImportAnalysis, fetchDashboardInsight,
+    handleSendMessage,
+    handleSelectHistoryItem,
+    handleCompareHistoryItems,
+    handleDeleteHistoryItem,
+    handleCreateKanbanBoard,
+    handleClearHistory,
+    dashboardInsight,
+    isInsightLoading
   };
 
-  return <ProjectContext.Provider value={value as ProjectContextType}>{children}</ProjectContext.Provider>;
+  return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 };
 
 export const useProjectContext = (): ProjectContextType => {
   const context = useContext(ProjectContext);
-  if (!context) throw new Error('useProjectContext must be used within a ProjectProvider');
+  if (context === undefined) {
+    throw new Error('useProjectContext must be used within a ProjectContextProvider');
+  }
   return context;
 };

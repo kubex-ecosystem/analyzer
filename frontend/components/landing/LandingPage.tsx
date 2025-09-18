@@ -1,175 +1,137 @@
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart3, CodeXml, FileText, Layers3, ShieldCheck, Sparkles, Star } from 'lucide-react';
-import * as React from 'react';
-import { useEffect, useState } from 'react';
+import { LucideIcon, FileCode, ShieldCheck, BarChart, Scale, BookOpen, Network } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTranslation } from '../../hooks/useTranslation';
 import FeatureDetailModal from './FeatureDetailModal';
 
 export interface AnalysisFeature {
-  icon: React.ElementType;
-  titleKey: string;
-  descriptionKey: string;
+  title: string;
+  description: string;
   detailKey: string;
-  color: 'blue' | 'red' | 'purple' | 'teal';
+  icon: LucideIcon;
+  color: 'blue' | 'red' | 'purple' | 'teal' | 'amber' | 'green';
 }
 
-const colorMap = {
-  blue: { text: 'text-blue-400', hoverBorder: 'hover:border-blue-500/50', hoverShadow: 'hover:shadow-blue-500/20' },
-  red: { text: 'text-red-400', hoverBorder: 'hover:border-red-500/50', hoverShadow: 'hover:shadow-red-500/20' },
-  purple: { text: 'text-purple-400', hoverBorder: 'hover:border-purple-500/50', hoverShadow: 'hover:shadow-purple-500/20' },
-  teal: { text: 'text-teal-400', hoverBorder: 'hover:border-teal-500/50', hoverShadow: 'hover:shadow-teal-500/20' },
-};
-
 const features: AnalysisFeature[] = [
-  {
-    icon: FileText,
-    titleKey: 'input:analysisTypes.GENERAL.label',
-    descriptionKey: 'input:analysisTypes.GENERAL.description',
-    detailKey: 'landing.featureDetails.GENERAL.description',
-    color: 'blue',
-  },
-  {
-    icon: ShieldCheck,
-    titleKey: 'input:analysisTypes.SECURITY.label',
-    descriptionKey: 'input:analysisTypes.SECURITY.description',
-    detailKey: 'landing.featureDetails.SECURITY',
-    color: 'red',
-  },
-  {
-    icon: Layers3,
-    titleKey: 'input:analysisTypes.SCALABILITY.label',
-    descriptionKey: 'input:analysisTypes.SCALABILITY.description',
-    detailKey: 'landing.featureDetails.SCALABILITY',
-    color: 'purple',
-  },
-  {
-    icon: CodeXml,
-    titleKey: 'input:analysisTypes.CODE_QUALITY.label',
-    descriptionKey: 'input:analysisTypes.CODE_QUALITY.description',
-    detailKey: 'landing.featureDetails.CODE_QUALITY',
-    color: 'teal',
-  }
+  { title: 'Architectural Review', description: 'Analyzes high-level design and generates a visual diagram', detailKey: 'architecture', icon: Network, color: 'purple' },
+  { title: 'Code Quality', description: 'Evaluates patterns, maintainability, and adherence to principles like SOLID', detailKey: 'codeQuality', icon: FileCode, color: 'teal' },
+  { title: 'Security Analysis', description: 'Focus on vulnerabilities, security practices, and compliance', detailKey: 'security', icon: ShieldCheck, color: 'red' },
+  { title: 'Scalability Analysis', description: 'Assessment of system growth capacity and performance', detailKey: 'scalability', icon: BarChart, color: 'blue' },
+  { title: 'Compliance & Practices', description: 'Focus on accessibility (WCAG), data privacy, and industry standards', detailKey: 'compliance', icon: Scale, color: 'green' },
+  { title: 'Documentation Review', description: 'Analysis of clarity, completeness, and structure of project documentation', detailKey: 'documentation', icon: BookOpen, color: 'amber' },
 ];
 
-const FeatureCard: React.FC<{ feature: AnalysisFeature, onClick: () => void }> = ({ feature, onClick }) => {
-  const { t, isLoading } = useTranslation(['landing', 'input']);
-  const Icon = feature.icon;
-  const styles = colorMap[feature.color];
-
-  if (isLoading) {
-    return <div className="bg-gradient-to-br from-gray-800 to-gray-900/50 border border-gray-700 p-6 rounded-xl h-[164px] animate-pulse"></div>;
-  }
-
-  return (
-    <button
-      onClick={onClick}
-      className={`group bg-gradient-to-br from-gray-800 to-gray-900/50 border border-gray-700 p-6 rounded-xl flex flex-col items-start gap-4 text-left transition-all duration-300 hover:scale-[1.03] ${styles.hoverBorder} hover:shadow-2xl ${styles.hoverShadow} cursor-pointer`}
-    >
-      <div className="bg-gray-900/50 p-3 rounded-full transition-transform duration-300 group-hover:scale-110">
-        <Icon className={`w-7 h-7 ${styles.text} transition-transform duration-300 group-hover:-rotate-12`} />
-      </div>
-      <div>
-        <p className="font-semibold text-white text-lg">{t(feature.titleKey)}</p>
-        <p className="text-sm text-gray-400 mt-1">{t(feature.descriptionKey)}</p>
-      </div>
-    </button>
-  );
+const colorMap = {
+    blue: { text: 'text-blue-400', border: 'border-blue-500/40', hoverBorder: 'hover:border-blue-500/80' },
+    red: { text: 'text-red-400', border: 'border-red-500/40', hoverBorder: 'hover:border-red-500/80' },
+    purple: { text: 'text-purple-400', border: 'border-purple-500/40', hoverBorder: 'hover:border-purple-500/80' },
+    teal: { text: 'text-teal-400', border: 'border-teal-500/40', hoverBorder: 'hover:border-teal-500/80' },
+    amber: { text: 'text-amber-400', border: 'border-amber-500/40', hoverBorder: 'hover:border-amber-500/80' },
+    green: { text: 'text-green-400', border: 'border-green-500/40', hoverBorder: 'hover:border-green-500/80' },
 };
 
 
 const LandingPage: React.FC = () => {
-  const { t, isLoading } = useTranslation(['landing', 'common']);
   const { login } = useAuth();
+  const dynamicPhrases = [
+    "complex architectures",
+    "legacy code",
+    "microservices",
+    "RESTful APIs",
+    "databases",
+    "cloud infrastructure",
+    "web applications",
+    "distributed systems"
+  ];
+  const [phraseIndex, setPhraseIndex] = useState(0);
   const [selectedFeature, setSelectedFeature] = useState<AnalysisFeature | null>(null);
-  const [dynamicTitle, setDynamicTitle] = useState('');
 
   useEffect(() => {
-    if (!isLoading) {
-      const titles = t('landing.dynamicPhrases') as unknown as string[];
-      if (Array.isArray(titles) && titles.length > 0) {
-        const randomIndex = Math.floor(Math.random() * titles.length);
-        setDynamicTitle(titles[randomIndex]);
-      }
-    }
-  }, [t, isLoading]);
-
-  if (isLoading) {
-    return <div className="bg-gray-900 text-white min-h-screen"></div>;
-  }
+    const interval = setInterval(() => {
+      setPhraseIndex(prev => (prev + 1) % (dynamicPhrases?.length || 1));
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [dynamicPhrases]);
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen font-sans selection:bg-purple-500/30">
-      <div className="fixed top-0 left-0 w-full h-full bg-grid-gray-700/[0.05] -z-10"></div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20 space-y-20">
+    <>
+      <div className="min-h-screen font-sans selection:bg-purple-500/30 overflow-x-hidden">
+        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight"
+          >
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-teal-400">Transform Documentation into</span>{' '}
+            <span className="relative inline-flex h-[1.3em] overflow-hidden align-bottom">
+              <motion.span
+                key={phraseIndex}
+                initial={{ y: '100%' }}
+                animate={{ y: '0%' }}
+                exit={{ y: '-100%' }}
+                transition={{ duration: 0.5, ease: 'easeInOut' }}
+                className="absolute inset-0 bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-teal-400"
+              >
+                {dynamicPhrases[phraseIndex]}
+              </motion.span>
+            </span>
+          </motion.h1>
 
-        {/* Hero Section */}
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-        >
-          {/* Combined Title */}
-          <div className="flex flex-wrap items-baseline justify-center gap-x-4 gap-y-2 group">
-            <div
-              className="text-3xl md:text-5xl font-bold text-gray-200"
-            >
-              <span>{t('header.title')}</span>
-            </div>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-6 max-w-2xl mx-auto text-lg text-gray-400"
+          >
+            Transform your project documentation into actionable insights with AI-driven analysis.
+          </motion.p>
 
-            <div className="inline-flex items-baseline justify-center gap-3">
-              <BarChart3 className="w-8 h-8 md:w-10 md:h-10 text-blue-400 transition-transform duration-300 group-hover:rotate-6" />
-              <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">
-                {dynamicTitle}
-              </h1>
-              <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-purple-400 transition-transform duration-300 group-hover:-rotate-6" />
-            </div>
-          </div>
-
-          <p className="text-gray-400 mt-6 max-w-3xl mx-auto text-lg md:text-xl">
-            {t('header.subtitle')}
-          </p>
-          <div className="mt-10">
-            <button
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4 }}
+            className="mt-10"
+          >
+            <motion.button
               onClick={login}
-              className="group relative inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold text-lg hover:shadow-2xl hover:shadow-blue-500/30 hover:scale-105 transition-all duration-300"
+              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg font-semibold text-lg shadow-lg"
+              whileHover={{ scale: 1.05, boxShadow: "0px 10px 30px rgba(59, 130, 246, 0.4)" }}
+              whileTap={{ scale: 0.95 }}
             >
-              <span>{t('landing.cta')}</span>
-              <div className="absolute -right-2 -top-2 w-5 h-5 bg-teal-400 rounded-full flex items-center justify-center animate-pulse">
-                <Star className="w-3 h-3 text-teal-900" />
-              </div>
-            </button>
-          </div>
-        </motion.div>
+              Start Analysis
+            </motion.button>
+          </motion.div>
 
-        {/* Features Section */}
-        <motion.div
-          className="space-y-12"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.7 }}
-        >
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-white">{t('landing.featuresTitle')}</h2>
-            <p className="text-gray-400 mt-2 max-w-2xl mx-auto">{t('landing.featuresSubtitle')}</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                feature={feature}
-                onClick={() => setSelectedFeature(feature)}
-              />
-            ))}
-          </div>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="mt-24"
+          >
+            <h2 className="text-3xl font-bold">Features</h2>
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {features.map((feature, i) => (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + i * 0.1 }}
+                  onClick={() => setSelectedFeature(feature)}
+                  className={`bg-gray-800/50 border p-6 rounded-xl text-left ${colorMap[feature.color].border} ${colorMap[feature.color].hoverBorder} transition-all duration-300 cursor-pointer transform hover:scale-105`}
+                >
+                  <div className="flex items-center gap-4">
+                    <feature.icon className={`w-8 h-8 ${colorMap[feature.color].text}`} />
+                    <h3 className="text-xl font-bold">{feature.title}</h3>
+                  </div>
+                  <p className="mt-4 text-gray-400">{feature.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </main>
       </div>
-      <FeatureDetailModal
-        feature={selectedFeature}
-        onClose={() => setSelectedFeature(null)}
-      />
-    </div>
+      <FeatureDetailModal feature={selectedFeature} onClose={() => setSelectedFeature(null)} />
+    </>
   );
 };
 

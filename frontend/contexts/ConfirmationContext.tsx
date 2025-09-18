@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { createContext, ReactNode, useCallback, useContext, useState } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
 
 interface ConfirmationOptions {
   title: string;
@@ -27,7 +26,7 @@ export const ConfirmationProvider: React.FC<{ children: ReactNode }> = ({ childr
     setOptions(opts);
     setIsOpen(true);
   }, []);
-
+  
   const hideConfirmation = useCallback(() => {
     setIsOpen(false);
     // Give time for animation before clearing options

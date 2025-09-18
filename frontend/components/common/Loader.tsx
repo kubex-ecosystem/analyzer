@@ -1,53 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useTranslation } from '../../hooks/useTranslation';
+import { Loader2 } from 'lucide-react';
 
 const Loader: React.FC = () => {
-  const { t, isLoading } = useTranslation('common');
-  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
-
-  const loadingSteps: string[] = !isLoading ? (t('loader.steps') as any || []) : [];
+  const steps = [
+      "Parsing file structure...",
+      "Evaluating architecture...",
+      "Checking code quality...",
+      "Identifying potential improvements...",
+      "Compiling the report..."
+    ];
+  const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    if (loadingSteps.length > 0) {
-      const interval = setInterval(() => {
-        setCurrentMessageIndex(prevIndex => (prevIndex + 1) % loadingSteps.length);
-      }, 2500); // Change message every 2.5 seconds
+    const interval = setInterval(() => {
+      setCurrentStep(prev => (prev + 1) % (steps?.length || 1));
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [steps]);
 
-      return () => clearInterval(interval);
-    }
-  }, [loadingSteps.length]);
-
-  if (isLoading) return null; // Or a minimal spinner
+  if (!steps || steps.length === 0) {
+    return null; // Don't render if translations are not ready
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-900/80 backdrop-blur-sm"
-      aria-label={t('loader.ariaLabel')}
+    <div
+      className="fixed inset-0 bg-gray-900/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center"
+      aria-label="Analyzing content, please wait."
+      role="status"
     >
-      <div className="relative h-16 w-16">
-        <div className="absolute h-full w-full rounded-full border-4 border-t-blue-500 border-gray-700 animate-spin"></div>
-        <div className="absolute h-full w-full rounded-full border-4 border-t-purple-500 border-gray-700 animate-spin [animation-delay:-0.2s]"></div>
-      </div>
-      <div className="mt-4 text-center h-12">
+      <Loader2 className="w-12 h-12 text-purple-400 animate-spin" />
+      <h2 className="mt-4 text-2xl font-bold text-white">Analyzing your project...</h2>
+      <p className="text-gray-400">This may take a few moments.</p>
+      <div className="mt-6 text-center h-6 overflow-hidden">
         <AnimatePresence mode="wait">
           <motion.p
-            key={currentMessageIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="text-lg font-medium text-gray-400"
+            key={currentStep}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.5, ease: 'easeInOut' }}
+            className="text-gray-300"
           >
-            {loadingSteps[currentMessageIndex] || t('loader.message')}
+            {steps[currentStep]}
           </motion.p>
         </AnimatePresence>
       </div>
-      <p className="text-sm text-gray-500">{t('loader.subMessage')}</p>
-    </motion.div>
+    </div>
   );
 };
 

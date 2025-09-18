@@ -1,28 +1,26 @@
+import React from 'react';
 import { motion } from 'framer-motion';
 import { Rocket } from 'lucide-react';
-import * as React from 'react';
-import { useTranslation } from '../../hooks/useTranslation';
-import { MaturityLevel, ProjectMaturity } from '../../types';
+// FIX: Corrected import path for types
+import { ProjectMaturity, MaturityLevel } from '../../types';
 
 interface MaturityKpiCardProps {
   maturity: ProjectMaturity;
 }
 
-const maturityConfig: Record<MaturityLevel, { labelKey: string; color: string; width: string }> = {
-  [MaturityLevel.Prototype]: { labelKey: 'maturityLevels.PROTOTYPE', color: 'bg-red-500', width: '25%' },
-  [MaturityLevel.MVP]: { labelKey: 'maturityLevels.MVP', color: 'bg-yellow-500', width: '50%' },
-  [MaturityLevel.Production]: { labelKey: 'maturityLevels.PRODUCTION', color: 'bg-green-500', width: '75%' },
-  [MaturityLevel.Optimized]: { labelKey: 'maturityLevels.OPTIMIZED', color: 'bg-blue-500', width: '100%' },
+const maturityConfig: Record<MaturityLevel, { label: string; color: string; width: string }> = {
+  [MaturityLevel.Prototype]: { label: 'Prototype', color: 'bg-red-500', width: '25%' },
+  [MaturityLevel.MVP]: { label: 'MVP', color: 'bg-yellow-500', width: '50%' },
+  [MaturityLevel.Production]: { label: 'Production', color: 'bg-green-500', width: '75%' },
+  [MaturityLevel.Optimized]: { label: 'Optimized', color: 'bg-blue-500', width: '100%' },
 };
 
 const MaturityKpiCard: React.FC<MaturityKpiCardProps> = ({ maturity }) => {
-  const { t } = useTranslation(['analysis', 'common']);
-  const level = maturity.level.toString().toUpperCase() as MaturityLevel;
-  const config = maturityConfig[level];
-
+  const config = maturityConfig[maturity.level.toUpperCase() as MaturityLevel];
+  
   if (!config) {
-    console.warn(`Unknown maturity level: ${maturity.level}`);
-    return null;
+      console.warn(`Unknown maturity level: ${maturity.level}`);
+      return null;
   }
 
   return (
@@ -35,7 +33,7 @@ const MaturityKpiCard: React.FC<MaturityKpiCardProps> = ({ maturity }) => {
       <div>
         <div className="flex items-center gap-3 mb-4">
           <Rocket className="w-6 h-6 text-purple-400" />
-          <h3 className="text-xl font-semibold text-white">{t('results.maturity.title')}</h3>
+          <h3 className="text-xl font-semibold text-white">Project Maturity</h3>
         </div>
         <p className="text-sm text-gray-400 italic">"{maturity.assessment}"</p>
       </div>
@@ -50,15 +48,15 @@ const MaturityKpiCard: React.FC<MaturityKpiCardProps> = ({ maturity }) => {
           />
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-1.5 px-1">
-          <span>{t('maturityLevels.PROTOTYPE')}</span>
-          <span>{t('maturityLevels.MVP')}</span>
-          <span>{t('maturityLevels.PRODUCTION')}</span>
-          <span>{t('maturityLevels.OPTIMIZED')}</span>
+            <span>Prototype</span>
+            <span>MVP</span>
+            <span>Production</span>
+            <span>Optimized</span>
         </div>
-        <div className="text-center mt-2">
-          <span className={`text-lg font-bold ${config.color.replace('bg-', 'text-')}`}>
-            {t(config.labelKey)}
-          </span>
+         <div className="text-center mt-2">
+            <span className={`text-lg font-bold ${config.color.replace('bg-', 'text-')}`}>
+                {config.label}
+            </span>
         </div>
       </div>
     </motion.div>

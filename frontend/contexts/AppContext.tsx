@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { createContext, ReactNode, useCallback, useContext, useState } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback } from 'react';
 
 interface AppContextType {
   resetApplication: () => void;

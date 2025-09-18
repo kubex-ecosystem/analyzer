@@ -1,9 +1,8 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Edit, Info, Save, Trash2, X } from 'lucide-react';
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { useTranslation } from '../../hooks/useTranslation';
-import { Difficulty, KanbanCard, Priority } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Trash2 } from 'lucide-react';
+import { KanbanCard, Priority, Difficulty } from '../../types';
+import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 interface EditCardModalProps {
   isOpen: boolean;
@@ -11,211 +10,124 @@ interface EditCardModalProps {
   card: KanbanCard | Omit<KanbanCard, 'id'> | null;
   onSave: (card: KanbanCard | Omit<KanbanCard, 'id'>) => void;
   onDelete: (cardId: string) => void;
-  isExample?: boolean;
+  isExample: boolean;
 }
 
-const EditCardModal: React.FC<EditCardModalProps> = ({ isOpen, onClose, card, onSave, onDelete, isExample = false }) => {
-  const { t } = useTranslation(['kanban', 'common']);
-  const [formData, setFormData] = useState<Partial<KanbanCard>>({});
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    if (card) {
-      setFormData(card);
-    } else {
-      setFormData({
+const EditCardModal: React.FC<EditCardModalProps> = ({ isOpen, onClose, card, onSave, onDelete, isExample }) => {
+    const { showConfirmation } = useConfirmation();
+    
+    const [formData, setFormData] = useState<KanbanCard | Omit<KanbanCard, 'id'>>({
         title: '',
         description: '',
         priority: Priority.Medium,
         difficulty: Difficulty.Medium,
         tags: [],
-        notes: '',
-      });
-    }
-  }, [card]);
+        notes: ''
+    });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+    useEffect(() => {
+        if (card) {
+            setFormData(card);
+        }
+    }, [card]);
+    
+    const isNewCard = !('id' in (card || {}));
 
-  const handleSave = () => {
-    if (isExample) return;
-    if (formData.title) {
-      onSave(formData as KanbanCard | Omit<KanbanCard, 'id'>);
-    }
-  };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-  const handleDelete = () => {
-    if (isExample) return;
-    if ('id' in formData && formData.id) {
-      onDelete(formData.id);
-    }
-    setIsDeleteConfirmOpen(false);
-  };
+    const handleSave = () => {
+        onSave(formData);
+    };
 
-  const isNewCard = !('id' in formData) || !formData.id;
+    const handleDelete = () => {
+        if ('id' in formData) {
+            showConfirmation({
+                title: "Delete Card",
+                message: "Are you sure you want to delete this card? This action cannot be undone.",
+                confirmText: "Delete",
+                onConfirm: () => onDelete(formData.id!),
+            });
+        }
+    };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-        >
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-lg flex flex-col shadow-2xl max-h-[90vh]"
-          >
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <div className="flex items-center gap-3">
-                <Edit className="w-6 h-6 text-blue-400" />
-                <h2 className="text-xl font-bold text-white">
-                  {isNewCard ? t('kanban.addCard') : t('kanban.editCard')}
-                </h2>
-              </div>
-              <button title={t('common.close')} onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4 overflow-y-auto">
-              {isExample && (
-                <div className="p-3 mb-2 bg-purple-900/50 border border-purple-700 text-purple-300 rounded-lg flex items-center gap-3 text-sm">
-                  <Info className="w-5 h-5 shrink-0" />
-                  <p>{t('kanban.exampleModeNotice')}</p>
-                </div>
-              )}
-              <div>
-                <label className="text-sm font-medium text-gray-300">{t('kanban.card.title')}</label>
-                <input
-                  title={t('kanban.card.title')}
-                  name="title"
-                  value={formData.title || ''}
-                  onChange={handleChange}
-                  className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md"
-                />
-              </div>
-
-              {!isNewCard && (
-                <div>
-                  <label className="text-sm font-medium text-gray-400">{t('kanban.originalDescription')}</label>
-                  <div className="w-full p-2 mt-1 bg-gray-900/50 border border-gray-700 rounded-md text-sm text-gray-400 max-h-28 overflow-y-auto">
-                    {formData.description || ''}
-                  </div>
-                </div>
-              )}
-
-              {isNewCard && (
-                <div>
-                  <label className="text-sm font-medium text-gray-300">{t('kanban.card.description')}</label>
-                  <textarea
-                    title={t('kanban.card.description')}
-                    name="description"
-                    value={formData.description || ''}
-                    onChange={handleChange}
-                    rows={3}
-                    className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md resize-y"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm font-medium text-gray-300">{t('kanban.notes')}</label>
-                <textarea
-                  name="notes"
-                  value={formData.notes || ''}
-                  onChange={handleChange}
-                  rows={4}
-                  placeholder={t('kanban.notesPlaceholder')}
-                  className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md resize-y"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-300">{t('kanban.card.priority')}</label>
-                  <select
-                    title={t('kanban.card.priority')}
-                    name="priority"
-                    value={formData.priority || Priority.Medium}
-                    onChange={handleChange}
-                    className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md"
-                  >
-                    {Object.values(Priority).map(p => <option key={p} value={p}>{t(`priority.${p}`)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-300">{t('kanban.card.difficulty')}</label>
-                  <select
-                    title={t('kanban.card.difficulty')}
-                    name="difficulty"
-                    value={formData.difficulty || Difficulty.Medium}
-                    onChange={handleChange}
-                    className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md"
-                  >
-                    {Object.values(Difficulty).map(d => <option key={d} value={d}>{t(`difficulty.${d}`)}</option>)}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-gray-900/50 border-t border-gray-700 flex justify-between items-center">
-              {!isNewCard ? (
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  disabled={isExample}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-400 bg-transparent border border-transparent rounded-md hover:bg-red-900/50 hover:border-red-700/50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Trash2 className="w-4 h-4" /> {t('common.delete')}
-                </button>
-              ) : <div />}
-              <button
-                onClick={handleSave}
-                disabled={isExample}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Save className="w-4 h-4" /> {t('common.save')}
-              </button>
-            </div>
-
-            {/* Delete Confirmation Dialog */}
-            <AnimatePresence>
-              {isDeleteConfirmOpen && (
+    return (
+        <AnimatePresence>
+            {isOpen && (
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="absolute inset-0 bg-gray-800/80 backdrop-blur-sm z-10 flex items-center justify-center p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
                 >
-                  <motion.div
-                    initial={{ scale: 0.9, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-gray-900 border border-red-700 rounded-xl p-6 max-w-sm text-center"
-                  >
-                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
-                    <h3 className="mt-4 text-lg font-bold text-white">{t('kanban.deleteConfirm.title')}</h3>
-                    <p className="mt-2 text-sm text-gray-400">{t('kanban.deleteConfirm.message')}</p>
-                    <div className="mt-6 flex justify-center gap-4">
-                      <button onClick={() => setIsDeleteConfirmOpen(false)} className="px-4 py-2 text-sm font-semibold text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600">{t('common.cancel')}</button>
-                      <button onClick={handleDelete} className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-md hover:bg-red-700">{t('kanban.deleteConfirm.confirm')}</button>
-                    </div>
-                  </motion.div>
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-lg flex flex-col shadow-2xl"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                            <h2 className="text-xl font-bold text-white">{isNewCard ? 'Add Card' : 'Edit Card'}</h2>
+                            <button onClick={onClose} className="p-1 rounded-full text-gray-400 hover:bg-gray-700">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        {/* Form */}
+                        <div className="p-6 space-y-4 overflow-y-auto">
+                            <div>
+                                <label htmlFor="title" className="text-sm font-medium text-gray-300">Title</label>
+                                <input type="text" name="title" value={formData.title} onChange={handleChange} className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md"/>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-300">Description</label>
+                                <p className="text-xs text-gray-500 p-2 bg-gray-900 rounded-md mt-1">{formData.description}</p>
+                            </div>
+                            <div>
+                                <label htmlFor="notes" className="text-sm font-medium text-gray-300">Notes</label>
+                                <textarea name="notes" value={formData.notes || ''} onChange={handleChange} placeholder="Add any extra notes or details here..." rows={4} className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md"/>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label htmlFor="priority" className="text-sm font-medium text-gray-300">Priority</label>
+                                    <select name="priority" value={formData.priority} onChange={handleChange} className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md">
+                                        {/* FIX: Explicitly cast enum values to prevent type errors in .map() */}
+                                        {Object.values(Priority).map(p => <option key={p as string} value={p as string}>{p as string}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label htmlFor="difficulty" className="text-sm font-medium text-gray-300">Difficulty</label>
+                                    <select name="difficulty" value={formData.difficulty} onChange={handleChange} className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md">
+                                        {/* FIX: Explicitly cast enum values to prevent type errors in .map() */}
+                                        {Object.values(Difficulty).map(d => <option key={d as string} value={d as string}>{d as string}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-4 bg-gray-900/50 flex justify-between items-center rounded-b-xl">
+                            <div>
+                                {!isNewCard && (
+                                    <button onClick={handleDelete} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded-full" disabled={isExample}>
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex gap-3">
+                                <button onClick={onClose} className="px-4 py-2 text-sm font-semibold text-gray-200 bg-gray-700 rounded-md hover:bg-gray-600">Cancel</button>
+                                <button onClick={handleSave} className="px-4 py-2 text-sm font-semibold text-white bg-purple-600 rounded-md hover:bg-purple-700" disabled={isExample}>Save</button>
+                            </div>
+                        </div>
+                    </motion.div>
                 </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
+            )}
+        </AnimatePresence>
+    );
 };
 
 export default EditCardModal;

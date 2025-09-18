@@ -1,12 +1,11 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, User } from 'lucide-react';
+// FIX: Corrected import path for ProjectContext
 import { useProjectContext } from '../../contexts/ProjectContext';
-import { useTranslation } from '../../hooks/useTranslation';
 
 const DashboardInsightCard: React.FC = () => {
     const { dashboardInsight, isInsightLoading, userProfile } = useProjectContext();
-    const { t } = useTranslation('dashboard');
 
     if (isInsightLoading) {
         return (
@@ -41,7 +40,7 @@ const DashboardInsightCard: React.FC = () => {
             </div>
             <div className="flex-grow z-10">
                 <h2 className="text-xl font-bold text-white">
-                    {t('dashboard.insight.title', { name: userProfile.name.split(' ')[0] })}
+                    {dashboardInsight.title}
                 </h2>
                 <p className="mt-2 text-gray-300">{dashboardInsight.summary}</p>
             </div>

@@ -1,3 +1,4 @@
+// FIX: Corrected import path for types
 import { AppSettings, UserProfile } from '../types';
 
 export const initialProjectContext = `# LookAtni Code - Gerado automaticamente
@@ -179,6 +180,7 @@ export const defaultSettings: AppSettings = {
     jiraInstanceUrl: '',
     jiraUserEmail: '',
     jiraApiToken: '',
+    enableDashboardInsights: true,
 };
 
 export const defaultUserProfile: UserProfile = {

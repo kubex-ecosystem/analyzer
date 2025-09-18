@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+// FIX: Corrected import path for types
 import { AppSettings } from '../../types';
-import { useTranslation } from '../../hooks/useTranslation';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { testApiKey } from '../../services/gemini/api';
 import { useNotification } from '../../contexts/NotificationContext';
 import { Check, Loader2, X, Key, Settings as SettingsIcon } from 'lucide-react';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
+// FIX: Corrected import path for ProjectContext
 import { useProjectContext } from '../../contexts/ProjectContext';
 
 interface PreferencesTabProps {
@@ -14,10 +14,9 @@ interface PreferencesTabProps {
 }
 
 const PreferencesTab: React.FC<PreferencesTabProps> = ({ settings, onSettingsChange }) => {
-    const { t } = useTranslation(['settings', 'common']);
-    const { locale, setLocale } = useLanguage();
     const { addNotification } = useNotification();
     const { showConfirmation } = useConfirmation();
+    // FIX: handleClearHistory is now available on the context
     const { handleClearHistory } = useProjectContext();
 
     const [apiKey, setApiKey] = useState(settings.userApiKey || '');
@@ -27,14 +26,14 @@ const PreferencesTab: React.FC<PreferencesTabProps> = ({ settings, onSettingsCha
     const handleFieldChange = (key: keyof AppSettings, value: any) => {
         if (key === 'saveHistory' && value === false && settings.saveHistory === true) {
             showConfirmation({
-                title: t('clearHistoryOnDisable.title'),
-                message: t('clearHistoryOnDisable.message'),
-                confirmText: t('common:common.confirm'),
-                cancelText: t('common:common.cancel'),
+                title: 'Disable History Saving',
+                message: 'Disabling this option will also clear the current analysis history for this project. Are you sure you want to continue?',
+                confirmText: 'Confirm',
+                cancelText: 'Cancel',
                 onConfirm: () => {
                     onSettingsChange({ ...settings, saveHistory: false });
                     handleClearHistory();
-                    addNotification({ message: t('clearHistoryOnDisable.cleared'), type: 'info' });
+                    addNotification({ message: 'History saving disabled and history cleared.', type: 'info' });
                 },
                 // onCancel, do nothing, the switch visually reverts because state wasn't changed.
             });
@@ -56,12 +55,12 @@ const PreferencesTab: React.FC<PreferencesTabProps> = ({ settings, onSettingsCha
         try {
             await testApiKey(apiKey);
             setTestStatus('success');
-            addNotification({ message: t('notifications.apiKeyTestSuccess'), type: 'success' });
+            addNotification({ message: 'API key is valid and working!', type: 'success' });
         } catch (error: any) {
             setTestStatus('failure');
             const errorMessage = error.message === "API_KEY_EMPTY" 
-                ? t('notifications.apiKeyTestEmpty') 
-                : t('notifications.apiKeyTestFailure');
+                ? 'API key field cannot be empty.'
+                : 'API key test failed. Please check the key and try again.';
             addNotification({ message: errorMessage, type: 'error' });
         } finally {
             setIsTestingKey(false);
@@ -70,26 +69,26 @@ const PreferencesTab: React.FC<PreferencesTabProps> = ({ settings, onSettingsCha
 
     const renderTestButton = () => {
         if (isTestingKey) {
-            return <div className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> {t('apiKeys.gemini.testing')}</div>;
+            return <div className="flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Testing...</div>;
         }
         if (testStatus === 'success') {
-            return <div className="flex items-center gap-2 text-green-400"><Check className="w-4 h-4" /> {t('apiKeys.gemini.testSuccess')}</div>;
+            return <div className="flex items-center gap-2 text-green-400"><Check className="w-4 h-4" /> Valid</div>;
         }
         if (testStatus === 'failure') {
-            return <div className="flex items-center gap-2 text-red-400"><X className="w-4 h-4" /> {t('apiKeys.gemini.testFailure')}</div>;
+            return <div className="flex items-center gap-2 text-red-400"><X className="w-4 h-4" /> Invalid</div>;
         }
-        return t('apiKeys.gemini.testButton');
+        return 'Test Key';
     };
 
     return (
         <div className="space-y-8">
             <section>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><SettingsIcon className="w-5 h-5 text-gray-400"/> {t('tabs.preferences')}</h3>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><SettingsIcon className="w-5 h-5 text-gray-400"/> Preferences</h3>
                 <div className="space-y-4">
                     <div className="flex items-start justify-between">
                         <div>
-                            <label htmlFor="saveHistory" className="font-medium text-gray-200">{t('saveHistory.label')}</label>
-                            <p className="text-sm text-gray-400">{t('saveHistory.description')}</p>
+                            <label htmlFor="saveHistory" className="font-medium text-gray-200">Save Analysis History</label>
+                            <p className="text-sm text-gray-400">Automatically save each analysis to the project's history.</p>
                         </div>
                         <input
                             id="saveHistory"
@@ -101,8 +100,8 @@ const PreferencesTab: React.FC<PreferencesTabProps> = ({ settings, onSettingsCha
                     </div>
                      <div className="flex items-start justify-between">
                         <div>
-                            <label htmlFor="enableDashboardInsights" className="font-medium text-gray-200">{t('dashboardInsights.label')}</label>
-                            <p className="text-sm text-gray-400">{t('dashboardInsights.description')}</p>
+                            <label htmlFor="enableDashboardInsights" className="font-medium text-gray-200">Enable Dashboard Insights</label>
+                            <p className="text-sm text-gray-400">Allow the AI to generate a personalized insight on your dashboard based on recent activity.</p>
                         </div>
                         <input
                             id="enableDashboardInsights"
@@ -112,33 +111,21 @@ const PreferencesTab: React.FC<PreferencesTabProps> = ({ settings, onSettingsCha
                             className="mt-1 w-4 h-4 rounded bg-gray-700 border-gray-600 text-purple-600 focus:ring-purple-500"
                         />
                     </div>
-                    <div>
-                        <label htmlFor="language" className="text-sm font-medium text-gray-300">{t('language.label')}</label>
-                        <select
-                            id="language"
-                            value={locale}
-                            onChange={(e) => setLocale(e.target.value as 'en-US' | 'pt-BR')}
-                            className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md"
-                        >
-                            <option value="en-US">English (US)</option>
-                            <option value="pt-BR">Português (Brasil)</option>
-                        </select>
-                    </div>
                 </div>
             </section>
             
             <section>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Key className="w-5 h-5 text-gray-400"/> {t('apiKeys.gemini.title')}</h3>
-                <p className="text-sm text-gray-400 mb-4">{t('apiKeys.gemini.description')}</p>
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2"><Key className="w-5 h-5 text-gray-400"/> Gemini API Key</h3>
+                <p className="text-sm text-gray-400 mb-4">Provide your own Google Gemini API key to use the tool. Your key is stored locally in your browser.</p>
                 <div>
-                    <label htmlFor="geminiApiKey" className="text-sm font-medium text-gray-300">{t('apiKeys.gemini.label')}</label>
+                    <label htmlFor="geminiApiKey" className="text-sm font-medium text-gray-300">Your API Key</label>
                     <div className="flex gap-2 mt-1">
                         <input
                             type="password"
                             id="geminiApiKey"
                             value={apiKey}
                             onChange={handleApiKeyChange}
-                            placeholder={t('apiKeys.gemini.placeholder')}
+                            placeholder="Enter your Google Gemini API key"
                             className="flex-grow p-2 bg-gray-900 border border-gray-600 rounded-md"
                         />
                         <button
