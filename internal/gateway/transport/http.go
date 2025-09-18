@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/config"
+	"github.com/kubex-ecosystem/analyzer/internal/gateway/health"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/handlers/lookatni"
@@ -25,6 +27,9 @@ type httpHandlers struct {
 	engine               *scorecard.Engine    // Repository Intelligence engine
 	lookAtniHandler      *lookatni.Handler    // LookAtni integration
 	webhookHandler       *webhook.HTTPHandler // Meta-recursive webhook handler
+	healthEngine         *health.Engine       // AI Provider health monitoring
+	healthRegistry       *health.ProberRegistry
+	healthScheduler      *health.Scheduler // Background health checks
 }
 
 // WireHTTP sets up HTTP routes
@@ -36,12 +41,38 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	// Initialize webhook handler (mock for now - TODO: implement real actors)
 	webhookHandler := webhook.NewHTTPHandler(nil) // TODO: Initialize with real handler
 
+	// Initialize AI Provider Health Monitoring
+	healthStore := health.NewStore()
+	healthRegistry := health.NewProberRegistry()
+
+	// Registra probers no registry local
+	healthRegistry.Register(health.NewGroqProber())
+	healthRegistry.Register(health.NewGeminiProber())
+
+	// Cria engine com probers do registry
+	groqProber := health.NewGroqProber()
+	geminiProber := health.NewGeminiProber()
+	healthEngine := health.NewEngine(healthStore, groqProber, geminiProber)
+
+	// Initialize Background Health Scheduler - ARQUITETURA QUE NÃO SE SABOTA! 🔥
+	schedulerConfig := health.DefaultSchedulerConfig()
+	schedulerConfig.LogVerbose = false // Production mode
+	healthScheduler := health.NewScheduler(healthEngine, healthRegistry, schedulerConfig)
+
+	// Start scheduler in background
+	if err := healthScheduler.Start(); err != nil {
+		log.Printf("⚠️  Failed to start health scheduler: %v", err)
+	}
+
 	h := &httpHandlers{
 		registry:             reg,
 		productionMiddleware: prodMiddleware,
 		engine:               nil, // TODO: Initialize scorecard engine with real clients
 		lookAtniHandler:      lookAtniHandler,
 		webhookHandler:       webhookHandler,
+		healthEngine:         healthEngine,
+		healthRegistry:       healthRegistry,
+		healthScheduler:      healthScheduler,
 	}
 
 	// Web Interface - Frontend embarcado! 🚀
@@ -69,6 +100,11 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	mux.HandleFunc("/api/v1/metrics/ai", h.handleAIMetrics)
 	mux.HandleFunc("/api/v1/health", h.handleRepositoryHealth)
 
+	// AI Provider Health Monitoring - ARQUITETURA QUE NÃO SE SABOTA! 🔥
+	health.RegisterRoutes(mux, h.healthEngine, h.healthRegistry)
+	mux.HandleFunc("/health/scheduler/stats", h.handleSchedulerStats)
+	mux.HandleFunc("/health/scheduler/force", h.handleSchedulerForce)
+
 	// LookAtni Integration endpoints - CODE NAVIGATION! 🔍
 	mux.HandleFunc("/api/v1/lookatni/extract", h.lookAtniHandler.HandleExtractProject)
 	mux.HandleFunc("/api/v1/lookatni/archive", h.lookAtniHandler.HandleCreateArchive)
@@ -82,6 +118,7 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 
 	log.Println("✅ LookAtni integration enabled - Code extraction and navigation ready!")
 	log.Println("🔄 Meta-recursive webhook system enabled - INSANIDADE RACIONAL activated!")
+	log.Println("🔥 AI Provider Health Monitoring enabled - ARQUITETURA QUE NÃO SE SABOTA!")
 }
 
 // healthCheck provides a simple health endpoint
@@ -517,4 +554,34 @@ func (h *httpHandlers) handleRepositoryHealth(w http.ResponseWriter, r *http.Req
 		"version": "analyzer-v1.0.0",
 	}
 	json.NewEncoder(w).Encode(health)
+}
+
+// handleSchedulerStats returns health scheduler statistics
+func (h *httpHandlers) handleSchedulerStats(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	stats := h.healthScheduler.GetStats()
+	json.NewEncoder(w).Encode(stats)
+}
+
+// handleSchedulerForce forces immediate health checks for all providers
+func (h *httpHandlers) handleSchedulerForce(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	h.healthScheduler.ForceCheck()
+
+	w.Header().Set("Content-Type", "application/json")
+	response := map[string]interface{}{
+		"status":  "triggered",
+		"message": "Force health check initiated for all providers",
+		"time":    time.Now(),
+	}
+	json.NewEncoder(w).Encode(response)
 }
