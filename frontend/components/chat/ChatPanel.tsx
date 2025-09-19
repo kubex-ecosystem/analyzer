@@ -1,113 +1,128 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Loader2, Send, User } from 'lucide-react';
 import * as React from 'react';
+
+import { Info, Loader2, Send, Sparkles, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { useTranslation } from '../../hooks/useTranslation';
-import { ChatMessage } from '../../types';
+import { useProjectContext } from '../../contexts/ProjectContext';
 
-interface ChatPanelProps {
-  history: ChatMessage[];
-  isLoading: boolean;
-  onSendMessage: (message: string) => void;
-  projectName: string;
-}
+// FIX: Replaced deprecated ChatMessage with Content
+import { Content } from '@google/genai';
 
-const ChatPanel: React.FC<ChatPanelProps> = ({ history, isLoading, onSendMessage, projectName }) => {
-  const { t } = useTranslation(['chat', 'common']);
+const ChatMessageBubble: React.FC<{ message: Content }> = ({ message }) => {
+  const isUser = message.role === 'user';
+  return (
+    <div className={`flex items-start gap-3 ${isUser ? 'justify-end' : ''}`}>
+      {!isUser && (
+        <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-800 shrink-0">
+          <Sparkles className="w-5 h-5 text-purple-400" />
+        </div>
+      )}
+      <div
+        className={`max-w-xl p-3 rounded-xl text-white ${isUser ? 'bg-blue-600 rounded-br-none' : 'bg-gray-700 rounded-bl-none'
+          }`}
+      >
+        <p className="whitespace-pre-wrap">{(message.parts || [])[0].text}</p>
+      </div>
+      {isUser && (
+        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center shrink-0">
+          <User className="w-5 h-5 text-gray-300" />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ChatPanel: React.FC = () => {
+  const {
+    currentChatHistory,
+    isChatLoading,
+    handleSendMessage,
+    suggestedQuestions,
+    activeProject,
+    isExample
+  } = useProjectContext();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
-    scrollToBottom();
-  }, [history, isLoading]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [currentChatHistory, isChatLoading]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.trim() && !isLoading) {
-      onSendMessage(input.trim());
+    if (input.trim() && !isChatLoading) {
+      handleSendMessage(input);
       setInput('');
     }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-gray-800/50 border border-gray-700 rounded-xl flex flex-col h-[70vh]"
-    >
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-semibold text-white">{t('chat:title')}</h2>
-        <p className="text-sm text-gray-400">{t('chat:subtitle', { projectName })}</p>
+  const handleSuggestionClick = (question: string) => {
+    handleSendMessage(question);
+  };
+
+  if (!activeProject) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-gray-900/30 border border-gray-800 rounded-xl text-center">
+        <h3 className="text-xl font-bold">No Project Loaded</h3>
+        <p className="text-gray-400 mt-2">Create or select a project to start chatting.</p>
       </div>
-      <div className="flex-grow p-4 overflow-y-auto space-y-6">
-        {history.map((msg, index) => (
-          <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-            {msg.role === 'model' && (
-              <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center shrink-0">
-                <Bot className="w-5 h-5 text-purple-400" />
-              </div>
-            )}
-            <div className={`max-w-xl p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}>
-              <div className="prose prose-invert prose-sm max-w-none text-gray-300 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-headings:text-white">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {msg.parts[0].text}
-                </ReactMarkdown>
-              </div>
-            </div>
-            {msg.role === 'user' && (
-              <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center shrink-0">
-                <User className="w-5 h-5 text-gray-300" />
-              </div>
-            )}
+    )
+  }
+
+  return (
+    <div className="h-full flex flex-col bg-gray-900/30 border border-gray-800 rounded-xl">
+      {/* Messages */}
+      <div className="flex-grow p-4 overflow-y-auto space-y-4">
+        {isExample && (
+          <div className="p-3 bg-purple-900/50 border border-purple-700 text-purple-300 rounded-lg flex items-center gap-3 text-sm">
+            <Info className="w-5 h-5 shrink-0" />
+            <p>You are chatting in example mode. The conversation will not be saved.</p>
           </div>
+        )}
+        {currentChatHistory.map((msg, index) => (
+          <ChatMessageBubble key={index} message={msg} />
         ))}
-        <AnimatePresence>
-          {isLoading && (!history.length || history[history.length - 1]?.role === 'user') && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-start gap-3"
-            >
-              <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center shrink-0">
-                <Bot className="w-5 h-5 text-purple-400" />
-              </div>
-              <div className="max-w-xl p-3 rounded-lg bg-gray-700 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                <span className="text-sm text-gray-400 italic">{t('chat:thinking')}</span>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isChatLoading && currentChatHistory.length > 0 && currentChatHistory[currentChatHistory.length - 1].role === 'user' && (
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full bg-purple-900/50 flex items-center justify-center border border-purple-800 shrink-0">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+            </div>
+            <div className="max-w-xl p-3 rounded-xl text-white bg-gray-700 rounded-bl-none">
+              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Input Area */}
       <div className="p-4 border-t border-gray-700">
-        <form onSubmit={handleSubmit} className="flex items-center gap-3">
-          <textarea
+        {currentChatHistory.length <= (isExample ? 1 : 0) && suggestedQuestions.length > 0 && (
+          <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+            {suggestedQuestions.map((q, i) => (
+              <button key={i} onClick={() => handleSuggestionClick(q)}
+                className="p-2 text-sm text-left bg-gray-800/60 border border-gray-700 rounded-lg hover:bg-gray-700/80 transition-colors"
+              >
+                {q}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <input
+            type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-            placeholder={t('chat:placeholder')}
-            disabled={isLoading}
-            rows={1}
-            className="w-full p-2 bg-gray-900 border border-gray-600 rounded-md resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-60"
+            placeholder="Ask something about the analysis..."
+            className="flex-grow p-2 bg-gray-900 border border-gray-600 rounded-md text-sm"
+            disabled={isChatLoading}
           />
-          <button title={t('chat:send')} type="submit" disabled={isLoading || !input.trim()} className="p-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed">
+          <button title='Send Message' type="submit" disabled={isChatLoading || !input.trim()} className="p-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:bg-gray-600">
             <Send className="w-5 h-5" />
           </button>
         </form>
       </div>
-    </motion.div>
+    </div>
   );
 };
 

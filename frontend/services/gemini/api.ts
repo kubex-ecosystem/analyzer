@@ -1,155 +1,171 @@
-import { GoogleGenAI, GenerateContentResponse, Chat } from "@google/genai";
-import { AnalysisType, ProjectAnalysis, EvolutionAnalysis, HistoryItem } from "../../types";
-import { getAnalysisPrompt, getEvolutionPrompt } from "./prompts";
-import { projectAnalysisSchema, evolutionAnalysisSchema } from "./schemas";
-import { parseJsonResponse, handleGeminiError } from "./utils";
+// services/gemini/api.ts
+// FIX: Added full content for services/gemini/api.ts to resolve module errors.
 
-const getApiKey = (userApiKey?: string): string => {
-    const key = userApiKey || process.env.API_KEY;
-    if (!key) {
-        throw new Error("Gemini API key not found. Please provide it in the settings or set the API_KEY environment variable.");
-    }
-    return key;
-}
+import { GoogleGenAI } from "@google/genai";
+import {
+  AnalysisType,
+  DashboardInsight,
+  EvolutionAnalysis,
+  HistoryItem,
+  ProjectAnalysis,
+  SelfCritiqueAnalysis,
+  UserProfile,
+} from '../../types';
 
-/**
- * Tests a Gemini API key by making a lightweight request.
- * @param apiKey The API key to test.
- * @throws An error with a descriptive message if the key is invalid or another issue occurs.
- */
-export const testApiKey = async (apiKey: string): Promise<void> => {
-    if (!apiKey || !apiKey.trim()) {
-      // Use a specific error message that can be caught and translated
-      const err = new Error("API_KEY_EMPTY");
-      err.name = 'ApiKeyError';
-      throw err;
-    }
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-      // Use a minimal, low-token request to validate the key and its permissions
-      await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: "test",
-      });
-    } catch (error) {
-      // Let handleGeminiError parse the error and throw a more user-friendly message
-      handleGeminiError(error);
-    }
+import {
+  analysisPromptSystemInstruction,
+  getAnalysisPrompt,
+  getChatPrompt,
+  getDashboardInsightPrompt,
+  getEvolutionAnalysisPrompt,
+  getSelfCritiquePrompt,
+} from './prompts';
+
+import {
+  DashboardInsightSchema,
+  EvolutionAnalysisSchema,
+  ProjectAnalysisSchema,
+  SelfCritiqueSchema,
+} from './schemas';
+import { handleGeminiError } from './utils';
+
+// This function should be called ONLY ONCE to initialize the API.
+const getGenAI = (apiKey?: string) => {
+  const key = apiKey || process.env.API_KEY;
+  if (!key) {
+    const error = new Error("API_KEY_EMPTY");
+    handleGeminiError(error);
+  }
+  return new GoogleGenAI({ apiKey: key });
 };
 
+type GenerateContentRequest = {
+  model: string;
+  // Removida a opção de string no array para alinhar com o tipo esperado pelo SDK.
+  contents: Array<{ role?: string; parts?: Array<{ text: string }> }>;
+  config?: {
+    responseMimeType?: string;
+    responseSchema?: any;
+    systemInstruction?: string;
+  };
+};
 
-/**
- * Analyzes a project context using the Gemini API.
- * @param projectContext The context of the project to analyze.
- * @param analysisType The type of analysis to perform.
- * @param locale The desired language for the response.
- * @param userApiKey Optional user-provided API key.
- * @returns A promise that resolves to the project analysis.
- */
+const callGemini = async (
+  apiKey: string,
+  prompt: string,
+  schema: object,
+  systemInstruction?: string
+): Promise<ProjectAnalysis | EvolutionAnalysis | SelfCritiqueAnalysis | DashboardInsight> => {
+  try {
+    const ai = getGenAI(apiKey);
+    const request: GenerateContentRequest = {
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: schema,
+      }
+    };
+
+    if (systemInstruction) {
+      request.config!.systemInstruction = systemInstruction;
+    }
+
+    // Preserve the original returned value (it can be a string or an object).
+    const result = await ai.models.generateContent(request);
+
+    // Safely extract the response text. The SDK can return either a string or an object with `.text`.
+    let rawText = "";
+    if (typeof result === "string") {
+      rawText = result;
+    } else if (result && typeof (result as any).text === "string") {
+      rawText = (result as any).text;
+    }
+
+    // Ensure JSON.parse always receives a string; fallback to empty object if nothing found.
+    const parsed = JSON.parse(rawText || "{}") as any; // The schema ensures the type.
+
+    // Add usage metadata to the response object when available and when result is an object.
+    if (result && typeof result !== "string" && (result as any).usageMetadata) {
+      const um = (result as any).usageMetadata;
+      parsed.usageMetadata = {
+        promptTokenCount: um.promptTokenCount,
+        candidatesTokenCount: um.candidatesTokenCount,
+        totalTokenCount: um.totalTokenCount,
+      };
+    }
+
+    return parsed;
+  } catch (error) {
+    handleGeminiError(error);
+    throw error; // Re-throw after handling
+  }
+};
+
 export const analyzeProject = async (
   projectContext: string,
   analysisType: AnalysisType,
-  locale: 'pt-BR' | 'en-US',
-  userApiKey?: string,
+  apiKey: string
 ): Promise<ProjectAnalysis> => {
-  try {
-    const apiKey = getApiKey(userApiKey);
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = getAnalysisPrompt(projectContext, analysisType, locale);
-
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: projectAnalysisSchema,
-        },
-    });
-
-    const usageMetadata = response.usageMetadata;
-    const analysisResult = parseJsonResponse<ProjectAnalysis>(response.text, 'ProjectAnalysis');
-    
-    // Add usage metadata to the result
-    if (usageMetadata) {
-        analysisResult.usageMetadata = {
-            promptTokenCount: usageMetadata.promptTokenCount,
-            candidatesTokenCount: usageMetadata.candidatesTokenCount || 0,
-            totalTokenCount: usageMetadata.totalTokenCount,
-        };
-    }
-
-    return analysisResult;
-  } catch (error) {
-    handleGeminiError(error);
-    // handleGeminiError throws, so this is for type safety.
-    throw error;
-  }
+  const prompt = getAnalysisPrompt(projectContext, analysisType);
+  return await (callGemini(apiKey, prompt, ProjectAnalysisSchema, analysisPromptSystemInstruction) as Promise<ProjectAnalysis> || {}) as ProjectAnalysis;
 };
 
-/**
- * Compares two history items to generate an evolution analysis using the Gemini API.
- * @param item1 The first history item.
- * @param item2 The second history item.
- * @param locale The desired language for the response.
- * @param userApiKey Optional user-provided API key.
- * @returns A promise that resolves to the evolution analysis.
- */
 export const compareAnalyses = async (
-  item1: HistoryItem,
-  item2: HistoryItem,
-  locale: 'pt-BR' | 'en-US',
-  userApiKey?: string,
+  previous: ProjectAnalysis,
+  current: ProjectAnalysis,
+  apiKey: string
 ): Promise<EvolutionAnalysis> => {
-  try {
-    const apiKey = getApiKey(userApiKey);
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = getEvolutionPrompt(item1, item2, locale);
-
-    const response: GenerateContentResponse = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: evolutionAnalysisSchema,
-        },
-    });
-    
-    const usageMetadata = response.usageMetadata;
-    const evolutionResult = parseJsonResponse<EvolutionAnalysis>(response.text, 'EvolutionAnalysis');
-    
-    if (usageMetadata) {
-        evolutionResult.usageMetadata = {
-            promptTokenCount: usageMetadata.promptTokenCount,
-            candidatesTokenCount: usageMetadata.candidatesTokenCount || 0,
-            totalTokenCount: usageMetadata.totalTokenCount,
-        };
-    }
-    
-    return evolutionResult;
-
-  } catch (error) {
-    handleGeminiError(error);
-    throw error;
-  }
+  const prompt = getEvolutionAnalysisPrompt(previous, current);
+  return await (callGemini(apiKey, prompt, EvolutionAnalysisSchema, analysisPromptSystemInstruction) as Promise<EvolutionAnalysis> || {}) as EvolutionAnalysis;
 };
 
-/**
- * Creates a new chat session with the Gemini API.
- * @param systemInstruction The system instruction/context for the chat.
- * @param userApiKey Optional user-provided API key.
- * @returns A Chat instance.
- */
-export const createChatSession = (
-  systemInstruction: string,
-  userApiKey?: string,
-): Chat => {
-  const apiKey = getApiKey(userApiKey);
-  const ai = new GoogleGenAI({ apiKey });
-  const chat: Chat = ai.chats.create({
+export const generateSelfCritique = async (
+  analysis: ProjectAnalysis,
+  apiKey: string
+): Promise<SelfCritiqueAnalysis> => {
+  const prompt = getSelfCritiquePrompt(analysis);
+  return await (callGemini(apiKey, prompt, SelfCritiqueSchema, analysisPromptSystemInstruction) as Promise<SelfCritiqueAnalysis> || {}) as SelfCritiqueAnalysis;
+};
+
+export const generateDashboardInsight = async (
+  userProfile: UserProfile,
+  recentHistory: HistoryItem[],
+  apiKey: string
+): Promise<DashboardInsight> => {
+  const prompt = getDashboardInsightPrompt(userProfile, recentHistory);
+  return await (callGemini(apiKey, prompt, DashboardInsightSchema) as Promise<DashboardInsight> || {}) as DashboardInsight;
+};
+
+
+export const createChat = (apiKey: string, analysisContext: ProjectAnalysis) => {
+  const ai = getGenAI(apiKey);
+  const systemInstruction = getChatPrompt(analysisContext);
+  const chat = ai.chats.create({
     model: 'gemini-2.5-flash',
     config: {
-      systemInstruction,
-    },
+      systemInstruction
+    }
   });
   return chat;
+};
+
+
+export const testApiKey = async (apiKey: string): Promise<boolean> => {
+  try {
+    const ai = getGenAI(apiKey);
+    // Usar formato consistente de 'contents' semelhante ao restante do arquivo
+    const request: GenerateContentRequest = {
+      model: 'gemini-2.5-flash',
+      contents: [{ role: 'user', parts: [{ text: 'test' }] }],
+      config: {
+        responseMimeType: 'application/json'
+      }
+    };
+    await ai.models.generateContent(request);
+    return true;
+  } catch (error) {
+    handleGeminiError(error);
+    return false;
+  }
 };

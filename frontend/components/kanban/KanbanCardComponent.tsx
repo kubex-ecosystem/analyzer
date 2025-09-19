@@ -1,57 +1,55 @@
+import React from 'react';
 import { motion, PanInfo } from 'framer-motion';
-import { StickyNote } from 'lucide-react';
-import * as React from 'react';
-import { useTranslation } from '../../hooks/useTranslation';
-import { KanbanCard, Priority } from '../../types';
+import { Edit2 } from 'lucide-react';
+import { KanbanCard, Priority, KanbanColumnId } from '../../types';
 import DifficultyMeter from '../common/DifficultyMeter';
 
-interface KanbanCardComponentProps {
+interface KanbanCardProps {
   card: KanbanCard;
   onEdit: () => void;
-  onDragStart?: () => void;
+  onDragStart: (cardId: string, columnId: KanbanColumnId) => void;
   onDrag: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
-  onDragEnd: () => void;
+  onDragEnd: (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => void;
 }
 
-const getPriorityClass = (priority: Priority) => {
-  switch (priority) {
-    case Priority.High: return 'bg-red-500';
-    case Priority.Medium: return 'bg-yellow-500';
-    case Priority.Low: return 'bg-blue-500';
-    default: return 'bg-gray-500';
-  }
+const priorityColors: Record<Priority, string> = {
+  [Priority.High]: 'bg-red-500',
+  [Priority.Medium]: 'bg-yellow-500',
+  [Priority.Low]: 'bg-blue-500',
 };
 
-const KanbanCardComponent: React.FC<KanbanCardComponentProps> = ({ card, onEdit, onDragStart = () => { }, onDrag, onDragEnd }) => {
-  const { t } = useTranslation('common');
-  const cursorClass = 'cursor-grab active:cursor-grabbing';
-
+const KanbanCardComponent: React.FC<KanbanCardProps> = ({ card, onEdit, onDragStart, onDrag, onDragEnd }) => {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      drag={true}
-      dragElastic={0.8}
-      onDragStart={onDragStart}
+      drag
+      dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
+      dragElastic={1}
+      onDragStart={() => onDragStart(card.id, 'backlog' /* This is a placeholder, context should provide column */)}
       onDrag={onDrag}
       onDragEnd={onDragEnd}
-      whileDrag={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(0,0,0,0.2)", zIndex: 50 }}
-      onClick={onEdit}
-      data-kanban-card="true"
-      className={`p-3 bg-gray-900/70 border border-gray-700 rounded-lg transition-all relative hover:bg-gray-800/80 hover:border-gray-600 ${cursorClass}`}
+      className="p-3 bg-gray-800 border border-gray-700 rounded-md cursor-grab active:cursor-grabbing"
     >
-      <div className="flex justify-between items-start gap-2">
-        <p className="text-sm font-semibold text-white pr-2">{card.title}</p>
-        <div className="flex items-center gap-2 shrink-0">
-          {card.notes && <span title={t('kanban.notes')!}><StickyNote className="w-4 h-4 text-gray-500" /></span>}
-          <div className={`w-3 h-3 rounded-full shrink-0 mt-0.5 ${getPriorityClass(card.priority)}`} title={`${t('common.priority')}: ${t(`priority.${card.priority}`)}`}></div>
-        </div>
+      <div className="flex justify-between items-start">
+        <h4 className="text-sm font-semibold text-gray-200">{card.title}</h4>
+        <button onClick={onEdit} className="p-1 text-gray-500 hover:text-white">
+          <Edit2 className="w-3 h-3" />
+        </button>
       </div>
-      <div className="mt-2">
+      <p className="text-xs text-gray-400 mt-1 line-clamp-2">{card.description}</p>
+      <div className="mt-3 flex items-center justify-between">
         <DifficultyMeter difficulty={card.difficulty} />
+        <div className={`w-3 h-3 rounded-full ${priorityColors[card.priority]}`} title={`Priority: ${card.priority}`} />
       </div>
+      {card.tags && card.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {card.tags.map(tag => (
+            <span key={tag} className="px-1.5 py-0.5 text-xs bg-gray-700 text-gray-300 rounded">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };

@@ -1,114 +1,63 @@
-const DB_NAME = 'project-analyzer-db';
-const DB_VERSION = 1;
-const STORE_NAME = 'keyval';
+import { openDB, DBSchema } from 'idb';
+import { Project } from '../types';
 
-let dbPromise: Promise<IDBDatabase> | null = null;
+const DB_NAME = 'gemx-db';
+const KEYVAL_STORE_NAME = 'keyval';
+const PROJECTS_STORE_NAME = 'projects';
+const DB_VERSION = 2;
 
-/**
- * Creates and initializes the IndexedDB database and object store.
- * This function handles the initial setup and version upgrades.
- * @returns A promise that resolves with the IDBDatabase instance.
- */
-function createDB(): Promise<IDBDatabase> {
-  if (dbPromise) {
-    return dbPromise;
-  }
+interface GemXDB extends DBSchema {
+  [KEYVAL_STORE_NAME]: {
+    key: string;
+    value: any;
+  };
+  [PROJECTS_STORE_NAME]: {
+    key: string;
+    value: Project;
+    indexes: { 'by-name': string };
+  };
+}
 
-  dbPromise = new Promise((resolve, reject) => {
-    if (typeof indexedDB === 'undefined') {
-        reject('IndexedDB is not supported in this browser.');
-        return;
+const dbPromise = openDB<GemXDB>(DB_NAME, DB_VERSION, {
+  upgrade(db, oldVersion) {
+    if (oldVersion < 1) {
+      db.createObjectStore(KEYVAL_STORE_NAME);
     }
+    if (oldVersion < 2) {
+      const projectStore = db.createObjectStore(PROJECTS_STORE_NAME, { keyPath: 'id' });
+      projectStore.createIndex('by-name', 'name');
+    }
+  },
+});
 
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-
-    request.onsuccess = (event) => {
-      resolve((event.target as IDBOpenDBRequest).result);
-    };
-
-    request.onerror = (event) => {
-      console.error('IndexedDB error:', (event.target as IDBOpenDBRequest).error);
-      reject('IndexedDB error');
-      dbPromise = null; // Reset promise on error
-    };
-  });
-
-  return dbPromise;
-}
-
-/**
- * Retrieves a value from the IndexedDB store by its key.
- * @template T The expected type of the value.
- * @param {string} key The key of the item to retrieve.
- * @returns {Promise<T | undefined>} A promise that resolves with the value, or undefined if not found.
- */
+// Generic Key-Value Store Functions
 export async function get<T>(key: string): Promise<T | undefined> {
-  const db = await createDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readonly');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.get(key);
-
-    request.onsuccess = () => {
-      resolve(request.result as T);
-    };
-
-    request.onerror = () => {
-      console.error('Error getting data from IndexedDB:', request.error);
-      reject(request.error);
-    };
-  });
+  return (await dbPromise).get(KEYVAL_STORE_NAME, key);
 }
 
-/**
- * Stores a value in the IndexedDB store with a given key.
- * @param {string} key The key to store the value under.
- * @param {any} value The value to be stored.
- * @returns {Promise<void>} A promise that resolves when the operation is complete.
- */
 export async function set(key: string, value: any): Promise<void> {
-  const db = await createDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(value, key);
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      console.error('Error setting data in IndexedDB:', request.error);
-      reject(request.error);
-    };
-  });
+  await (await dbPromise).put(KEYVAL_STORE_NAME, value, key);
 }
 
-/**
- * Clears all key-value pairs from the object store.
- * @returns {Promise<void>} A promise that resolves when the operation is complete.
- */
+// Project-Specific Store Functions
+export async function getProject(id: string): Promise<Project | undefined> {
+    return (await dbPromise).get(PROJECTS_STORE_NAME, id);
+}
+
+export async function setProject(project: Project): Promise<string> {
+    return (await dbPromise).put(PROJECTS_STORE_NAME, project);
+}
+
+export async function deleteProject(id: string): Promise<void> {
+    await (await dbPromise).delete(PROJECTS_STORE_NAME, id);
+}
+
+export async function getAllProjects(): Promise<Project[]> {
+    return (await dbPromise).getAll(PROJECTS_STORE_NAME);
+}
+
+// Clear All Data Function
 export async function clear(): Promise<void> {
-  const db = await createDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.clear();
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      console.error('Error clearing IndexedDB store:', request.error);
-      reject(request.error);
-    };
-  });
+  await (await dbPromise).clear(KEYVAL_STORE_NAME);
+  await (await dbPromise).clear(PROJECTS_STORE_NAME);
 }

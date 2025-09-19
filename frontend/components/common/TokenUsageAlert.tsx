@@ -1,69 +1,44 @@
-import { motion } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
-import * as React from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useTranslation } from '../../hooks/useTranslation';
+import React from 'react';
+import { TrendingUp, AlertCircle } from 'lucide-react';
 
 interface TokenUsageAlertProps {
-  limit: number;
   consumed: number;
+  limit: number;
 }
 
-const TokenUsageAlert: React.FC<TokenUsageAlertProps> = ({ limit, consumed }) => {
-  const { t } = useTranslation('common');
-  const { locale } = useLanguage();
+const TokenUsageAlert: React.FC<TokenUsageAlertProps> = ({ consumed, limit }) => {
+  const percentage = limit > 0 ? Math.round((consumed / limit) * 100) : 0;
 
-  if (limit <= 0) {
-    return null;
-  }
-
-  const percentage = Math.round((consumed / limit) * 100);
-
-  let progressBarColor = 'bg-green-500';
-  let textColor = 'text-green-300';
-  let borderColor = 'border-green-700/50';
-  let bgColor = 'bg-green-900/20';
-
-  if (percentage >= 90) {
-    progressBarColor = 'bg-red-500';
-    textColor = 'text-red-300';
-    borderColor = 'border-red-700/50';
-    bgColor = 'bg-red-900/20';
-  } else if (percentage >= 70) {
-    progressBarColor = 'bg-yellow-500';
-    textColor = 'text-yellow-300';
-    borderColor = 'border-yellow-700/50';
-    bgColor = 'bg-yellow-900/20';
-  }
+  const getBarColor = () => {
+    if (percentage > 90) return 'bg-red-500';
+    if (percentage > 70) return 'bg-yellow-500';
+    return 'bg-blue-500';
+  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`p-3 rounded-lg border ${borderColor} ${bgColor} ${textColor}`}
-    >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="w-4 h-4" />
-          <span className="font-semibold">{t('tokenUsage.title')}</span>
-        </div>
-        <p>
-          {t('tokenUsage.usageText', {
-            consumed: consumed.toLocaleString(locale),
-            limit: limit.toLocaleString(locale),
-            percentage
-          })}
+    <div className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg">
+      <h3 className="text-md font-semibold text-white flex items-center gap-2">
+        <TrendingUp className="w-5 h-5 text-gray-400" />
+        Monthly Usage
+      </h3>
+      <div className="mt-3">
+        <p className="text-sm text-gray-400">
+          {`You have used ${consumed.toLocaleString()} of ${limit.toLocaleString()} tokens (${percentage}%).`}
         </p>
+        <div className="relative w-full bg-gray-700 rounded-full h-2 mt-2">
+          <div
+            className={`h-2 rounded-full transition-all duration-500 ${getBarColor()}`}
+            style={{ width: `${percentage}%` }}
+          />
+        </div>
       </div>
-      <div className="mt-2 w-full bg-gray-700 rounded-full h-1.5">
-        <motion.div
-          className={`h-1.5 rounded-full ${progressBarColor}`}
-          initial={{ width: '0%' }}
-          animate={{ width: `${Math.min(percentage, 100)}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
-      </div>
-    </motion.div>
+      {percentage > 90 && (
+        <div className="mt-3 text-xs text-yellow-400 flex items-center gap-2 p-2 bg-yellow-900/30 rounded-md">
+          <AlertCircle className="w-4 h-4" />
+          <span>You are approaching your token limit.</span>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -1,3 +1,4 @@
+// FIX: Corrected import path for types
 import { AppSettings, UserProfile } from '../types';
 
 export const initialProjectContext = `# LookAtni Code - Gerado automaticamente
@@ -8,8 +9,8 @@ export const initialProjectContext = `# LookAtni Code - Gerado automaticamente
 // / RELEASE_NOTES.md / //
 # 🚀 Kortex v0.1.0 - Release Notes
 
-**Release Date:** July 25, 2025  
-**Version:** 0.1.0  
+**Release Date:** July 25, 2025
+**Version:** 0.1.0
 **Status:** Production Ready
 
 ---
@@ -94,7 +95,7 @@ AFTER:  Real APIs → Resilient Service Layer → WebSocket Updates → UI with 
 
 This directory contains the complete documentation for Kortex, built with MkDocs Material.
 
-## 🚀 Quick Start
+[[[[[   ## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -145,16 +146,16 @@ graph TD
     B --> C[Resilient Service Layer]
     C --> D[Mock API Server]
     C --> E[Production APIs]
-    
+
     D --> F[GitHub API Mock]
     D --> G[Azure DevOps Mock]
     D --> H[MCP Server Mock]
     D --> I[Helm/K8s Mock]
-    
+
     E --> J[StatusRafa MCP]
     E --> K[Kosmos Backend]
     E --> L[External APIs]
-    
+
     A --> M[WebSocket System]
     M --> N[Real-time Events]
     M --> O[Auto-reconnect]
@@ -171,18 +172,22 @@ graph TD
 `;
 
 export const defaultSettings: AppSettings = {
-    saveHistory: true,
-    theme: 'dark',
-    tokenLimit: 1000000,
-    userApiKey: '',
-    githubPat: '',
-    jiraInstanceUrl: '',
-    jiraUserEmail: '',
-    jiraApiToken: '',
+  saveHistory: true,
+  theme: 'dark',
+  enableTelemetry: false,
+  autoAnalyze: false,
+  tokenLimit: 1000000,
+  userApiKey: '',
+  githubPat: '',
+  jiraInstanceUrl: '',
+  jiraUserEmail: '',
+  jiraApiToken: '',
+  enableDashboardInsights: true,
 };
 
 export const defaultUserProfile: UserProfile = {
-    name: 'GemX User',
-    email: '',
-    avatar: '',
+  name: 'GemX User',
+  email: '',
+  avatar: '',
 };
+

@@ -15,6 +15,7 @@ type Handler struct{ reg *registry.Registry }
 func New(reg *registry.Registry) *Handler { return &Handler{reg: reg} }
 
 type adviseReq struct {
+	Mode        string         `json:"mode"`
 	Provider    string         `json:"provider"`
 	Model       string         `json:"model"`
 	Scorecard   map[string]any `json:"scorecard"`
@@ -23,7 +24,7 @@ type adviseReq struct {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	mode := Mode(r.URL.Query().Get("mode"))
+	mode := r.URL.Query().Get("mode")
 	if mode == "" {
 		http.Error(w, "mode required: exec|code|ops|community", http.StatusBadRequest)
 		return
@@ -40,7 +41,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sys := systemPrompt(mode)
+	sys := systemPrompt(in.Mode)
 	user := userPrompt(in.Scorecard, in.Hotspots)
 
 	headers := map[string]string{
@@ -76,16 +77,46 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if c.Content != "" {
 			w.Write([]byte("data: "))
 			w.Write(enc(map[string]any{"content": c.Content}))
-			w.Write([]byte("nn"))
-			flusher.Flush()
+			w.Write([]byte("\n\n"))
+			if flusher != nil {
+				flusher.Flush()
+			}
+			if c.Done {
+				w.Write([]byte("data: "))
+				w.Write(enc(map[string]any{"done": true, "usage": c.Usage, "mode": mode}))
+				w.Write([]byte("nn"))
+				flusher.Flush()
+			}
 		}
-		if c.Done {
-			w.Write([]byte("data: "))
-			w.Write(enc(map[string]any{"done": true, "usage": c.Usage, "mode": mode}))
-			w.Write([]byte("nn"))
-			flusher.Flush()
-		}
-	}
-	_ = start
+		_ = start
 
+	}
+}
+
+// systemPrompt retorna o prompt de sistema apropriado para o modo requerido.
+// Inclui casos para exec|code|ops|community e um fallback genérico.
+func systemPrompt(mode string) string {
+	switch mode {
+	case "exec":
+		return "You are an expert in repository execution and operational guidance. Provide clear, concise instructions focusing on runtime behavior, command usage, and how to reproduce issues."
+	case "code":
+		return "You are a code reviewer and refactorer. Provide focused suggestions to improve code quality, architecture, maintainability, and testing. Highlight concrete code changes when appropriate."
+	case "ops":
+		return "You are an infrastructure and operations expert. Suggest improvements for deployment, CI/CD, monitoring, reliability, and security relevant to this repository."
+	case "community":
+		return "You are a community and contributor experience advisor. Recommend improvements for documentation, contributing guidelines, issue templates, and onboarding for new contributors."
+	default:
+		return "You are a general repository advisor. Provide concise, actionable recommendations to improve the repository across code, operations, and contributor experience."
+	}
+}
+
+func userPrompt(scorecard map[string]any, hotspots []string) string {
+	scorecardStr, _ := json.MarshalIndent(scorecard, "", "  ")
+	hotspotsStr, _ := json.MarshalIndent(hotspots, "", "  ")
+
+	return `Here are the scorecard results for a software repository:
+` + "```json\n" + string(scorecardStr) + "\n```\n" + `
+Here are some identified hotspots in the repository that may need attention:
+` + "```json\n" + string(hotspotsStr) + "\n```\n" + `
+Based on the above scorecard results and hotspots, please provide specific, actionable advice to improve the repository. Focus on practical steps that can be taken to address any issues or weaknesses identified. Be concise and prioritize the most impactful recommendations.`
 }

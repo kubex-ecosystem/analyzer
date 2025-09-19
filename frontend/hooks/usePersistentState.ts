@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+// FIX: Corrected import for generic get/set from idb utility
 import { get, set } from '../lib/idb';
 
 type SetValue<T> = (value: T | ((prevValue: T) => T)) => void;

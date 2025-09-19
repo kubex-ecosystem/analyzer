@@ -1,43 +1,27 @@
-import { motion } from 'framer-motion';
-import * as React from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useTranslation } from '../../hooks/useTranslation';
+import React from 'react';
+import { Calculator } from 'lucide-react';
+import { UsageMetadata } from '../../types';
 
 interface SubtleTokenUsageProps {
-  limit: number;
-  consumed: number;
+  usageMetadata?: UsageMetadata;
+  label: string;
 }
 
-const SubtleTokenUsage: React.FC<SubtleTokenUsageProps> = ({ limit, consumed }) => {
-  const { t } = useTranslation('common');
-  const { locale } = useLanguage();
+const SubtleTokenUsage: React.FC<SubtleTokenUsageProps> = ({ usageMetadata, label }) => {
 
-  if (limit <= 0) {
-    return null; // Don't show if there's no limit
-  }
-
-  const percentage = Math.round((consumed / limit) * 100);
-
-  let progressBarColor = 'bg-green-500';
-  if (percentage >= 90) {
-    progressBarColor = 'bg-red-500';
-  } else if (percentage >= 70) {
-    progressBarColor = 'bg-yellow-500';
+  if (!usageMetadata) {
+    return null;
   }
 
   return (
-    <div className="w-full text-xs text-gray-400">
-      <div className="flex justify-between mb-1">
-        <span>{t('tokenUsage.monthlyUsage')}</span>
-        <span>{`${consumed.toLocaleString(locale)} / ${limit.toLocaleString(locale)}`}</span>
-      </div>
-      <div className="w-full bg-gray-700 rounded-full h-1.5">
-        <motion.div
-          className={`h-1.5 rounded-full ${progressBarColor}`}
-          initial={{ width: '0%' }}
-          animate={{ width: `${Math.min(percentage, 100)}%` }}
-          transition={{ duration: 0.5, ease: 'easeOut' }}
-        />
+    <div
+      className="flex items-center justify-center gap-3 text-xs text-gray-400 p-2 bg-gray-800/50 border border-gray-700 rounded-lg max-w-md mx-auto"
+      aria-label="Token usage metadata for the last analysis"
+    >
+      <Calculator className="w-4 h-4 text-gray-500 shrink-0" />
+      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+        <span className="font-semibold">{label}:</span>
+        <span>{usageMetadata.totalTokenCount.toLocaleString('en-US')} Tokens</span>
       </div>
     </div>
   );

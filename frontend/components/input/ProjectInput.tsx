@@ -1,481 +1,246 @@
+import * as React from 'react';
+
 import { motion } from 'framer-motion';
-import { AlertTriangle, ArrowLeft, Code2, FileText, FolderOpen, Github, Loader2, Plus, Search, Sparkles, Upload, X } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FileText, Github, Loader2, MessageSquareQuote, Wand2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { initialProjectContext } from '../../constants';
 import { useNotification } from '../../contexts/NotificationContext';
-import { useTranslation } from '../../hooks/useTranslation';
-import { fetchRepoContents, fetchRepoForAnalysis } from '../../services/integrations/github';
-import { fetchJiraProject } from '../../services/integrations/jira';
-import { AnalysisType, AppSettings, ProjectFile, UsageTracking } from '../../types';
-import SubtleTokenUsage from '../common/SubtleTokenUsage';
-import TokenUsageAlert from '../common/TokenUsageAlert';
+import { useProjectContext } from '../../contexts/ProjectContext';
+import { useUser } from '../../contexts/UserContext';
+import { exampleProject } from '../../data/exampleAnalysis';
+import { fetchRepoContents } from '../../services/integrations/github';
+import { AnalysisType } from '../../types';
 import GitHubSearchModal from './GitHubSearchModal';
-import LookAtniDirectExtractor from './LookAtniDirectExtractor';
 
-interface ProjectInputProps {
-  files: ProjectFile[];
-  onFilesChange: (files: ProjectFile[]) => void;
-  onAnalyze: (type: AnalysisType) => void;
-  onShowExample: () => void;
-  isLoading: boolean;
-  settings: AppSettings;
-  usageTracking: UsageTracking;
-  isExample: boolean;
-  onExitExample: () => void;
-  hasRealData: boolean;
-}
-
-const colorMap = {
-  blue: { text: 'text-blue-400', hoverBorder: 'hover:border-blue-500/50' },
-  red: { text: 'text-red-400', hoverBorder: 'hover:border-red-500/50' },
-  purple: { text: 'text-purple-400', hoverBorder: 'hover:border-purple-500/50' },
-  teal: { text: 'text-teal-400', hoverBorder: 'hover:border-teal-500/50' },
+const colorMap: Record<string, { border: string; bg: string; hoverBorder: string }> = {
+  blue: { border: 'border-blue-600', bg: 'bg-blue-900/50', hoverBorder: 'hover:border-blue-500/80' },
+  red: { border: 'border-red-600', bg: 'bg-red-900/50', hoverBorder: 'hover:border-red-500/80' },
+  purple: { border: 'border-purple-600', bg: 'bg-purple-900/50', hoverBorder: 'hover:border-purple-500/80' },
+  teal: { border: 'border-teal-600', bg: 'bg-teal-900/50', hoverBorder: 'hover:border-teal-500/80' },
+  amber: { border: 'border-amber-600', bg: 'bg-amber-900/50', hoverBorder: 'hover:border-amber-500/80' },
+  green: { border: 'border-green-600', bg: 'bg-green-900/50', hoverBorder: 'hover:border-green-500/80' },
+  pink: { border: 'border-pink-600', bg: 'bg-pink-900/50', hoverBorder: 'hover:border-pink-500/80' },
 };
 
-const AnalysisButton: React.FC<{
+const AnalysisTypeButton: React.FC<{
   type: AnalysisType;
   label: string;
   description: string;
-  onAnalyze: (type: AnalysisType) => void;
-  isLoading: boolean;
-  color: keyof typeof colorMap;
-  icon: React.ElementType;
-}> = ({ type, label, description, onAnalyze, isLoading, color, icon: Icon }) => {
-  const styles = colorMap[color] || colorMap.blue;
-  return (
-    <button
-      onClick={() => onAnalyze(type)}
-      disabled={isLoading}
-      className={`group p-4 bg-gray-800/50 border border-gray-700 rounded-lg text-left hover:bg-gray-700/50 ${styles.hoverBorder} transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-start gap-4`}
-    >
-      <Icon className={`w-6 h-6 shrink-0 mt-1 ${styles.text} transition-transform duration-300 group-hover:scale-110`} />
-      <div>
-        <p className="font-semibold text-white">{label}</p>
-        <p className="text-sm text-gray-400 mt-1">{description}</p>
-      </div>
-    </button>
-  );
-};
+  color: string;
+  isSelected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}> = ({ type, label, description, color, isSelected, onClick, disabled = false }) => (
+  <motion.button
+    onClick={onClick}
+    disabled={disabled}
+    className={`p-4 text-left border rounded-lg transition-all w-full relative ${isSelected
+      ? `${colorMap[color].bg} ${colorMap[color].border}`
+      : `bg-gray-800/50 border-gray-700 ${!disabled ? colorMap[color].hoverBorder : ''}`
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    whileHover={{ scale: disabled ? 1 : 1.02, zIndex: 1 }}
+    whileTap={{ scale: disabled ? 1 : 0.98 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+    style={{ transformOrigin: 'center' }}
+  >
+    {isSelected && (
+      <motion.div
+        layoutId="analysis-type-selector"
+        className={`absolute inset-0 ${colorMap[color].bg.replace('/50', '/20')} rounded-lg`}
+        style={{ zIndex: -1 }}
+      />
+    )}
+    <h4 className="font-semibold text-white">{label}</h4>
+    <p className="text-sm text-gray-400 mt-1">{description}</p>
+  </motion.button>
+);
 
+const ProjectInput: React.FC = () => {
+  const {
+    handleAnalyze,
+    isAnalyzing,
+    activeProject,
+  } = useProjectContext();
 
-const ProjectInput: React.FC<ProjectInputProps> = ({
-  files,
-  onFilesChange,
-  onAnalyze,
-  onShowExample,
-  isLoading,
-  settings,
-  usageTracking,
-  isExample,
-  onExitExample,
-  hasRealData,
-}) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { t } = useTranslation(['input', 'common']);
+  const { userSettings, integrations } = useUser();
+
+  const [projectContext, setProjectContext] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [analysisType, setAnalysisType] = useState<AnalysisType>(AnalysisType.Architecture);
+  const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
+  const [isFetchingRepo, setIsFetchingRepo] = useState(false);
   const { addNotification } = useNotification();
 
-  const [isFetching, setIsFetching] = useState<null | 'github' | 'jira' | 'github-search'>(null);
-  const [repoUrl, setRepoUrl] = useState('');
-
-  const [selectedFileId, setSelectedFileId] = useState<number | null>(null);
-  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-  const [inputMode, setInputMode] = useState<'files' | 'lookatni'>('files');
-
-  const selectedFile = useMemo(() => files.find(f => f.id === selectedFileId), [files, selectedFileId]);
+  const hasPreviousAnalysis = !!activeProject && activeProject.history.length > 0;
 
   useEffect(() => {
-    if (!selectedFileId && files.length > 0) {
-      setSelectedFileId(files[0].id);
+    if (activeProject) {
+      setProjectName(activeProject.name);
+      // Maybe load last context file? For now, keep it simple.
+      setProjectContext('');
+    } else {
+      setProjectName('');
+      setProjectContext('');
     }
-    if (selectedFileId && !files.some(f => f.id === selectedFileId)) {
-      setSelectedFileId(files.length > 0 ? files[0].id : null);
-    }
-  }, [files, selectedFileId]);
+  }, [activeProject]);
 
   const analysisTypes = [
-    { type: AnalysisType.General, label: t('analysisTypes.GENERAL.label'), description: t('analysisTypes.GENERAL.description'), color: 'blue', icon: FileText },
-    { type: AnalysisType.Security, label: t('analysisTypes.SECURITY.label'), description: t('analysisTypes.SECURITY.description'), color: 'red', icon: Sparkles },
-    { type: AnalysisType.Scalability, label: t('analysisTypes.SCALABILITY.label'), description: t('analysisTypes.SCALABILITY.description'), color: 'purple', icon: Sparkles },
-    { type: AnalysisType.CodeQuality, label: t('analysisTypes.CODE_QUALITY.label'), description: t('analysisTypes.CODE_QUALITY.description'), color: 'teal', icon: Sparkles },
+    { type: AnalysisType.Architecture, color: 'purple', label: "Architectural Review", description: "Analyzes high-level design and generates a visual diagram" },
+    { type: AnalysisType.CodeQuality, color: 'teal', label: "Code Quality", description: "Evaluates patterns, maintainability, and adherence to principles like SOLID" },
+    { type: AnalysisType.Security, color: 'red', label: "Security Analysis", description: "Focus on vulnerabilities, security practices, and compliance" },
+    { type: AnalysisType.Scalability, color: 'blue', label: "Scalability Analysis", description: "Assessment of system growth capacity and performance" },
+    { type: AnalysisType.Compliance, color: 'green', label: "Compliance & Best Practices", description: "Focus on accessibility (WCAG), data privacy, and industry standards" },
+    { type: AnalysisType.DocumentationReview, color: 'amber', label: "Documentation Review", description: "Analysis of clarity, completeness, and structure of project documentation" },
+    { type: AnalysisType.SelfCritique, color: 'pink', label: "Self-Critique (BETA)", description: "The AI reviews its own last analysis for quality and consistency.", disabled: !hasPreviousAnalysis },
   ];
 
-  // Convert LookAtni extracted files to ProjectFile format
-  const handleLookAtniFilesExtracted = (extractedFiles: any[]) => {
-    const convertedFiles: ProjectFile[] = extractedFiles.map((file) => ({
-      id: Date.now() + Math.random(),
-      name: file.name,
-      content: file.content,
-      isFragment: true,
-    }));
-
-    onFilesChange([...files, ...convertedFiles]);
-
-    if (convertedFiles.length > 0) {
-      setSelectedFileId(convertedFiles[0].id);
+  const handleImportFromGithub = async (owner: string, repo: string) => {
+    setIsGithubModalOpen(false);
+    setIsFetchingRepo(true);
+    if (!activeProject) {
+      setProjectName(`${owner}/${repo}`);
     }
-
-    addNotification({
-      type: 'success',
-      message: `Successfully imported ${convertedFiles.length} files from LookAtni extraction!`
-    });
-  };
-
-  // Handle selected fragments from LookAtni
-  const handleLookAtniFragmentsSelected = (fragments: any[]) => {
-    const fragmentFiles: ProjectFile[] = fragments.map((fragment, index) => ({
-      id: Date.now() + index,
-      name: `${fragment.type}-${fragment.name}.${fragment.language}`,
-      content: `// Fragment: ${fragment.name} (${fragment.type})\n// File: ${fragment.file_path}:${fragment.start_line}-${fragment.end_line}\n// Language: ${fragment.language}\n\n${fragment.content}`,
-    }));
-
-    onFilesChange([...files, ...fragmentFiles]);
-
-    if (fragmentFiles.length > 0) {
-      setSelectedFileId(fragmentFiles[0].id);
-    }
-
-    addNotification({
-      type: 'success',
-      message: `Successfully imported ${fragmentFiles.length} code fragments for analysis!`
-    });
-  };
-
-  const handleAddNewFile = () => {
-    const newFile: ProjectFile = {
-      id: Date.now(),
-      name: `untitled-${files.length + 1}.txt`,
-      content: '',
-    };
-    onFilesChange([...files, newFile]);
-    setSelectedFileId(newFile.id);
-  };
-
-  const handleFileSelectedForUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const newFile: ProjectFile = {
-          id: Date.now(),
-          name: file.name,
-          content: event.target?.result as string,
-        };
-        onFilesChange([...files, newFile]);
-        setSelectedFileId(newFile.id);
-      };
-      reader.readAsText(file);
-    }
-    // Reset file input to allow selecting the same file again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleDeleteFile = (idToDelete: number) => {
-    onFilesChange(files.filter(f => f.id !== idToDelete));
-  };
-
-  const handleUpdateFile = (updatedFile: ProjectFile) => {
-    onFilesChange(files.map(f => f.id === updatedFile.id ? updatedFile : f));
-  };
-
-  const handleFetchGitHub = async () => {
-    if (!repoUrl) {
-      addNotification({ message: t('notifications.emptyRepoUrl'), type: 'error' });
-      return;
-    }
-    if (!settings.githubPat) {
-      addNotification({ message: t('notifications.noGithubPat'), type: 'error' });
-      return;
-    }
-    setIsFetching('github');
     try {
-      const content = await fetchRepoContents(repoUrl, settings.githubPat);
-      const repoName = repoUrl.split('/').pop() || 'github-repo';
-      const newFile: ProjectFile = {
-        id: Date.now(),
-        name: `${repoName}.md`,
-        content: content,
-      };
-      onFilesChange([...files, newFile]);
-      setSelectedFileId(newFile.id);
-      addNotification({ message: t('notifications.repoDataFetched'), type: 'success' });
+      const githubPat = integrations?.github?.githubPat;
+      if (!githubPat) {
+        addNotification({ message: 'GitHub PAT is required for fetching repositories', type: 'error' });
+        return;
+      }
+      const content = await fetchRepoContents(`https://github.com/${owner}/${repo}`, githubPat);
+      setProjectContext(content);
+      addNotification({ message: `Successfully imported repository: ${owner}/${repo}`, type: 'success' });
     } catch (error: any) {
       addNotification({ message: error.message, type: 'error' });
     } finally {
-      setIsFetching(null);
+      setIsFetchingRepo(false);
     }
   };
 
-  const handleImportRepo = async (owner: string, repo: string) => {
-    if (!settings.githubPat) {
-      addNotification({ message: t('notifications.noGithubPat'), type: 'error' });
-      return;
-    }
-    setIsFetching('github-search');
-    setIsSearchModalOpen(false);
-    try {
-      const content = await fetchRepoForAnalysis(owner, repo, settings.githubPat);
-      const newFile: ProjectFile = {
-        id: Date.now(),
-        name: `${owner}-${repo}.md`,
-        content: content,
-      };
-      onFilesChange([...files, newFile]);
-      setSelectedFileId(newFile.id);
-      addNotification({ message: t('notifications.repoImportSuccess'), type: 'success' });
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsFetching(null);
-    }
-  };
+  const handleUseExample = () => {
+    setProjectName(exampleProject.name);
+    setProjectContext(initialProjectContext);
+    addNotification({ message: 'Example project context has been loaded into the form.', type: 'info' });
+  }
 
-  // This is still mocked, but adds a file.
-  const handleFetchJira = async () => {
-    setIsFetching('jira');
-    try {
-      const content = await fetchJiraProject("MOCK", settings);
-      const newFile: ProjectFile = {
-        id: Date.now(),
-        name: 'jira-project.md',
-        content: content
-      };
-      onFilesChange([...files, newFile]);
-      setSelectedFileId(newFile.id);
-      addNotification({ message: t('notifications.jiraDataFetched'), type: 'info' });
-    } catch (error: any) {
-      addNotification({ message: error.message, type: 'error' });
-    } finally {
-      setIsFetching(null);
-    }
-  };
+  const handleTriggerAnalysis = () => {
+    // For self-critique, the context is the previous analysis, handled in the context provider.
+    // We pass an empty string for context here.
+    const contextToSend = analysisType === AnalysisType.SelfCritique ? '' : projectContext;
+    handleAnalyze(projectName, contextToSend, analysisType);
+  }
 
-  const tokenPercentage = settings.tokenLimit > 0 ? (usageTracking.totalTokens / settings.tokenLimit) * 100 : 0;
+  const isSelfCritique = analysisType === AnalysisType.SelfCritique;
+  const canAnalyze = (isSelfCritique && hasPreviousAnalysis) ||
+    (!isSelfCritique && projectContext.trim().length > 100 && (!activeProject ? projectName.trim().length > 2 : true))
+    && !isAnalyzing;
+
+
+  const placeholderText = isSelfCritique
+    ? `The AI will now critique its latest analysis for the project "${activeProject?.name}". No context input is needed.`
+    : "Paste your project documentation here...\n\n# Kortex Project\n## Overview\nKortex is a real-time monitoring dashboard...";
 
   return (
     <>
-      <div className="space-y-8">
-        {isExample && (
-          <motion.div
-            className="mb-8 p-4 bg-purple-900/50 border border-purple-700 text-purple-300 rounded-lg flex items-center justify-between gap-3"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 shrink-0" />
-              <p className="text-sm font-medium">{t('exampleMode.notice')}</p>
-            </div>
-            <button
-              onClick={onExitExample}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-200 bg-purple-800/50 border border-purple-600 rounded-md hover:bg-purple-700/50 transition-colors"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              {t('exampleMode.exit')}
-            </button>
-          </motion.div>
-        )}
-
-        {/* Mode Selection Tabs */}
+      <div className="h-full flex flex-col lg:flex-row gap-8 overflow-hidden">
+        {/* Left Side: Input */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex gap-2 p-1 bg-gray-800/50 border border-gray-700 rounded-lg"
+          className="lg:w-1/2 flex flex-col"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
         >
-          <button
-            onClick={() => setInputMode('files')}
-            className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-colors ${inputMode === 'files'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="w-4 h-4" />
-              Manual Files & Integration
+          {!activeProject && (
+            <div className="mb-4">
+              <label htmlFor="projectName" className="text-lg font-semibold text-gray-300">Project Name</label>
+              <input
+                type="text"
+                id="projectName"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="e.g., Kortex Project"
+                className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
             </div>
-          </button>
-          <button
-            onClick={() => setInputMode('lookatni')}
-            className={`flex-1 px-4 py-3 rounded-md text-sm font-medium transition-colors ${inputMode === 'lookatni'
-              ? 'bg-blue-600 text-white'
-              : 'text-gray-400 hover:text-white hover:bg-gray-700/50'
-              }`}
-          >
-            <div className="flex items-center justify-center gap-2">
-              <Code2 className="w-4 h-4" />
-              LookAtni Code Extraction
+          )}
+
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold flex items-center gap-3">
+              {isSelfCritique ? <MessageSquareQuote className="text-pink-400" /> : <FileText className="text-blue-400" />}
+              {isSelfCritique ? 'Critique Target' : 'Project Context'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsGithubModalOpen(true)}
+                disabled={isFetchingRepo || isSelfCritique}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-700/80 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
+              >
+                {isFetchingRepo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Github className="w-4 h-4" />}
+                Import from GitHub
+              </button>
             </div>
+          </div>
+          <p className="text-gray-400 mb-4 text-sm">
+            {isSelfCritique
+              ? "The AI will analyze its own previous output for quality and consistency."
+              : "Provide the project context below. You can paste documentation, READMEs, or any relevant text."
+            }
+          </p>
+          <div className="flex-grow relative">
+            <textarea
+              value={projectContext}
+              onChange={(e) => setProjectContext(e.target.value)}
+              placeholder={placeholderText}
+              className="w-full h-full p-4 bg-gray-900/50 border border-gray-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-800/60"
+              disabled={isSelfCritique}
+            />
+          </div>
+          <button onClick={handleUseExample} disabled={isSelfCritique} className="text-sm text-blue-400 hover:underline mt-2 self-start disabled:opacity-50">
+            Or use an example
           </button>
         </motion.div>
 
-        {/* LookAtni Mode */}
-        {inputMode === 'lookatni' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
+        {/* Right Side: Options */}
+        <motion.div
+          className="lg:w-1/2 flex flex-col"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <Wand2 className="text-purple-400" />
+            Analysis Type
+          </h2>
+          <div className="space-y-3 flex-grow overflow-y-auto px-2">
+            {analysisTypes.map(at => (
+              <AnalysisTypeButton
+                key={at.type}
+                {...at}
+                isSelected={analysisType === at.type}
+                onClick={() => setAnalysisType(at.type)}
+              />
+            ))}
+          </div>
+          <motion.button
+            onClick={handleTriggerAnalysis}
+            disabled={!canAnalyze}
+            className="w-full mt-4 py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold text-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl hover:shadow-blue-500/30"
+            whileHover={{ scale: canAnalyze ? 1.05 : 1 }}
+            whileTap={{ scale: canAnalyze ? 0.95 : 1 }}
           >
-            <LookAtniDirectExtractor
-              onFilesExtracted={handleLookAtniFilesExtracted}
-              onFragmentsSelected={handleLookAtniFragmentsSelected}
-            />
-
-            {/* Analysis Options for LookAtni Mode */}
-            {files.length > 0 && (
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">Analyze Extracted Code</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {analysisTypes.map(at => (
-                    <AnalysisButton
-                      key={at.type}
-                      type={at.type}
-                      label={at.label}
-                      description={at.description}
-                      onAnalyze={onAnalyze}
-                      isLoading={isLoading}
-                      color={at.color as any}
-                      icon={at.icon}
-                    />
-                  ))}
-                </div>
-              </div>
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              'Analyze Project'
             )}
-          </motion.div>
-        )}
-
-        {/* Manual Files Mode */}
-        {inputMode === 'files' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-8"
-          >
-            {/* Left Side: File Management UI */}
-            <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6 flex flex-col">
-              <div className="flex items-center justify-between gap-3 mb-4">
-                <div className="flex items-center gap-3">
-                  <FolderOpen className="w-6 h-6 text-blue-400" />
-                  <h2 className="text-xl font-semibold text-white">{t('files.title')}</h2>
-                </div>
-                {files.length > 0 && (
-                  <button
-                    onClick={() => {
-                      onFilesChange([]);
-                      setSelectedFileId(null);
-                    }}
-                    className="px-3 py-1.5 text-xs bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-600/30 rounded-md transition-colors flex items-center gap-1.5"
-                  >
-                    <X className="w-3 h-3" />
-                    Clear All ({files.length})
-                  </button>
-                )}
-              </div>
-              <div className="flex-grow flex gap-4 min-h-[450px]">
-                {/* File List */}
-                <div className="w-1/3 border-r border-gray-600 pr-4 flex flex-col">
-                  <ul className="space-y-1 flex-grow overflow-y-auto max-h-80">
-                    {files.map(file => (
-                      <li key={file.id}>
-                        <button onClick={() => setSelectedFileId(file.id)} className={`w-full flex items-center justify-between gap-2 p-2 rounded-md text-left text-sm transition-colors ${selectedFileId === file.id ? 'bg-blue-600/50 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}>
-                          <div className="flex flex-col gap-1 flex-grow min-w-0">
-                            <span className="truncate">{file.name}</span>
-                            <div className="flex items-center gap-2">
-                              {file.isFragment ? (
-                                <span className="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
-                                  Fragment
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded">
-                                  Complete
-                                </span>
-                              )}
-                              <span className="text-xs text-gray-400">{file.content.length} chars</span>
-                            </div>
-                          </div>
-                          <X onClick={(e) => { e.stopPropagation(); handleDeleteFile(file.id); }} className="w-4 h-4 text-gray-500 hover:text-red-400 shrink-0" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="space-y-2 pt-2 border-t border-gray-600">
-                    <input title={t('files.addFromUpload')} type="file" ref={fileInputRef} onChange={handleFileSelectedForUpload} className="hidden" accept=".txt,.md,.js,.ts,.jsx,.tsx,.json,.html,.css" />
-                    <button onClick={handleAddNewFile} className="w-full text-sm flex items-center gap-2 p-2 justify-center rounded-md bg-gray-700 hover:bg-gray-600"><Plus className="w-4 h-4" /> {t('files.addFile')}</button>
-                    <button onClick={() => fileInputRef.current?.click()} className="w-full text-sm flex items-center gap-2 p-2 justify-center rounded-md bg-gray-700 hover:bg-gray-600"><Upload className="w-4 h-4" /> {t('files.addFromUpload')}</button>
-                  </div>
-                </div>
-                {/* Editor */}
-                <div className="w-2/3 flex flex-col gap-2">
-                  {selectedFile ? (
-                    <>
-                      <input type="text" value={selectedFile.name} onChange={(e) => handleUpdateFile({ ...selectedFile, name: e.target.value })} placeholder={t('files.fileName')} className="p-2 bg-gray-900 border border-gray-600 rounded-md text-sm shrink-0" />
-                      <textarea value={selectedFile.content} onChange={(e) => handleUpdateFile({ ...selectedFile, content: e.target.value })} placeholder={t('files.fileContent')} className="w-full h-full p-2 bg-gray-900 border border-gray-600 rounded-md resize-none text-sm font-mono flex-grow" />
-                    </>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-center text-gray-500 border-2 border-dashed border-gray-700 rounded-lg p-4">
-                      {t('files.emptyState')}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-700 space-y-3">
-                <div className="flex gap-2">
-                  <input type="text" value={repoUrl} onChange={e => setRepoUrl(e.target.value)} placeholder={t('dataSources.github.placeholder')} className="flex-grow p-2 bg-gray-900 border border-gray-600 rounded-md text-sm" disabled={!!isFetching} />
-                  <button onClick={handleFetchGitHub} disabled={!!isFetching || !repoUrl} className="p-2 px-3 bg-gray-700 rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center gap-2 text-sm"><Github className="w-4 h-4" />{isFetching === 'github' && <Loader2 className="w-4 h-4 animate-spin" />}</button>
-                  <button onClick={() => setIsSearchModalOpen(true)} disabled={!!isFetching} className="p-2 px-3 bg-gray-700 rounded-md hover:bg-gray-600 disabled:opacity-50 flex items-center gap-2 text-sm">
-                    {isFetching === 'github-search' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{t('githubSearch.button')}</span>
-                  </button>
-                </div>
-                {!hasRealData && !isExample && (
-                  <div className="text-center">
-                    <button onClick={onShowExample} disabled={isLoading || !!isFetching} className="text-sm text-purple-400 hover:underline">
-                      {t('showExample')}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right Side: Analysis Options */}
-            <div className="space-y-6">
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Sparkles className="w-6 h-6 text-purple-400" />
-                  <h2 className="text-xl font-semibold text-white">{t('analysisTitle')}</h2>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
-                  {analysisTypes.map(at => (
-                    <AnalysisButton
-                      key={at.type}
-                      type={at.type}
-                      label={at.label}
-                      description={at.description}
-                      onAnalyze={onAnalyze}
-                      isLoading={isLoading || files.length === 0 || !!isFetching}
-                      color={at.color as any}
-                      icon={at.icon}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-6">
-                {tokenPercentage > 70 ? (
-                  <TokenUsageAlert limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
-                ) : (
-                  <SubtleTokenUsage limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
+          </motion.button>
+        </motion.div>
       </div>
       <GitHubSearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-        onImport={handleImportRepo}
-        githubPat={settings.githubPat}
+        isOpen={isGithubModalOpen}
+        onClose={() => setIsGithubModalOpen(false)}
+        onImport={handleImportFromGithub}
+        githubPat={integrations?.github?.githubPat || ''}
       />
     </>
   );
