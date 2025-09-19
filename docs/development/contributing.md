@@ -80,8 +80,8 @@ Tem uma ideia para melhorar o GemxAnalyzer?
 2. **Clone** seu fork:
 
    ```bash
-   git clone https://github.com/seu-usuario/grompt.git
-   cd grompt
+   git clone https://github.com/seu-usuario/analyzer.git
+   cd analyzer
    ```
 
 3. **Configure o ambiente:**
@@ -239,7 +239,7 @@ test: adiciona testes para módulo de templates
 ### Estrutura de Diretórios
 
 ```plaintext
-grompt/
+analyzer/
 ├── cmd/                    # CLI entrypoints
 │   ├── main.go            # Servidor principal
 │   └── cli/               # Comandos CLI

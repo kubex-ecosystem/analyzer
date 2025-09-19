@@ -1,226 +1,271 @@
-// Unified AI service - allows switching between direct Gemini and Gateway
-import { AnalysisType, EvolutionAnalysis, HistoryItem, ProjectAnalysis } from "../types";
+// Unified AI Service - Conecta com Analyzer Gateway
+// Suporta TODOS os providers: Groq, Gemini, OpenAI, Anthropic
+// Criado para respeitar contratos consolidados
 
-// Direct Gemini imports (existing functionality)
-import {
-  analyzeProject as analyzeProjectDirect,
-  compareAnalyses as compareAnalysesDirect,
-  createChatSession as createChatSessionDirect,
-  testApiKey as testApiKeyDirect
-} from "./gemini/api";
-
-// Gateway imports (new functionality)
-import {
-  analyzeProjectViaGateway,
-  compareAnalysesViaGateway,
-  createChatSessionViaGateway,
-  testGatewayConnection
-} from "./gateway/api";
-
-export type AIProvider = 'gemini-direct' | 'gateway-gemini' | 'gateway-openai' | 'gateway-anthropic';
-
-interface AIServiceConfig {
-  provider: AIProvider;
-  userApiKey?: string;
-  gatewayUrl?: string;
+export interface Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
 }
 
-/**
- * Unified AI Service - abstracts different providers behind a common interface
- */
-export class AIService {
-  private config: AIServiceConfig;
+export interface ChatRequest {
+  provider: string;
+  model: string;
+  messages: Message[];
+  temperature?: number;
+  stream?: boolean;
+}
 
-  constructor(config: AIServiceConfig) {
-    this.config = config;
+export interface ChatResponse {
+  content: string;
+  done: boolean;
+  usage?: {
+    completion_tokens: number;
+    prompt_tokens: number;
+    total_tokens: number;
+    latency_ms: number;
+    cost_usd: number;
+    provider: string;
+    model: string;
+  };
+  error?: string;
+}
+
+export interface Provider {
+  id: string;
+  name: string;
+  models: string[];
+  available: boolean;
+}
+
+class UnifiedAIService {
+  private baseURL: string;
+
+  constructor() {
+    // @ts-ignore - Vite env vars
+    this.baseURL = import.meta.env?.VITE_GATEWAY_URL || 'http://localhost:8080';
   }
 
-  /**
-   * Test the configured provider
-   */
-  async testConnection(): Promise<void> {
-    switch (this.config.provider) {
-      case 'gemini-direct':
-        if (!this.config.userApiKey) {
-          throw new Error('API key required for direct Gemini access');
+  // Lista providers disponíveis no gateway
+  async getProviders(): Promise<Provider[]> {
+    try {
+      const response = await fetch(`${this.baseURL}/v1/providers`);
+      if (!response.ok) {
+        throw new Error(`Failed to get providers: ${response.statusText}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error getting providers:', error);
+      return [];
+    }
+  }
+
+  // Chat unificado - funciona com qualquer provider
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    try {
+      const response = await fetch(`${this.baseURL}/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          provider: request.provider,
+          model: request.model,
+          messages: request.messages,
+          temperature: request.temperature || 0.7,
+          stream: request.stream || false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Chat request failed: ${response.statusText}`);
+      }
+
+      // Se não for stream, retorna resposta direta
+      if (!request.stream) {
+        return await response.json();
+      }
+
+      // Para stream, processar SSE
+      return this.handleStreamResponse(response);
+    } catch (error) {
+      console.error('Error in chat:', error);
+      return {
+        content: '',
+        done: true,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  // Stream de chat em tempo real
+  async *streamChat(request: ChatRequest): AsyncIterable<ChatResponse> {
+    try {
+      const response = await fetch(`${this.baseURL}/v1/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...request,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        yield {
+          content: '',
+          done: true,
+          error: `Stream request failed: ${response.statusText}`,
+        };
+        return;
+      }
+
+      if (!response.body) {
+        yield {
+          content: '',
+          done: true,
+          error: 'No response body',
+        };
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                yield data as ChatResponse;
+              } catch (e) {
+                console.warn('Failed to parse SSE data:', line);
+              }
+            }
+          }
         }
-        return testApiKeyDirect(this.config.userApiKey);
-
-      case 'gateway-gemini':
-      case 'gateway-openai':
-      case 'gateway-anthropic':
-        const gatewayProvider = this.config.provider.split('-')[1]; // Extract 'gemini', 'openai', etc.
-        return testGatewayConnection(gatewayProvider);
-
-      default:
-        throw new Error(`Unsupported provider: ${this.config.provider}`);
+      } finally {
+        reader.releaseLock();
+      }
+    } catch (error) {
+      yield {
+        content: '',
+        done: true,
+        error: error instanceof Error ? error.message : 'Stream error',
+      };
     }
   }
 
-  /**
-   * Analyze a project using the configured provider
-   */
-  async analyzeProject(
-    projectContext: string,
-    analysisType: AnalysisType,
-    locale: 'pt-BR' | 'en-US'
-  ): Promise<ProjectAnalysis> {
+  private async handleStreamResponse(response: Response): Promise<ChatResponse> {
+    // Para compatibilidade com código que não usa streams
+    let fullContent = '';
+    let lastResponse: ChatResponse = { content: '', done: false };
 
-    switch (this.config.provider) {
-      case 'gemini-direct':
-        return analyzeProjectDirect(projectContext, analysisType, locale, this.config.userApiKey);
+    if (!response.body) {
+      return { content: '', done: true, error: 'No response body' };
+    }
 
-      case 'gateway-gemini':
-        return analyzeProjectViaGateway(projectContext, analysisType, locale, this.config.userApiKey, 'gemini');
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
 
-      case 'gateway-openai':
-        return analyzeProjectViaGateway(projectContext, analysisType, locale, this.config.userApiKey, 'openai');
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      case 'gateway-anthropic':
-        return analyzeProjectViaGateway(projectContext, analysisType, locale, this.config.userApiKey, 'anthropic');
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
 
-      default:
-        throw new Error(`Unsupported provider: ${this.config.provider}`);
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.content) {
+                fullContent += data.content;
+              }
+              lastResponse = data;
+              if (data.done) {
+                return { ...data, content: fullContent };
+              }
+            } catch (e) {
+              console.warn('Failed to parse SSE data:', line);
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    return { ...lastResponse, content: fullContent, done: true };
+  }
+
+  // Testa conectividade com um provider específico
+  async testProvider(provider: string, model?: string): Promise<boolean> {
+    try {
+      const testRequest: ChatRequest = {
+        provider,
+        model: model || this.getDefaultModel(provider),
+        messages: [{ role: 'user', content: 'Test connection' }],
+        temperature: 0.1,
+        stream: false,
+      };
+
+      const response = await this.chat(testRequest);
+      return !response.error && response.content.length > 0;
+    } catch (error) {
+      console.error(`Failed to test provider ${provider}:`, error);
+      return false;
     }
   }
 
-  /**
-   * Compare analyses using the configured provider
-   */
-  async compareAnalyses(
-    item1: HistoryItem,
-    item2: HistoryItem,
-    locale: 'pt-BR' | 'en-US'
-  ): Promise<EvolutionAnalysis> {
-
-    switch (this.config.provider) {
-      case 'gemini-direct':
-        return compareAnalysesDirect(item1, item2, locale, this.config.userApiKey);
-
-      case 'gateway-gemini':
-        return compareAnalysesViaGateway(item1, item2, locale, this.config.userApiKey, 'gemini');
-
-      case 'gateway-openai':
-        return compareAnalysesViaGateway(item1, item2, locale, this.config.userApiKey, 'openai');
-
-      case 'gateway-anthropic':
-        return compareAnalysesViaGateway(item1, item2, locale, this.config.userApiKey, 'anthropic');
-
-      default:
-        throw new Error(`Unsupported provider: ${this.config.provider}`);
-    }
+  private getDefaultModel(provider: string): string {
+    const defaults = {
+      groq: 'llama-3.1-8b-instant',
+      gemini: 'gemini-pro',
+      openai: 'gpt-3.5-turbo',
+      anthropic: 'claude-3-haiku-20240307',
+    };
+    return defaults[provider as keyof typeof defaults] || 'unknown';
   }
 
-  /**
-   * Create a chat session using the configured provider
-   */
-  createChatSession(systemInstruction: string) {
-    switch (this.config.provider) {
-      case 'gemini-direct':
-        return createChatSessionDirect(systemInstruction, this.config.userApiKey);
-
-      case 'gateway-gemini':
-        return createChatSessionViaGateway(systemInstruction, this.config.userApiKey, 'gemini');
-
-      case 'gateway-openai':
-        return createChatSessionViaGateway(systemInstruction, this.config.userApiKey, 'openai');
-
-      case 'gateway-anthropic':
-        return createChatSessionViaGateway(systemInstruction, this.config.userApiKey, 'anthropic');
-
-      default:
-        throw new Error(`Unsupported provider: ${this.config.provider}`);
-    }
-  }
-
-  /**
-   * Get provider-specific information
-   */
-  getProviderInfo() {
-    switch (this.config.provider) {
-      case 'gemini-direct':
-        return {
-          name: 'Google Gemini (Direct)',
-          type: 'direct',
-          supportsStreaming: false,
-          requiresApiKey: true,
-          description: 'Direct connection to Google Gemini API'
-        };
-
-      case 'gateway-gemini':
-        return {
-          name: 'Google Gemini (Gateway)',
-          type: 'gateway',
-          supportsStreaming: true,
-          requiresApiKey: false, // Can use server-side key
-          description: 'Gemini via analyzer gateway with streaming support'
-        };
-
-      case 'gateway-openai':
-        return {
-          name: 'OpenAI (Gateway)',
-          type: 'gateway',
-          supportsStreaming: true,
-          requiresApiKey: false,
-          description: 'OpenAI via analyzer gateway with streaming support'
-        };
-
-      case 'gateway-anthropic':
-        return {
-          name: 'Anthropic Claude (Gateway)',
-          type: 'gateway',
-          supportsStreaming: true,
-          requiresApiKey: false,
-          description: 'Anthropic Claude via analyzer gateway with streaming support'
-        };
-
-      default:
-        return {
-          name: 'Unknown Provider',
-          type: 'unknown',
-          supportsStreaming: false,
-          requiresApiKey: true,
-          description: 'Unknown provider configuration'
-        };
+  // Health check do gateway
+  async healthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseURL}/healthz`);
+      return response.ok;
+    } catch (error) {
+      console.error('Health check failed:', error);
+      return false;
     }
   }
 }
 
-/**
- * Factory function to create AI service instances
- */
-export const createAIService = (config: AIServiceConfig): AIService => {
-  return new AIService(config);
-};
+// Export singleton instance
+export const unifiedAI = new UnifiedAIService();
 
-/**
- * Helper to get available providers
- */
-export const getAvailableProviders = (): Array<{ value: AIProvider, label: string, description: string }> => {
-  return [
-    {
-      value: 'gemini-direct',
-      label: 'Gemini (Direct)',
-      description: 'Direct connection to Google Gemini - current stable implementation'
-    },
-    {
-      value: 'gateway-gemini',
-      label: 'Gemini (Gateway)',
-      description: 'Gemini via gateway with streaming and cost tracking'
-    },
-    {
-      value: 'gateway-openai',
-      label: 'OpenAI (Gateway)',
-      description: 'OpenAI GPT models with streaming and cost tracking'
-    },
-    {
-      value: 'gateway-anthropic',
-      label: 'Anthropic (Gateway)',
-      description: 'Claude models with streaming and cost tracking (coming soon)'
-    }
-  ];
-};
+// Export para compatibilidade
+export default unifiedAI;
 
-// Re-export specific functions for backward compatibility
-export { testGatewayConnection } from "./gateway/api";
-export { testApiKey as testGeminiApiKey } from "./gemini/api";
+// Convenience functions para uso direto
+export const chatWithProvider = (provider: string, model: string, message: string) =>
+  unifiedAI.chat({
+    provider,
+    model,
+    messages: [{ role: 'user', content: message }],
+  });
+
+export const streamChatWithProvider = (provider: string, model: string, messages: Message[]) =>
+  unifiedAI.streamChat({
+    provider,
+    model,
+    messages,
+    stream: true,
+  });

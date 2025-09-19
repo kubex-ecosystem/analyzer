@@ -10,251 +10,76 @@ import (
 	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/metrics"
+	"github.com/kubex-ecosystem/analyzer/internal/services/github"
 )
 
-// GitHubClient implements real GitHub API integration
+// GitHubClient implements real GitHub API integration using the new GitHub service
 type GitHubClient struct {
-	token      string
-	httpClient *http.Client
-	baseURL    string
+	service *github.Service
 }
 
-// NewGitHubClient creates a new GitHub API client
+// NewGitHubClient creates a new GitHub API client using the enhanced service
 func NewGitHubClient(token string) *GitHubClient {
-	return &GitHubClient{
-		token:      token,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
-		baseURL:    "https://api.github.com",
+	// Create a config for backward compatibility with PAT token
+	config := &github.Config{
+		PersonalAccessToken: token,
+		BaseURL:             "https://api.github.com",
+		APIVersion:          "2022-11-28",
+		UserAgent:           "GemX-Analyzer/1.0.0",
+		Timeout:             30 * time.Second,
+		MaxRetries:          3,
+		RetryBackoffMs:      1000,
+		CacheTTLMinutes:     15,
+		EnableRateLimit:     true,
+		RateLimitBurst:      100,
 	}
+
+	service, err := github.NewService(config)
+	if err != nil {
+		// Fallback to a basic implementation in case of configuration errors
+		// This maintains backward compatibility
+		return &GitHubClient{service: nil}
+	}
+
+	return &GitHubClient{
+		service: service,
+	}
+}
+
+// NewGitHubClientFromService creates a GitHub client from an existing service
+func NewGitHubClientFromService(service *github.Service) *GitHubClient {
+	return &GitHubClient{service: service}
 }
 
 // GetPullRequests fetches pull requests from GitHub API
 func (g *GitHubClient) GetPullRequests(ctx context.Context, owner, repo string, since time.Time) ([]metrics.PullRequest, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/pulls?state=all&since=%s", g.baseURL, owner, repo, since.Format(time.RFC3339))
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
+	if g.service == nil {
+		return nil, fmt.Errorf("GitHub service not initialized")
 	}
 
-	req.Header.Set("Authorization", "Bearer "+g.token)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API error: %d", resp.StatusCode)
-	}
-
-	var githubPRs []GitHubPullRequest
-	if err := json.NewDecoder(resp.Body).Decode(&githubPRs); err != nil {
-		return nil, err
-	}
-
-	var prs []metrics.PullRequest
-	for _, gpr := range githubPRs {
-		pr := metrics.PullRequest{
-			Number:       gpr.Number,
-			Title:        gpr.Title,
-			State:        gpr.State,
-			CreatedAt:    gpr.CreatedAt,
-			UpdatedAt:    gpr.UpdatedAt,
-			MergedAt:     gpr.MergedAt,
-			ClosedAt:     gpr.ClosedAt,
-			Commits:      gpr.Commits,
-			Additions:    gpr.Additions,
-			Deletions:    gpr.Deletions,
-			ChangedFiles: gpr.ChangedFiles,
-		}
-
-		// Get first review time
-		if gpr.ReviewComments > 0 {
-			firstReview, err := g.getFirstReviewTime(ctx, owner, repo, gpr.Number)
-			if err == nil {
-				pr.FirstReviewAt = firstReview
-			}
-		}
-
-		prs = append(prs, pr)
-	}
-
-	return prs, nil
+	return g.service.GetPullRequests(ctx, owner, repo, since)
 }
 
 // GetDeployments fetches deployments from GitHub API
 func (g *GitHubClient) GetDeployments(ctx context.Context, owner, repo string, since time.Time) ([]metrics.Deployment, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/deployments", g.baseURL, owner, repo)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
+	if g.service == nil {
+		return nil, fmt.Errorf("GitHub service not initialized")
 	}
 
-	req.Header.Set("Authorization", "Bearer "+g.token)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API error: %d", resp.StatusCode)
-	}
-
-	var githubDeployments []GitHubDeployment
-	if err := json.NewDecoder(resp.Body).Decode(&githubDeployments); err != nil {
-		return nil, err
-	}
-
-	var deployments []metrics.Deployment
-	for _, gd := range githubDeployments {
-		if gd.CreatedAt.Before(since) {
-			continue
-		}
-
-		deployment := metrics.Deployment{
-			ID:          gd.ID,
-			Environment: gd.Environment,
-			State:       gd.State,
-			CreatedAt:   gd.CreatedAt,
-			UpdatedAt:   gd.UpdatedAt,
-			SHA:         gd.SHA,
-		}
-		deployments = append(deployments, deployment)
-	}
-
-	return deployments, nil
+	return g.service.GetDeployments(ctx, owner, repo, since)
 }
 
 // GetWorkflowRuns fetches workflow runs from GitHub Actions API
 func (g *GitHubClient) GetWorkflowRuns(ctx context.Context, owner, repo string, since time.Time) ([]metrics.WorkflowRun, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/actions/runs?created=>=%s", g.baseURL, owner, repo, since.Format("2006-01-02"))
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
+	if g.service == nil {
+		return nil, fmt.Errorf("GitHub service not initialized")
 	}
 
-	req.Header.Set("Authorization", "Bearer "+g.token)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API error: %d", resp.StatusCode)
-	}
-
-	var response GitHubWorkflowRunsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		return nil, err
-	}
-
-	var runs []metrics.WorkflowRun
-	for _, gwr := range response.WorkflowRuns {
-		run := metrics.WorkflowRun{
-			ID:         gwr.ID,
-			Name:       gwr.Name,
-			Status:     gwr.Status,
-			Conclusion: gwr.Conclusion,
-			CreatedAt:  gwr.CreatedAt,
-			UpdatedAt:  gwr.UpdatedAt,
-			SHA:        gwr.HeadSHA,
-		}
-		runs = append(runs, run)
-	}
-
-	return runs, nil
+	return g.service.GetWorkflowRuns(ctx, owner, repo, since)
 }
 
-// getFirstReviewTime gets the first review time for a PR
-func (g *GitHubClient) getFirstReviewTime(ctx context.Context, owner, repo string, prNumber int) (*time.Time, error) {
-	url := fmt.Sprintf("%s/repos/%s/%s/pulls/%d/reviews", g.baseURL, owner, repo, prNumber)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+g.token)
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-
-	resp, err := g.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API error: %d", resp.StatusCode)
-	}
-
-	var reviews []GitHubReview
-	if err := json.NewDecoder(resp.Body).Decode(&reviews); err != nil {
-		return nil, err
-	}
-
-	if len(reviews) > 0 {
-		return &reviews[0].SubmittedAt, nil
-	}
-
-	return nil, nil
-}
-
-// GitHubPullRequest GitHub API response types
-type GitHubPullRequest struct {
-	Number         int        `json:"number"`
-	Title          string     `json:"title"`
-	State          string     `json:"state"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-	MergedAt       *time.Time `json:"merged_at"`
-	ClosedAt       *time.Time `json:"closed_at"`
-	Commits        int        `json:"commits"`
-	Additions      int        `json:"additions"`
-	Deletions      int        `json:"deletions"`
-	ChangedFiles   int        `json:"changed_files"`
-	ReviewComments int        `json:"review_comments"`
-}
-
-type GitHubDeployment struct {
-	ID          int       `json:"id"`
-	Environment string    `json:"environment"`
-	State       string    `json:"state"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
-	SHA         string    `json:"sha"`
-}
-
-type GitHubWorkflowRun struct {
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	Status     string    `json:"status"`
-	Conclusion string    `json:"conclusion"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	HeadSHA    string    `json:"head_sha"`
-}
-
-type GitHubWorkflowRunsResponse struct {
-	TotalCount   int                 `json:"total_count"`
-	WorkflowRuns []GitHubWorkflowRun `json:"workflow_runs"`
-}
-
-type GitHubReview struct {
-	ID          int       `json:"id"`
-	State       string    `json:"state"`
-	SubmittedAt time.Time `json:"submitted_at"`
-}
+// The GitHub API response types are now defined in the github service package.
+// This maintains backward compatibility while using the enhanced service.
 
 // JiraClient implements real Jira API integration
 type JiraClient struct {

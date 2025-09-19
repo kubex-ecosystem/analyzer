@@ -1,4 +1,5 @@
-import { clear as clearIdb } from './idb';
+// FIX: Corrected import to use the new generic 'clear' function
+import { clear } from './idb';
 
 // List of all keys managed by usePersistentState or stored directly
 const APP_STORAGE_KEYS = [
@@ -20,7 +21,7 @@ const APP_STORAGE_KEYS = [
 export const clearAllAppData = async (): Promise<void> => {
     try {
         // Clear IndexedDB store
-        await clearIdb();
+        await clear();
         console.log('IndexedDB store cleared.');
 
         // Clear localStorage keys

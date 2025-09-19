@@ -1,331 +1,248 @@
-import { motion } from 'framer-motion';
-import { BookText, Code, FilePlus, FileText, Scaling, Shield, Sparkles, Upload, Wand2 } from 'lucide-react';
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+
+import { motion } from 'framer-motion';
+import { FileText, Github, Loader2, MessageSquareQuote, Wand2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { initialProjectContext } from '../../constants';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
-import { useTranslation } from '../../hooks/useTranslation';
-import { fetchRepoForAnalysis } from '../../services/integrations/github';
-import { AnalysisType, ProjectFile } from '../../types';
-import SubtleTokenUsage from '../common/SubtleTokenUsage';
-import TokenUsageAlert from '../common/TokenUsageAlert';
+import { useUser } from '../../contexts/UserContext';
+import { exampleProject } from '../../data/exampleAnalysis';
+import { fetchRepoContents } from '../../services/integrations/github';
+import { AnalysisType } from '../../types';
 import GitHubSearchModal from './GitHubSearchModal';
-import LookAtniDirectExtractor from './LookAtniDirectExtractor';
+
+const colorMap: Record<string, { border: string; bg: string; hoverBorder: string }> = {
+  blue: { border: 'border-blue-600', bg: 'bg-blue-900/50', hoverBorder: 'hover:border-blue-500/80' },
+  red: { border: 'border-red-600', bg: 'bg-red-900/50', hoverBorder: 'hover:border-red-500/80' },
+  purple: { border: 'border-purple-600', bg: 'bg-purple-900/50', hoverBorder: 'hover:border-purple-500/80' },
+  teal: { border: 'border-teal-600', bg: 'bg-teal-900/50', hoverBorder: 'hover:border-teal-500/80' },
+  amber: { border: 'border-amber-600', bg: 'bg-amber-900/50', hoverBorder: 'hover:border-amber-500/80' },
+  green: { border: 'border-green-600', bg: 'bg-green-900/50', hoverBorder: 'hover:border-green-500/80' },
+  pink: { border: 'border-pink-600', bg: 'bg-pink-900/50', hoverBorder: 'hover:border-pink-500/80' },
+};
+
+const AnalysisTypeButton: React.FC<{
+  type: AnalysisType;
+  label: string;
+  description: string;
+  color: string;
+  isSelected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}> = ({ type, label, description, color, isSelected, onClick, disabled = false }) => (
+  <motion.button
+    onClick={onClick}
+    disabled={disabled}
+    className={`p-4 text-left border rounded-lg transition-all w-full relative ${isSelected
+      ? `${colorMap[color].bg} ${colorMap[color].border}`
+      : `bg-gray-800/50 border-gray-700 ${!disabled ? colorMap[color].hoverBorder : ''}`
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    whileHover={{ scale: disabled ? 1 : 1.02, zIndex: 1 }}
+    whileTap={{ scale: disabled ? 1 : 0.98 }}
+    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+    style={{ transformOrigin: 'center' }}
+  >
+    {isSelected && (
+      <motion.div
+        layoutId="analysis-type-selector"
+        className={`absolute inset-0 ${colorMap[color].bg.replace('/50', '/20')} rounded-lg`}
+        style={{ zIndex: -1 }}
+      />
+    )}
+    <h4 className="font-semibold text-white">{label}</h4>
+    <p className="text-sm text-gray-400 mt-1">{description}</p>
+  </motion.button>
+);
 
 const ProjectInput: React.FC = () => {
   const {
-    projectFiles: files,
-    setProjectFiles,
     handleAnalyze,
-    handleShowExample,
-    isLoading,
-    setIsLoading,
-    settings,
-    usageTracking,
-    isExample
+    isAnalyzing,
+    activeProject,
   } = useProjectContext();
-  const { t } = useTranslation(['input', 'common', 'tokenUsage']);
-  const [activeFileId, setActiveFileId] = useState<number | null>(null);
-  const [isGitHubModalOpen, setIsGitHubModalOpen] = useState(false);
-  const [showLookAtni, setShowLookAtni] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { userSettings, integrations } = useUser();
+
+  const [projectContext, setProjectContext] = useState('');
+  const [projectName, setProjectName] = useState('');
+  const [analysisType, setAnalysisType] = useState<AnalysisType>(AnalysisType.Architecture);
+  const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
+  const [isFetchingRepo, setIsFetchingRepo] = useState(false);
   const { addNotification } = useNotification();
 
-  // Auto-select first file on load if one exists
+  const hasPreviousAnalysis = !!activeProject && activeProject.history.length > 0;
+
   useEffect(() => {
-    if (files.length > 0 && activeFileId === null) {
-      setActiveFileId(files[0].id);
+    if (activeProject) {
+      setProjectName(activeProject.name);
+      // Maybe load last context file? For now, keep it simple.
+      setProjectContext('');
+    } else {
+      setProjectName('');
+      setProjectContext('');
     }
-    if (files.length === 0) {
-      setActiveFileId(null);
+  }, [activeProject]);
+
+  const analysisTypes = [
+    { type: AnalysisType.Architecture, color: 'purple', label: "Architectural Review", description: "Analyzes high-level design and generates a visual diagram" },
+    { type: AnalysisType.CodeQuality, color: 'teal', label: "Code Quality", description: "Evaluates patterns, maintainability, and adherence to principles like SOLID" },
+    { type: AnalysisType.Security, color: 'red', label: "Security Analysis", description: "Focus on vulnerabilities, security practices, and compliance" },
+    { type: AnalysisType.Scalability, color: 'blue', label: "Scalability Analysis", description: "Assessment of system growth capacity and performance" },
+    { type: AnalysisType.Compliance, color: 'green', label: "Compliance & Best Practices", description: "Focus on accessibility (WCAG), data privacy, and industry standards" },
+    { type: AnalysisType.DocumentationReview, color: 'amber', label: "Documentation Review", description: "Analysis of clarity, completeness, and structure of project documentation" },
+    { type: AnalysisType.SelfCritique, color: 'pink', label: "Self-Critique (BETA)", description: "The AI reviews its own last analysis for quality and consistency.", disabled: !hasPreviousAnalysis },
+  ];
+
+  const handleImportFromGithub = async (owner: string, repo: string) => {
+    setIsGithubModalOpen(false);
+    setIsFetchingRepo(true);
+    if (!activeProject) {
+      setProjectName(`${owner}/${repo}`);
     }
-  }, [files, activeFileId]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const uploadedFiles = e.target.files;
-    if (uploadedFiles) {
-      Array.from(uploadedFiles).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const content = event.target?.result as string;
-          const newFile: ProjectFile = {
-            id: Date.now() + Math.random(),
-            name: file.name,
-            content: content
-          };
-          setProjectFiles((prev: any) => [...prev, newFile]);
-          setActiveFileId(newFile.id);
-        };
-        reader.readAsText(file);
-        addNotification({ message: t('notifications.fileLoaded', { fileName: file.name }), type: 'info' });
-      });
-    }
-  };
-
-  const handleAddNewFile = () => {
-    const newFile: ProjectFile = {
-      id: Date.now(),
-      name: 'untitled.md',
-      content: ''
-    };
-    setProjectFiles((prev: any) => [...prev, newFile]);
-    setActiveFileId(newFile.id);
-  };
-
-  const handleUpdateFileContent = (id: number, content: string) => {
-    setProjectFiles(files.map(f => f.id === id ? { ...f, content } : f));
-  };
-
-  const handleUpdateFileName = (id: number, name: string) => {
-    setProjectFiles(files.map(f => f.id === id ? { ...f, name } : f));
-  };
-
-  const handleRemoveFile = (id: number) => {
-    setProjectFiles(files.filter(f => f.id !== id));
-    if (activeFileId === id) {
-      setActiveFileId(files.length > 1 ? files.find(f => f.id !== id)!.id : null);
-    }
-  };
-
-  const handleImportFromGitHub = async (owner: string, repo: string) => {
-    if (!settings.githubPat) {
-      addNotification({ message: t('notifications.noGithubPat'), type: 'error' });
-      return;
-    }
-    setIsLoading(true);
     try {
-      const content = await fetchRepoForAnalysis(owner, repo, settings.githubPat);
-      const newFile: ProjectFile = {
-        id: Date.now(),
-        name: `${owner}_${repo}_context.md`,
-        content,
-      };
-      setProjectFiles([newFile]);
-      setActiveFileId(newFile.id);
-      addNotification({ message: t('notifications.repoImportSuccess'), type: 'success' });
+      const githubPat = integrations?.github?.githubPat;
+      if (!githubPat) {
+        addNotification({ message: 'GitHub PAT is required for fetching repositories', type: 'error' });
+        return;
+      }
+      const content = await fetchRepoContents(`https://github.com/${owner}/${repo}`, githubPat);
+      setProjectContext(content);
+      addNotification({ message: `Successfully imported repository: ${owner}/${repo}`, type: 'success' });
     } catch (error: any) {
       addNotification({ message: error.message, type: 'error' });
     } finally {
-      setIsLoading(false);
-      setIsGitHubModalOpen(false);
+      setIsFetchingRepo(false);
     }
   };
 
-  const handleLookAtniFilesExtracted = (extractedFiles: any[]) => {
-    const newFiles: ProjectFile[] = extractedFiles.map((file, index) => ({
-      id: Date.now() + index,
-      name: file.name || file.path?.split('/').pop() || `extracted_${index}.txt`,
-      content: file.content || ''
-    }));
+  const handleUseExample = () => {
+    setProjectName(exampleProject.name);
+    setProjectContext(initialProjectContext);
+    addNotification({ message: 'Example project context has been loaded into the form.', type: 'info' });
+  }
 
-    setProjectFiles((prev: any) => [...prev, ...newFiles]);
-    if (newFiles.length > 0) {
-      setActiveFileId(newFiles[0].id);
-    }
-    setShowLookAtni(false);
-    addNotification({
-      message: t('notifications.lookAtniSuccess', { count: newFiles.length }),
-      type: 'success'
-    });
-  };
+  const handleTriggerAnalysis = () => {
+    // For self-critique, the context is the previous analysis, handled in the context provider.
+    // We pass an empty string for context here.
+    const contextToSend = analysisType === AnalysisType.SelfCritique ? '' : projectContext;
+    handleAnalyze(projectName, contextToSend, analysisType);
+  }
 
-  const handleLookAtniFragmentsSelected = (fragments: any[]) => {
-    const fragmentFiles: ProjectFile[] = fragments.map((fragment, index) => ({
-      id: Date.now() + index,
-      name: `${fragment.name || 'fragment'}_${fragment.type || 'code'}.${fragment.language || 'txt'}`,
-      content: `// Fragment: ${fragment.name} (${fragment.type})\n// File: ${fragment.file_path}\n// Lines: ${fragment.start_line}-${fragment.end_line}\n\n${fragment.content}`
-    }));
+  const isSelfCritique = analysisType === AnalysisType.SelfCritique;
+  const canAnalyze = (isSelfCritique && hasPreviousAnalysis) ||
+    (!isSelfCritique && projectContext.trim().length > 100 && (!activeProject ? projectName.trim().length > 2 : true))
+    && !isAnalyzing;
 
-    setProjectFiles((prev: any) => [...prev, ...fragmentFiles]);
-    if (fragmentFiles.length > 0) {
-      setActiveFileId(fragmentFiles[0].id);
-    }
-    setShowLookAtni(false);
-    addNotification({
-      message: t('notifications.fragmentsSelected', { count: fragmentFiles.length }),
-      type: 'success'
-    });
-  };
 
-  // Check if there are any LookAtni blobs in the current files
-  const hasLookAtniBlob = files.some(file =>
-    file.content.includes('// LookAtni Extraction') ||
-    file.content.includes('lookatni') ||
-    file.name.toLowerCase().includes('lookatni') ||
-    file.name.toLowerCase().includes('extracted') ||
-    file.content.includes('Fragment:') ||
-    file.content.includes('// Fragment:')
-  );
-
-  // Handlers for the LookAtni buttons
-  const handleUploadLocalFiles = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleExtractFromProject = () => {
-    if (!hasLookAtniBlob) {
-      addNotification({
-        message: 'Você precisa ter um blob do LookAtni carregado antes de extrair fragmentos!',
-        type: 'info'
-      });
-      return;
-    }
-    setShowLookAtni(true);
-  };
-
-  const analysisTypes = [
-    { type: AnalysisType.General, label: t('analysisTypes.GENERAL.label'), description: t('analysisTypes.GENERAL.description'), icon: Wand2, color: 'blue' },
-    { type: AnalysisType.Security, label: t('analysisTypes.SECURITY.label'), description: t('analysisTypes.SECURITY.description'), icon: Shield, color: 'red' },
-    { type: AnalysisType.Scalability, label: t('analysisTypes.SCALABILITY.label'), description: t('analysisTypes.SCALABILITY.description'), icon: Scaling, color: 'purple' },
-    { type: AnalysisType.DocsReview, label: t('analysisTypes.DOCUMENTATION_REVIEW.label'), description: t('analysisTypes.DOCUMENTATION_REVIEW.description'), icon: BookText, color: 'amber' },
-    { type: AnalysisType.CodeQuality, label: t('analysisTypes.CODE_QUALITY.label'), description: t('analysisTypes.CODE_QUALITY.description'), icon: Code, color: 'teal' }
-  ];
-
-  const colorMap = {
-    blue: { text: 'text-blue-400', border: 'border-blue-600/60', hoverBg: 'hover:bg-blue-900/40', shadow: 'hover:shadow-blue-500/20' },
-    red: { text: 'text-red-400', border: 'border-red-600/60', hoverBg: 'hover:bg-red-900/40', shadow: 'hover:shadow-red-500/20' },
-    purple: { text: 'text-purple-400', border: 'border-purple-600/60', hoverBg: 'hover:bg-purple-900/40', shadow: 'hover:shadow-purple-500/20' },
-    teal: { text: 'text-teal-400', border: 'border-teal-600/60', hoverBg: 'hover:bg-teal-900/40', shadow: 'hover:shadow-teal-500/20' },
-    amber: { text: 'text-amber-400', border: 'border-amber-600/60', hoverBg: 'hover:bg-amber-900/40', shadow: 'hover:shadow-amber-500/20' },
-  };
-
-  const activeFileData = files.find(f => f.id === activeFileId);
+  const placeholderText = isSelfCritique
+    ? `The AI will now critique its latest analysis for the project "${activeProject?.name}". No context input is needed.`
+    : "Paste your project documentation here...\n\n# Kortex Project\n## Overview\nKortex is a real-time monitoring dashboard...";
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-      <TokenUsageAlert limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Side: File Management and Editor */}
-        <div className="bg-gray-800/50 border border-gray-700 rounded-xl flex flex-col h-[70vh]">
-          <div className="p-4 border-b border-gray-700">
-            <h2 className="text-xl font-semibold text-white">{t('title')}</h2>
-            <p className="text-sm text-gray-400">{t('subtitle')}</p>
-          </div>
-          <div className="flex-grow flex">
-            {/* File List */}
-            <div className="w-1/3 border-r border-gray-700 p-2 space-y-1 overflow-y-auto">
-              {files.map(file => (
-                <button key={file.id} onClick={() => setActiveFileId(file.id)} className={`w-full text-left p-2 rounded-md text-sm flex items-center justify-between ${activeFileId === file.id ? 'bg-blue-600/30 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}>
-                  <span className="truncate">{file.name}</span>
-                  <span onClick={(e) => { e.stopPropagation(); handleRemoveFile(file.id) }} className="text-gray-500 hover:text-red-400 p-1 rounded-full">&times;</span>
-                </button>
-              ))}
-              <button onClick={handleAddNewFile} className="w-full flex items-center gap-2 p-2 text-sm text-blue-400 hover:bg-blue-900/50 rounded-md">
-                <FilePlus className="w-4 h-4" /> {t('addFile')}
-              </button>
-              <button onClick={() => fileInputRef.current?.click()} className="w-full flex items-center gap-2 p-2 text-sm text-gray-400 hover:bg-gray-700/50 rounded-md">
-                <Upload className="w-4 h-4" /> {t('uploadFiles')}
-              </button>
-              <input title='Upload files' type="file" ref={fileInputRef} onChange={handleFileChange} multiple className="hidden" />
+    <>
+      <div className="h-full flex flex-col lg:flex-row gap-8 overflow-hidden">
+        {/* Left Side: Input */}
+        <motion.div
+          className="lg:w-1/2 flex flex-col"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          {!activeProject && (
+            <div className="mb-4">
+              <label htmlFor="projectName" className="text-lg font-semibold text-gray-300">Project Name</label>
+              <input
+                type="text"
+                id="projectName"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                placeholder="e.g., Kortex Project"
+                className="w-full p-2 mt-1 bg-gray-900 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
             </div>
-            {/* Editor */}
-            <div className="w-2/3 flex flex-col">
-              {showLookAtni ? (
-                <div className="h-full flex flex-col">
-                  <div className="p-2 bg-gray-900/50 border-b border-gray-700 text-sm w-full flex items-center justify-between">
-                    <span className="text-white font-medium">LookAtni Extractor</span>
-                    <button
-                      onClick={() => setShowLookAtni(false)}
-                      className="text-gray-400 hover:text-white p-1"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  <div className="flex-grow overflow-hidden">
-                    <LookAtniDirectExtractor
-                      onFilesExtracted={handleLookAtniFilesExtracted}
-                      onFragmentsSelected={handleLookAtniFragmentsSelected}
-                    />
-                  </div>
-                </div>
-              ) : activeFileData ? (
-                <>
-                  <input
-                    title='File name'
-                    type="text"
-                    value={activeFileData.name}
-                    onChange={(e) => handleUpdateFileName(activeFileData.id, e.target.value)}
-                    className="p-2 bg-gray-900/50 border-b border-gray-700 text-sm w-full focus:outline-none"
-                  />
-                  <textarea
-                    value={activeFileData.content}
-                    onChange={(e) => handleUpdateFileContent(activeFileData.id, e.target.value)}
-                    placeholder={t('input.fileInput.placeholder')}
-                    className="w-full h-full p-3 bg-gray-900/30 text-gray-300 resize-none focus:outline-none font-mono text-sm"
-                  />
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 p-4">
-                  <FileText className="w-12 h-12 mb-4" />
-                  <h3 className="font-semibold text-lg text-gray-400">{t('noFiles.title')}</h3>
-                  <p className="text-sm">{t('noFiles.subtitle')}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+          )}
 
-        {/* Right Side: Analysis Options */}
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
-            {analysisTypes.map(item => {
-              const colors = colorMap[item.color as keyof typeof colorMap];
-              return (
-                <button
-                  key={item.type}
-                  onClick={() => handleAnalyze(item.type)}
-                  disabled={isLoading || isExample}
-                  className={`p-4 flex flex-col text-left rounded-lg border ${colors.border} ${colors.hoverBg} transition-all duration-300 hover:shadow-lg ${colors.shadow} group disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <div className="flex items-center gap-3">
-                    <item.icon className={`w-6 h-6 ${colors.text} transition-transform duration-300 group-hover:scale-110`} />
-                    <h3 className={`text-lg font-semibold ${colors.text}`}>{item.label}</h3>
-                  </div>
-                  <p className="text-sm text-gray-400 mt-2 flex-grow">{item.description}</p>
-                </button>
-              )
-            })}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold flex items-center gap-3">
+              {isSelfCritique ? <MessageSquareQuote className="text-pink-400" /> : <FileText className="text-blue-400" />}
+              {isSelfCritique ? 'Critique Target' : 'Project Context'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsGithubModalOpen(true)}
+                disabled={isFetchingRepo || isSelfCritique}
+                className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-700/80 border border-gray-600 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
+              >
+                {isFetchingRepo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Github className="w-4 h-4" />}
+                Import from GitHub
+              </button>
+            </div>
           </div>
-          <div className="p-3 bg-gray-800/50 border border-gray-700 rounded-xl">
-            <SubtleTokenUsage limit={settings.tokenLimit} consumed={usageTracking.totalTokens} />
+          <p className="text-gray-400 mb-4 text-sm">
+            {isSelfCritique
+              ? "The AI will analyze its own previous output for quality and consistency."
+              : "Provide the project context below. You can paste documentation, READMEs, or any relevant text."
+            }
+          </p>
+          <div className="flex-grow relative">
+            <textarea
+              value={projectContext}
+              onChange={(e) => setProjectContext(e.target.value)}
+              placeholder={placeholderText}
+              className="w-full h-full p-4 bg-gray-900/50 border border-gray-700 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-800/60"
+              disabled={isSelfCritique}
+            />
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => setIsGitHubModalOpen(true)} disabled={isLoading || isExample} className="flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-700/80 text-gray-200 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50">
-              <Code className="w-4 h-4" /> {t('importFromGithub')}
-            </button>
-            <button onClick={() => handleShowExample()} className="flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-transparent border border-purple-600 text-purple-300 rounded-md hover:bg-purple-900/40 transition-colors">
-              <Sparkles className="w-4 h-4" /> {t('actions.showExample')}
-            </button>
+          <button onClick={handleUseExample} disabled={isSelfCritique} className="text-sm text-blue-400 hover:underline mt-2 self-start disabled:opacity-50">
+            Or use an example
+          </button>
+        </motion.div>
+
+        {/* Right Side: Options */}
+        <motion.div
+          className="lg:w-1/2 flex flex-col"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+        >
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <Wand2 className="text-purple-400" />
+            Analysis Type
+          </h2>
+          <div className="space-y-3 flex-grow overflow-y-auto px-2">
+            {analysisTypes.map(at => (
+              <AnalysisTypeButton
+                key={at.type}
+                {...at}
+                isSelected={analysisType === at.type}
+                onClick={() => setAnalysisType(at.type)}
+              />
+            ))}
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleUploadLocalFiles}
-              disabled={isLoading || isExample}
-              className="flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-md hover:from-blue-700 hover:to-cyan-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Upload className="w-4 h-4" /> Upload Local Files
-            </button>
-            <button
-              onClick={handleExtractFromProject}
-              disabled={isLoading || isExample || !hasLookAtniBlob}
-              className={`flex-grow w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${hasLookAtniBlob
-                ? 'from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700'
-                : 'from-gray-500 to-gray-600'
-                }`}
-            >
-              <Sparkles className="w-4 h-4" /> Extract from Project
-            </button>
-          </div>
-        </div>
+          <motion.button
+            onClick={handleTriggerAnalysis}
+            disabled={!canAnalyze}
+            className="w-full mt-4 py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold text-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl hover:shadow-blue-500/30"
+            whileHover={{ scale: canAnalyze ? 1.05 : 1 }}
+            whileTap={{ scale: canAnalyze ? 0.95 : 1 }}
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-6 h-6 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              'Analyze Project'
+            )}
+          </motion.button>
+        </motion.div>
       </div>
       <GitHubSearchModal
-        isOpen={isGitHubModalOpen}
-        onClose={() => setIsGitHubModalOpen(false)}
-        onImport={handleImportFromGitHub}
-        githubPat={settings.githubPat}
+        isOpen={isGithubModalOpen}
+        onClose={() => setIsGithubModalOpen(false)}
+        onImport={handleImportFromGithub}
+        githubPat={integrations?.github?.githubPat || ''}
       />
-    </motion.div>
+    </>
   );
 };
 

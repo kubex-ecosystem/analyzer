@@ -1,237 +1,130 @@
-import { AnimatePresence, motion, Variants } from 'framer-motion';
-import { BarChart3, FileText, Folder, ListChecks, Star, Zap } from 'lucide-react';
-import * as React from 'react';
-import { JSXElementConstructor, Key, ReactElement, ReactNode, ReactPortal, useMemo } from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useTranslation } from '../../hooks/useTranslation';
-import { AnalysisType, HistoryItem, UsageTracking, ViewType } from '../../types';
+import { motion } from 'framer-motion';
+import { FileText, ListChecks, Star, Zap } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { useProjectContext } from '../../contexts/ProjectContext';
+import { useUser } from '../../contexts/UserContext';
+import { AnalysisType, ViewType } from '../../types';
 import DashboardEmptyState from './DashboardEmptyState';
+import DashboardInsightCard from './DashboardInsightCard';
 import TrendChart from './TrendChart';
 
-interface DashboardProps {
-  history: HistoryItem[];
-  usageTracking: UsageTracking;
-  onNavigate: (view: ViewType | 'history') => void;
-  onLoadHistoryItem: (item: HistoryItem) => void;
-  selectedProject: string | null;
-  onSelectProject: (projectName: string | null) => void;
-  isExample: boolean;
-  showEmptyState?: boolean;
-}
-
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.05, delayChildren: 0.1 }
-  }
-};
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 100 } }
-};
-
-const KPICard: React.FC<{ icon: React.ReactNode; title: string; value: string | number; description: string }> = ({ icon, title, value, description }) => (
-  <div className="group bg-gradient-to-br from-gray-800 to-gray-900/50 border border-gray-700 p-4 rounded-lg flex items-center gap-4 transition-all duration-300">
+const KpiCard: React.FC<{ icon: React.ReactNode; title: string; value: string | number; description: string; delay: number }> = ({ icon, title, value, description, delay }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay }}
+    className="bg-gray-800/50 border border-gray-700/80 p-4 rounded-lg flex items-start gap-4"
+  >
     <div className="bg-gray-900/50 p-3 rounded-full">{icon}</div>
     <div>
-      <p className="text-xs text-gray-400">{title}</p>
-      <p className="text-xl font-bold text-white">{value}</p>
-      <p className="text-xs text-gray-500">{description}</p>
+      <p className="text-3xl font-bold text-white">{value}</p>
+      <p className="text-sm font-semibold text-gray-300 -mt-1">{title}</p>
+      <p className="text-xs text-gray-500 mt-1">{description}</p>
     </div>
-  </div>
+  </motion.div>
 );
 
-const Dashboard: React.FC<DashboardProps> = ({ history, usageTracking, onNavigate, onLoadHistoryItem, selectedProject, onSelectProject, isExample, showEmptyState = false }) => {
-  const { t, isLoading } = useTranslation(['dashboard', 'common', 'input']);
-  const { locale } = useLanguage();
+const Dashboard: React.FC = () => {
+  const {
+    projects,
+    activeProjectId,
+    setActiveProjectId,
+    setCurrentView,
+    activeProject
+  } = useProjectContext();
 
-  const projects = useMemo(() => {
-    const projectMap = new Map<string, number>();
-    history.forEach((item: { projectName: string; }) => {
-      projectMap.set(item.projectName, (projectMap.get(item.projectName) || 0) + 1);
-    });
-    return Array.from(projectMap.entries()).map(([name, count]) => ({ name, count }));
-  }, [history]);
+  const { name: userName } = useUser();
 
-  const filteredHistory = useMemo(() => {
-    if (!selectedProject) {
-      return history;
-    }
-    return history.filter((item: { projectName: any; }) => item.projectName === selectedProject);
-  }, [history, selectedProject]);
+  const projectOptions = useMemo(() => projects.filter(p => p.id !== 'example-project-id'), [projects]);
 
-  const stats = useMemo(() => {
-    const source = filteredHistory;
-    if (source.length === 0) {
+  const dashboardStats = useMemo(() => {
+    if (!activeProject || activeProject.history.length === 0) {
       return {
         totalAnalyses: 0,
         averageScore: 0,
         commonType: 'N/A',
-        scoreTrend: [],
+        scoreHistory: [],
       };
     }
-    const totalScore = source.reduce((sum: any, item: { analysis: { viability: { score: any; }; }; }) => sum + item.analysis.viability.score, 0);
-    const typeCounts = source.reduce((acc: { [x: string]: any; }, item: { analysisType: string | number; }) => {
-      acc[item.analysisType] = (acc[item.analysisType] || 0) + 1;
+
+    const history = activeProject.history;
+    const totalAnalyses = history.length;
+    // FIX: Explicitly typed the 'sum' accumulator to resolve TS error.
+    const averageScore = history.reduce((sum: number, item) => sum + item.analysis.viability.score, 0) / totalAnalyses;
+
+    const typeCounts = history.reduce((acc, item) => {
+      acc[item.analysis.analysisType] = (acc[item.analysis.analysisType] || 0) + 1;
       return acc;
     }, {} as Record<AnalysisType, number>);
 
-    const commonType = Object.entries(typeCounts).sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] || 'N/A';
-    const scoreTrend = [...source].reverse().map(item => item.analysis.viability.score);
+    const commonType = Object.keys(typeCounts).length > 0
+      ? Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0][0]
+      : 'N/A';
+
+    const scoreHistory = history.map(item => item.analysis.viability.score);
 
     return {
-      totalAnalyses: source.length,
-      averageScore: parseFloat((totalScore / source.length).toFixed(1)),
+      totalAnalyses,
+      averageScore: parseFloat(averageScore.toFixed(1)),
       commonType,
-      scoreTrend,
+      scoreHistory,
     };
-  }, [filteredHistory]);
+  }, [activeProject]);
 
-  if (showEmptyState) {
-    return <DashboardEmptyState onNavigate={onNavigate} />;
+  if (projectOptions.length === 0 && !activeProject) {
+    return <DashboardEmptyState onNavigate={() => setCurrentView(ViewType.Input)} />;
   }
-
-  if (isLoading) {
-    return (
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 animate-pulse">
-        <div className="lg:col-span-1 bg-gray-900/30 p-4 rounded-xl border border-gray-800 h-64"></div>
-        <div className="lg:col-span-3 space-y-8">
-          <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
-            <div className="xl:col-span-3 bg-gray-800/50 border border-gray-700 p-6 rounded-xl h-48"></div>
-            <div className="xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
-              <div className="bg-gray-800/50 border border-gray-700 p-4 rounded-lg h-20"></div>
-              <div className="bg-gray-800/50 border border-gray-700 p-4 rounded-lg h-20"></div>
-            </div>
-          </div>
-          <div className="bg-gray-900/30 p-6 rounded-xl border border-gray-800 h-64"></div>
-        </div>
-      </div>
-    );
-  }
-
-  const typeLabels: Record<string, string> = {
-    [AnalysisType.General]: t('analysisTypes.GENERAL.label'),
-    [AnalysisType.Security]: t('analysisTypes.SECURITY.label'),
-    [AnalysisType.Scalability]: t('analysisTypes.SCALABILITY.label'),
-    [AnalysisType.CodeQuality]: t('analysisTypes.CODE_QUALITY.label'),
-    'N/A': 'N/A'
-  };
-
-  const analysesToList = selectedProject ? filteredHistory : [...history].sort((a, b) => b.id - a.id).slice(0, 10);
 
   return (
-    <motion.div
-      className="grid grid-cols-1 lg:grid-cols-4 gap-8"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      {/* Project List Sidebar */}
-      <motion.div variants={itemVariants} className="lg:col-span-1 bg-gray-900/30 p-4 rounded-xl border border-gray-800 h-fit lg:sticky lg:top-24">
-        <h2 className="text-lg font-bold text-white mb-4 px-2">{t('dashboard.projects.title')}</h2>
-        <ul className="space-y-1">
-          <li>
-            <button
-              onClick={() => onSelectProject(null)}
-              className={`w-full text-left flex items-center gap-3 p-2 rounded-md transition-colors text-sm font-medium ${!selectedProject ? 'bg-blue-600/50 text-white' : 'text-gray-300 hover:bg-gray-700/50'}`}
-            >
-              <BarChart3 className="w-5 h-5 shrink-0" />
-              <span className="flex-grow truncate">{t('dashboard.projects.allProjects')}</span>
-              <span className="text-xs bg-gray-700/80 px-1.5 py-0.5 rounded">{history.length}</span>
-            </button>
-          </li>
-          {projects.map(project => (
-            <li key={project.name}>
-              <button
-                onClick={() => onSelectProject(project.name)}
-                className={`w-full text-left flex items-center gap-3 p-2 rounded-md transition-colors text-sm ${selectedProject === project.name ? 'bg-blue-600/50 text-white' : 'text-gray-400 hover:bg-gray-700/50'}`}
-              >
-                <Folder className="w-5 h-5 shrink-0" />
-                <span className="flex-grow truncate" title={project.name}>{project.name}</span>
-                <span className="text-xs bg-gray-700/80 px-1.5 py-0.5 rounded">{project.count}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </motion.div>
+    <div className="space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Welcome, {userName || 'User'}!</h1>
+          <p className="text-gray-400">Here's a summary of your projects.</p>
+        </div>
+        <div className="w-full sm:w-auto">
+          <select
+            title='Select Project'
+            value={activeProjectId || ''}
+            onChange={(e) => setActiveProjectId(e.target.value)}
+            className="w-full p-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="" disabled>Select a project...</option>
+            {projectOptions.map(p => (
+              <option key={p.id} value={p.id}>{p.name}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-      {/* Main Content */}
-      <motion.div className="lg:col-span-3 space-y-8">
-        {/* KPIs and Chart */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 xl:grid-cols-5 gap-8"
-        >
-          <div className="xl:col-span-3 bg-gray-800/50 border border-gray-700 p-6 rounded-xl flex flex-col">
-            <h3 className="text-lg font-semibold text-white mb-2">{t('dashboard.scoreEvolution')}</h3>
-            <div className="flex-grow h-48">
-              <TrendChart data={stats.scoreTrend} />
-            </div>
-          </div>
-          <div className="xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4">
-            <KPICard icon={<FileText className="w-6 h-6 text-purple-400" />} title={t('dashboard.kpi.totalAnalyses')} value={stats.totalAnalyses} description={t('dashboard.kpi.totalAnalyses_description')} />
-            <KPICard icon={<Star className="w-6 h-6 text-yellow-400" />} title={t('dashboard.kpi.averageScore')} value={stats.averageScore} description={t('dashboard.kpi.averageScore_description')} />
-            <KPICard icon={<ListChecks className="w-6 h-6 text-teal-400" />} title={t('dashboard.kpi.commonType')} value={typeLabels[stats.commonType]} description={t('dashboard.kpi.commonType_description')} />
-            <KPICard icon={<Zap className="w-6 h-6 text-blue-400" />} title={t('dashboard.kpi.tokensThisMonth')} value={usageTracking.totalTokens.toLocaleString(locale)} description={t('dashboard.kpi.tokensThisMonth_description')} />
-          </div>
-        </motion.div>
+      <DashboardInsightCard />
 
-        {/* Analyses List */}
-        <motion.div variants={itemVariants} className="bg-gray-900/30 p-6 rounded-xl border border-gray-800">
-          <h3 className="text-xl font-bold text-white mb-4">
-            {selectedProject
-              ? t('dashboard.projects.analysesFor', { projectName: selectedProject })
-              : t('dashboard.projects.recentAnalyses')}
-          </h3>
-          <div className="space-y-3">
-            <AnimatePresence>
-              {analysesToList.map((item: { id: Key | undefined; projectName: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | undefined> | undefined; analysisType: string | number; timestamp: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | null | undefined> | null | undefined; analysis: { viability: { score: string | number | bigint | boolean | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | Promise<string | number | bigint | boolean | ReactPortal | ReactElement<unknown, string | JSXElementConstructor<any>> | Iterable<ReactNode> | undefined> | undefined; }; }; }) => (
-                <motion.div
-                  key={item.id}
-                  layout
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="hidden"
-                  className="flex items-center justify-between gap-4 p-3 rounded-lg hover:bg-gray-800/60 transition-colors"
-                >
-                  <div className="text-sm flex-grow overflow-hidden">
-                    <p
-                      className="font-medium text-gray-300 truncate"
-                      title={String(item.projectName ?? '')}
-                    >
-                      {String(item.projectName ?? '')}
-                    </p>
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span>{typeLabels[item.analysisType]}</span>
-                      <span className="hidden sm:inline">&bull;</span>
-                      <span className="hidden sm:inline">{item.timestamp}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      <Star className="w-4 h-4 text-yellow-500" />
-                      <span className="font-bold text-white text-lg">{item.analysis.viability.score}</span>
-                    </div>
-                    <button
-                      onClick={() => onLoadHistoryItem(item as unknown as HistoryItem)}
-                      disabled={isExample}
-                      className="px-3 py-1 text-xs font-semibold text-blue-300 bg-blue-900/50 border border-blue-700 rounded-md hover:bg-blue-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {t('actions.view')}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+      {activeProject ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <KpiCard icon={<FileText className="w-6 h-6 text-purple-400" />} title="Total Analyses" value={dashboardStats.totalAnalyses} description="Analyses performed for this project." delay={0.1} />
+            <KpiCard icon={<Star className="w-6 h-6 text-yellow-400" />} title="Average Score" value={dashboardStats.averageScore} description="Average viability score for this project." delay={0.2} />
+            <KpiCard icon={<ListChecks className="w-6 h-6 text-teal-400" />} title="Common Type" value={dashboardStats.commonType} description="Most frequent analysis type for this project." delay={0.3} />
+            <KpiCard icon={<Zap className="w-6 h-6 text-blue-400" />} title="Tokens Used" value="N/A" description="Token consumption tracking coming soon." delay={0.4} />
           </div>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.5 }}
+            className="bg-gray-800/50 border border-gray-700/80 p-6 rounded-lg h-64"
+          >
+            <h3 className="text-lg font-semibold text-white">Viability Score Trend</h3>
+            <TrendChart data={dashboardStats.scoreHistory} />
+          </motion.div>
+        </>
+      ) : (
+        <div className="text-center py-16 bg-gray-800/50 border border-gray-700/80 rounded-lg">
+          <h2 className="text-2xl font-bold text-white">Please select a project</h2>
+          <p className="text-gray-400 mt-2">Choose a project from the dropdown to see its dashboard.</p>
+        </div>
+      )}
+    </div>
   );
 };
 
