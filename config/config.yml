@@ -1,30 +1,28 @@
 # Development Features Configuration
 
 providers:
-  groq:
-    type: groq
-    base_url: https://api.groq.com
-    key_env: GROQ_API_KEY
-    default_model: llama-3.1-8b-instant
-
   # gemini:
   #   type: gemini
   #   base_url: https://generativelanguage.googleapis.com
   #   key_env: "AIzaSyDmybu7EzXMt20jLB8WVi09kTErJYR_HKI"
   #   default_model: "gemini-2.5-flash"
-
+  # openai:
+  #   type: openai
+  #   base_url: https://api.openai.com
+  #   key_env: OPENAI_API_KEY
+  #   default_model: gpt-4o-mini
   gemini:
     type: gemini
     base_url: https://generativelanguage.googleapis.com
-    key_env: "AIzaSyDmybu7EzXMt20jLB8WVi09kTErJYR_HKI"
-    default_model: "gemini-2.0-flash-exp"
+    key_env: GEMINI_API_KEY
+    default_model: gemini-2.5-flash
+#   openai:
+#     type: openai
+#     base_url: https://api.openai.com
+#     key_env: OPENAI_API_KEY
+#     default_model: gpt-4o-mini
 
-  openai:
-    type: openai
-    base_url: https://api.openai.com
-    key_env: OPENAI_API_KEY
-    default_model: gpt-4o-mini
-
+  # Future providers (uncomment when implemented)
   # anthropic:
   #   type: anthropic
   #   base_url: https://api.anthropic.com
