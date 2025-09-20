@@ -131,6 +131,9 @@ armv6l:
 all:
 	@echo "Process finished for all platforms and architectures"
 
+run:
+	@bash $(INSTALL_SCRIPT) run $(ARGS)
+
 build-docs:
 	@echo "Building documentation..."
 	@bash $(INSTALL_SCRIPT) build-docs $(ARGS)

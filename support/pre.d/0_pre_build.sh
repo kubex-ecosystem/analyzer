@@ -60,7 +60,7 @@ build_frontend() {
           exit 1
       fi
 
-      if [[ -d './dist' ]]; then
+      if [[ -d "${_ROOT_DIR}/frontend/dist" ]]; then
           log success "Frontend assets built successfully." true
       else
           log fatal "Build directory does not exist." true

@@ -92,7 +92,7 @@ export default defineConfig(({ mode }: { mode: string }) => {
 
         },
       },
-      outDir: 'build',
+      outDir: 'dist',
       sourcemap: true,
       chunkSizeWarningLimit: 900,
     },
