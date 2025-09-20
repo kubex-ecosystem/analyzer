@@ -140,15 +140,20 @@ const HistoryPanel: React.FC = () => {
             {/* {history.length > 0 && ( */}
             <div className="p-4 bg-gray-900/50 border-t border-gray-700 space-y-3">
               <div className="flex gap-2">
-                <label className="w-full">
-                  <span className="sr-only">Import History</span>
+                <label
+                  htmlFor="import-history"
+                  className="w-full cursor-pointer px-4 py-2 text-sm font-semibold text-white bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-700/80 disabled:opacity-50 disabled:cursor-not-allowed align-middle text-center"
+                >
+                  Import History
                   <input
+                    id="import-history"
                     type="file"
-                    accept=".json,application/json"
+                    accept=".json"
                     onChange={handleImportHistoryClick}
-                    className="w-full px-4 py-2 text-sm text-gray-300 bg-gray-700 border border-gray-600 rounded-md cursor-pointer hover:bg-gray-700/80 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="hidden"
                   />
                 </label>
+
                 <button
                   title='Export History'
                   onClick={handleExportHistoryClick}
@@ -156,6 +161,15 @@ const HistoryPanel: React.FC = () => {
                   className="w-full px-4 py-2 text-sm font-semibold text-white bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-700/80 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Export History
+                </button>
+                <button
+                  type='button'
+                  title='Clear Selection'
+                  onClick={() => setSelectedForCompare([])}
+                  disabled={selectedForCompare.length === 0}
+                  className="w-full px-4 py-2 text-sm font-semibold text-white bg-gray-700 border border-gray-600 rounded-md hover:bg-gray-700/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Clear Selection
                 </button>
               </div>
 

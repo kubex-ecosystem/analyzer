@@ -20,10 +20,10 @@ func (m *Analyzer) Alias() string {
 	return ""
 }
 func (m *Analyzer) ShortDescription() string {
-	return "Analyzer a tool for building prompts with AI assistance."
+	return "AI tools help in the editor, but they stop antes do PR, lacking governance."
 }
 func (m *Analyzer) LongDescription() string {
-	return `Analyzer: A tool for building prompts with AI assistance using real engineering practices. Better prompts, better results.., Awesome prompts, AMAZING results !!!`
+	return `Analyzer: An AI-powered tool that enhances code quality and governance by providing intelligent suggestions and reviews before pull requests. It integrates seamlessly into your development workflow, ensuring that your code meets the highest standards of quality and compliance.`
 }
 func (m *Analyzer) Usage() string {
 	return "Analyzer [command] [args]"
@@ -58,9 +58,6 @@ func (m *Analyzer) Command() *cobra.Command {
 	}
 
 	// Add subcommands to the root command
-	// rtCmd.AddCommand(cc.StartCmd())
-	// rtCmd.AddCommand(cc.AskCmd())
-	// rtCmd.AddCommand(cc.ChatCmd())
 	rtCmd.AddCommand(cc.GatewayCmds())
 	rtCmd.AddCommand(cc.NewDaemonCommand())
 

@@ -6,8 +6,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway"
 	"github.com/spf13/cobra"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 )
 
 // GatewayCmds returns the gateway command with subcommands
@@ -49,6 +52,14 @@ Features:
 		Short: "Start the gateway server (with GUI)",
 		Long:  "Start the Analyzer Gateway server with enterprise features (with GUI)",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Load environment variables from .env file if exists
+			loadEnv(".env")
+
+			// Validate port
+			if _, err := net.LookupPort("tcp", port); err != nil {
+				return fmt.Errorf("invalid port %q: %w", port, err)
+			}
+
 			return startGateway(&gateway.ServerConfig{
 				Addr:            net.JoinHostPort(bindingAddress, port),
 				ProvidersConfig: configPath,
@@ -155,4 +166,11 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func loadEnv(configPath string) {
+	// Initialize environment variables, set them inside environment
+	if err := godotenv.Load(configPath); err != nil {
+		gl.Log("warning", fmt.Sprintf("No .env file found at %s, proceeding with existing environment variables", configPath))
+	}
 }
