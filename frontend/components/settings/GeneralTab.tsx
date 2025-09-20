@@ -1,5 +1,5 @@
 import { Palette, Settings as SettingsIcon } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useProjectContext } from '../../contexts/ProjectContext';

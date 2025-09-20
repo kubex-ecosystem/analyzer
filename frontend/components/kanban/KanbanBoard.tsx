@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Plus, Kanban, Info } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';

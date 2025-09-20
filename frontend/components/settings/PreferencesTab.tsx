@@ -1,5 +1,6 @@
 import { BarChart3, Beaker, Check, Clock, Loader2, Palette, RefreshCw, Settings as SettingsIcon, Shield, TrendingUp, X } from 'lucide-react';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useProjectContext } from '../../contexts/ProjectContext';

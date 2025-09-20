@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { FileText, ListChecks, Star, Zap } from 'lucide-react';
-import React, { useMemo } from 'react';
+import * as React from 'react';
+import { useMemo } from 'react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { useUser } from '../../contexts/UserContext';
 import { AnalysisType, ViewType } from '../../types';

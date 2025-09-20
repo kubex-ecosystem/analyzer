@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Lightbulb, Send, ThumbsUp, ThumbsDown, KanbanSquare } from 'lucide-react';
 import { useProjectContext } from '../../contexts/ProjectContext';

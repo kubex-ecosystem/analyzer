@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+import * as React from 'react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle, AlertTriangle, Info, X } from 'lucide-react';
 // FIX: Corrected import path for types

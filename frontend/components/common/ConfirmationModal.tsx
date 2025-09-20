@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
 import { useConfirmation } from '../../contexts/ConfirmationContext';

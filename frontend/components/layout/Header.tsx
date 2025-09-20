@@ -1,5 +1,5 @@
 import { Github, History, PlusCircle, Settings } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { useUser } from '../../contexts/UserContext';

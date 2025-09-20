@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { motion, Variants } from 'framer-motion';
 import { EvolutionAnalysis, Improvement, AnalysisType, Priority, ViewType } from '../../types';
 import { BrainCircuit, Calculator, Check, GitCompareArrows, Lightbulb, Repeat, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react';

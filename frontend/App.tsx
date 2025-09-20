@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 
 // Contexts & Hooks
 import { AppProvider } from './contexts/AppContext';
@@ -19,6 +19,7 @@ import LandingPage from './components/landing/LandingPage';
 import Header from './components/layout/Header';
 import NavigationBar from './components/layout/NavigationBar';
 // FIX: Corrected import path for Dashboard
+import 'framer-motion';
 import ChatPanel from './components/chat/ChatPanel';
 import ConfirmationModal from './components/common/ConfirmationModal';
 import Loader from './components/common/Loader';

@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Edit2 } from 'lucide-react';
 import { KanbanCard, Priority, KanbanColumnId } from '../../types';

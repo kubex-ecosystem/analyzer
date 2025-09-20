@@ -1,3 +1,4 @@
+import '@/types/MotionExtendedProps';
 import * as React from 'react';
 
 import { motion } from 'framer-motion';
@@ -32,8 +33,8 @@ const AnalysisTypeButton: React.FC<{
   disabled?: boolean;
 }> = ({ type, label, description, color, isSelected, onClick, disabled = false }) => (
   <motion.button
-    onClick={onClick}
-    disabled={disabled}
+    onTap={onClick}
+
     className={`p-4 text-left border rounded-lg transition-all w-full relative ${isSelected
       ? `${colorMap[color].bg} ${colorMap[color].border}`
       : `bg-gray-800/50 border-gray-700 ${!disabled ? colorMap[color].hoverBorder : ''}`
@@ -186,6 +187,7 @@ const ProjectInput: React.FC = () => {
           </p>
           <div className="flex-grow relative">
             <textarea
+              t
               value={projectContext}
               onChange={(e) => setProjectContext(e.target.value)}
               placeholder={placeholderText}
@@ -219,11 +221,11 @@ const ProjectInput: React.FC = () => {
             ))}
           </div>
           <motion.button
-            onClick={handleTriggerAnalysis}
-            disabled={!canAnalyze}
+            onTap={!canAnalyze ? handleTriggerAnalysis : undefined}
+            whileTap={{ scale: canAnalyze ? 0.95 : 1 }}
             className="w-full mt-4 py-3 px-6 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold text-lg flex items-center justify-center gap-3 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl hover:shadow-blue-500/30"
             whileHover={{ scale: canAnalyze ? 1.05 : 1 }}
-            whileTap={{ scale: canAnalyze ? 0.95 : 1 }}
+          // disabled={!canAnalyze}
           >
             {isAnalyzing ? (
               <>

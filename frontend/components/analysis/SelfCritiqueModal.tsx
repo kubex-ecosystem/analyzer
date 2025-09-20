@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle, Edit, MessageSquareQuote, X } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
 import { SelfCritiqueAnalysis } from '../../types';
 import SubtleTokenUsage from '../common/SubtleTokenUsage';
 

@@ -1,5 +1,5 @@
 import { AlertTriangle, Beaker, Zap } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/UserContext';
 import { UserSettings } from '../../types';

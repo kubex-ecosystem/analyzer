@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, Loader2, Search, Star, X } from 'lucide-react';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { listUserRepos } from '../../services/integrations/github';
 import { GitHubRepoListItem } from '../../types';
@@ -46,14 +47,14 @@ const GitHubSearchModal: React.FC<GitHubSearchModalProps> = ({ isOpen, onClose, 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onTap={onClose}
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
         >
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            onClick={(e) => e.stopPropagation()}
+            onTap={(e) => e.stopPropagation()}
             className="bg-gray-800 border border-gray-700 rounded-xl w-full max-w-2xl flex flex-col shadow-2xl h-[70vh]"
           >
             {/* Header */}

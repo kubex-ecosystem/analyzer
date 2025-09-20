@@ -1,5 +1,6 @@
 import { Check, Loader2, Shield, X } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import * as React from 'react';
+import { useEffect, useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/UserContext';
 import { Provider, unifiedAI } from '../../services/unified-ai';

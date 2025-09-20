@@ -1,4 +1,5 @@
-import React, { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
+import * as React from 'react';
+import { createContext, useState, useEffect, useContext, ReactNode, useCallback } from 'react';
 
 type Locale = 'en-US' | 'pt-BR';
 type Translations = Record<string, any>;

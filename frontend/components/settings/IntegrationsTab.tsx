@@ -1,5 +1,6 @@
 import { AtSign, ExternalLink, Github, Trello } from 'lucide-react';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useUser } from '../../contexts/UserContext';
 import { JiraIntegrationSettings, TrelloIntegrationSettings } from '../../types';

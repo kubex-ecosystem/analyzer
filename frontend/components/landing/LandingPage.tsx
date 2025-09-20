@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LucideIcon, FileCode, ShieldCheck, BarChart, Scale, BookOpen, Network } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -93,7 +94,7 @@ const LandingPage: React.FC = () => {
             className="mt-10"
           >
             <motion.button
-              onClick={login}
+              onTap={login}
               className="px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-500 text-white rounded-lg font-semibold text-lg shadow-lg"
               whileHover={{ scale: 1.05, boxShadow: "0px 10px 30px rgba(59, 130, 246, 0.4)" }}
               whileTap={{ scale: 0.95 }}
