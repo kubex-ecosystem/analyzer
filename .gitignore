@@ -2,6 +2,7 @@
 
 !grompt/
 .venv/
+.notes/
 bkp
 
 # Build outputs
@@ -16,6 +17,7 @@ dist/
 *.dylib
 *.test
 *.out
+
 go.work
 
 # Node.js
