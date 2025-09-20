@@ -1,8 +1,32 @@
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { defineConfig, loadEnv } from 'vite';
 
+const getEnvResilient = (mode: string, envDir: string) => {
+  // Estratégia de fallback para diferentes locais de .env
+  const envPaths = [
+    envDir,                    // diretório raiz
+    path.join(envDir, 'config'), // ./config/
+    path.join(envDir, '..'),   // diretório pai
+  ];
+
+  let finalEnv = {};
+
+  for (const envPath of envPaths) {
+    try {
+      const env = loadEnv(mode, envPath, ['GEMINI_', 'GITHUB_', 'JIRA_', 'API_']);
+      finalEnv = { ...finalEnv, ...env };
+    } catch (error) {
+      // Silently continue to next path
+      continue;
+    }
+  }
+
+  return finalEnv;
+};
+
 export default defineConfig(({ mode }: { mode: string }) => {
-  const env = loadEnv(mode, '.', '');
+  const env: Record<string, string> = getEnvResilient(mode, process.cwd());
   return {
     root: '.',
     base: './',
@@ -10,12 +34,12 @@ export default defineConfig(({ mode }: { mode: string }) => {
     cacheDir: 'node_modules/.vite',
     mode: mode,
     define: {
-      'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY || ""),
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY || ""),
-      'process.env.GITHUB_PAT': JSON.stringify(env.GITHUB_PAT || ""),
-      'process.env.JIRA_API_TOKEN': JSON.stringify(env.JIRA_API_TOKEN || ""),
-      'process.env.JIRA_INSTANCE_URL': JSON.stringify(env.JIRA_INSTANCE_URL || ""),
-      'process.env.JIRA_USER_EMAIL': JSON.stringify(env.JIRA_USER_EMAIL || "")
+      'process.env.API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || ""),
+      'process.env.GEMINI_API_KEY': JSON.stringify(env.VITE_GEMINI_API_KEY || env.GEMINI_API_KEY || ""),
+      'process.env.GITHUB_PAT': JSON.stringify(env.VITE_GITHUB_PAT || env.GITHUB_PAT || ""),
+      'process.env.JIRA_API_TOKEN': JSON.stringify(env.VITE_JIRA_API_TOKEN || env.JIRA_API_TOKEN || ""),
+      'process.env.JIRA_INSTANCE_URL': JSON.stringify(env.VITE_JIRA_INSTANCE_URL || env.JIRA_INSTANCE_URL || ""),
+      'process.env.JIRA_USER_EMAIL': JSON.stringify(env.VITE_JIRA_USER_EMAIL || env.JIRA_USER_EMAIL || "")
     },
     resolve: {
       alias: {
