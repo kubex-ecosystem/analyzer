@@ -6,36 +6,36 @@
     "url": "git+https://github.com/kubex-ecosystem/gemx/analyzer.git"
   },
   "homepage": "https://kubex-ecosystem.github.io/gemx/analyzer/",
-  "packageManager": "npm@^10.9.2",
+  "packageManager": "npm@10.9.2",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "install": "npm i --no-fund --no-audit --legacy-peer-deps --loglevel=error --silent",
+    "install:ci": "npm ci --no-fund --no-audit --legacy-peer-deps --loglevel=error --silent",
     "build": "vite build",
-    "build:static": "vite build --base ./",
+    "build:static": "vite build --mode production",
+    "dev": "vite",
     "preview": "vite preview"
   },
   "dependencies": {
     "@google/genai": "^1.17.0",
-    "framer-motion": "^12.23.12",
+    "framer-motion": "^10.18.0",
     "idb": "^8.0.3",
     "lucide-react": "^0.542.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-markdown": "^9.0.1",
-    "react-mermaid2": "^0.1.4",
     "remark-gfm": "^4.0.0"
   },
   "devDependencies": {
-    "@types/node": "^22.14.0",
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
+    "@types/node": "^22.17.0",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^7.1.6"
   }
 }

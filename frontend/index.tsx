@@ -1,12 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 // FIX: Corrected import path for App component
-import App from './App';
+import App from '@/App.tsx';
 
 const swExceptions = [
   '//ai.studio',
   'scf.usercontent.goog',
-  'generativelanguage.googleapis.com'
+  'generativelanguage.googleapis.com',
+  'localhost',
+  '127.0.0.1'
 ]
 
 // Register the service worker for PWA capabilities
