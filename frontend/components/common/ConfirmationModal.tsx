@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
+import * as React from 'react';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 
 const ConfirmationModal: React.FC = () => {
@@ -42,7 +42,7 @@ const ConfirmationModal: React.FC = () => {
                 <h2 className="text-xl font-bold text-white">{options.title}</h2>
                 <p className="mt-2 text-gray-300">{options.message}</p>
               </div>
-              <button onClick={handleCancel} className="p-1 rounded-full text-gray-400 hover:bg-gray-700 transition-colors absolute top-4 right-4">
+              <button title='Close' onClick={handleCancel} className="p-1 rounded-full text-gray-400 hover:bg-gray-700 transition-colors absolute top-4 right-4">
                 <X className="w-5 h-5" />
               </button>
             </div>

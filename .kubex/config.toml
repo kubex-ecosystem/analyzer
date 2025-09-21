@@ -29,7 +29,7 @@ eviction_order = ["exec", "plan", "delta"]
 
 [output]
 style = "succinct_actionable"
-postamble = "✅ Valide: build/test passam e objetivo foi atendido."
+postamble = "Valide: build/test passam e objetivo foi atendido."
 # foco em produto: não deixar “relatórios de tarefa” no repo
 generate_task_summaries = false
 allow_repo_writing_of_reports = false

@@ -1,7 +1,7 @@
-import * as React from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Edit2 } from 'lucide-react';
-import { KanbanCard, Priority, KanbanColumnId } from '../../types';
+import * as React from 'react';
+import { KanbanCard, KanbanColumnId, Priority } from '../../types';
 import DifficultyMeter from '../common/DifficultyMeter';
 
 interface KanbanCardProps {
@@ -32,7 +32,7 @@ const KanbanCardComponent: React.FC<KanbanCardProps> = ({ card, onEdit, onDragSt
     >
       <div className="flex justify-between items-start">
         <h4 className="text-sm font-semibold text-gray-200">{card.title}</h4>
-        <button onClick={onEdit} className="p-1 text-gray-500 hover:text-white">
+        <button title='Edit' onClick={onEdit} className="p-1 text-gray-500 hover:text-white">
           <Edit2 className="w-3 h-3" />
         </button>
       </div>
