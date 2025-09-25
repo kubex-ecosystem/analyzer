@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Star, ListChecks, Zap } from 'lucide-react';
 

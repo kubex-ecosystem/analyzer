@@ -126,7 +126,7 @@ export const ProjectContextProvider: React.FC<{ children: ReactNode }> = ({ chil
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
 
-  const [currentView, setCurrentView] = useState<ViewType>(ViewType.Dashboard);
+  const [currentView, setCurrentView] = usePersistentState<ViewType>('currentView', ViewType.Dashboard);
   const [activeHistoryId, setActiveHistoryId] = useState<number | null>(null);
   const [chatInstance, setChatInstance] = useState<Chat | null>(null);
 

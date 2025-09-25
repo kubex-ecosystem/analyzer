@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
 import { AnalysisFeature } from './LandingPage';
 
 interface FeatureDetailModalProps {

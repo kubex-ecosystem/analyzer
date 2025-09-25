@@ -1,7 +1,8 @@
 import { secureUserStorage, UserDataStorage } from "@/services/secureStorage";
 import { IntegrationSettings } from "@/types/Integrations";
 import { UsageTracking, User, UserSettings, UserTrackingMetadata } from "@/types/User";
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import * as React from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 
 // Define the shape of our user context
 interface UserContextType {

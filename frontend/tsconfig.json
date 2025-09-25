@@ -3,9 +3,11 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
+    "allowImportingTsExtensions": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "NodeNext",
-    "moduleResolution": "Node16",
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "ignoreDeprecations": "6.0",
     "strict": true,
     "lib": [
       "ES2022",
@@ -26,7 +28,6 @@
         "./*"
       ],
     },
-    "allowImportingTsExtensions": true,
     "noEmit": true
   }
 }

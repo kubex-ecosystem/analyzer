@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { useUser } from '../../contexts/UserContext';

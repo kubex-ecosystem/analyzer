@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import React from 'react';
+import * as React from 'react';
 // FIX: Corrected import path for ProjectContext
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { useUser } from '../../contexts/UserContext';

@@ -1,4 +1,5 @@
-import React, { useRef } from 'react';
+import * as React from 'react';
+import { useRef } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { useConfirmation } from '../../contexts/ConfirmationContext';
 import { useNotification } from '../../contexts/NotificationContext';

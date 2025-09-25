@@ -2,7 +2,7 @@
 // The primary insight card used in the application is DashboardInsightCard.tsx.
 // Providing a basic component structure to avoid any potential build errors.
 
-import React from 'react';
+import * as React from 'react';
 
 const InsightCard: React.FC = () => {
   return (

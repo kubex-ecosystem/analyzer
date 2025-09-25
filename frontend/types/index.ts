@@ -27,3 +27,9 @@ export * from './Integrations';
 
 // User types
 export * from './User';
+
+// // Auth typescript
+// export * from './AuthUser';
+
+// MotionExtendedProps for framer-motion with Tailwind CSS
+export * from './MotionExtendedProps';

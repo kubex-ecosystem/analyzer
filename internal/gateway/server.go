@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"sync"
 
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
@@ -26,6 +27,8 @@ type Server struct {
 	config     *ServerConfig
 	registry   *registry.Registry
 	middleware *middleware.ProductionMiddleware
+	handler    http.Handler
+	once       sync.Once
 }
 
 // NewServer creates a new gateway server instance
@@ -64,18 +67,30 @@ func (s *Server) Start() error {
 		os.Exit(0)
 	}()
 
-	// Setup HTTP routes
-	mux := http.NewServeMux()
-	transport.WireHTTP(mux, s.registry, s.middleware)
-
-	// Apply CORS if enabled
-	var handler http.Handler = mux
-	if s.config.EnableCORS {
-		handler = withCORS(handler)
+	handler, err := s.Handler()
+	if err != nil {
+		return err
 	}
 
 	log.Printf("🚀 analyzer-gw listening on %s with ENTERPRISE features!", s.config.Addr)
 	return http.ListenAndServe(s.config.Addr, handler)
+}
+
+// Handler builds (once) and returns the configured HTTP handler for reuse.
+func (s *Server) Handler() (http.Handler, error) {
+	s.once.Do(func() {
+		mux := http.NewServeMux()
+		transport.WireHTTP(mux, s.registry, s.middleware)
+
+		var handler http.Handler = mux
+		if s.config.EnableCORS {
+			handler = withCORS(handler)
+		}
+
+		s.handler = handler
+	})
+
+	return s.handler, nil
 }
 
 // withCORS adds CORS headers to responses

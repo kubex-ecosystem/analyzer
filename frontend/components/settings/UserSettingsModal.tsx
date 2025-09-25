@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, Beaker, Database, Link as LinkIcon, Settings as SettingsIcon, Shield, User, X } from 'lucide-react';
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { useProjectContext } from '../../contexts/ProjectContext';
 import { useUser } from '../../contexts/UserContext';
 import ProfileModal from '../user/ProfileModal';
