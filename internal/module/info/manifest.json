@@ -1,7 +1,7 @@
 {
   "name": "Kubex - GemX Analyzer",
   "application": "analyzer",
-  "version": "1.0.9",
+  "version": "0.0.1",
   "private": false,
   "published": true,
   "aliases": [
@@ -10,6 +10,7 @@
   "repository": "https://github.com/kubex-ecosystem/analyzer",
   "homepage": "https://github.com/kubex-ecosystem/analyzer",
   "description": "Kubex - GemX Analyzer is a professional AI prompt context object kind like: agents, prompts, API calls, and more.",
+  "go_version": "1.25.1",
   "main": "cmd/main.go",
   "bin": "analyzer",
   "author": "Rafael Mori <faelmori@gmail.com>",
