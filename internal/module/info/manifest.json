@@ -1,7 +1,7 @@
 {
   "name": "Kubex - GemX Analyzer",
   "application": "analyzer",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": false,
   "published": true,
   "aliases": [
