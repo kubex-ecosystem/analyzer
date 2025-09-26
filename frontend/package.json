@@ -11,8 +11,8 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "install": "npm i --no-fund --no-audit --legacy-peer-deps --loglevel=error --silent",
-    "install:ci": "npm ci --no-fund --no-audit --legacy-peer-deps --loglevel=error --silent",
+    "setup": "npm i --no-fund --no-audit --legacy-peer-deps --loglevel=error --silent",
+    "setup:ci": "npm ci --no-fund --no-audit --legacy-peer-deps --loglevel=error --silent",
     "build": "vite build",
     "build:static": "vite build --mode production",
     "dev": "vite",

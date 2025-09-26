@@ -6,7 +6,7 @@ set -o errexit  # Exit immediately if a command exits with a non-zero status
 set -o pipefail # Prevent errors in a pipeline from being masked
 set -o errtrace # If a command fails, the shell will exit immediately
 set -o functrace # If a function fails, the shell will exit immediately
-shopt -s inherit_errexit # Inherit the errexit option in functions
+# shopt -s inherit_errexit # Inherit the errexit option in functions
 
 IFS=$'\n\t'
 
@@ -46,7 +46,7 @@ build_frontend() {
   if command -v npm &>/dev/null; then
       log info "Building frontend..." true
 
-      _frontend_install_output="$(npm i --no-audit --no-fund --prefer-offline --silent || {
+      _frontend_install_output="$(npm i --no-audit --no-fund --legacy-peer-deps --prefer-offline --silent || {
           echo "Failed to install frontend dependencies."
       })"
 
@@ -75,7 +75,7 @@ build_frontend() {
           }
       fi
 
-      mv './dist' "${_ROOT_DIR}/internal/analyzer/embedded/guiweb" || {
+      mv -f "${_ROOT_DIR}/frontend/dist" "${_ROOT_DIR}/internal/analyzer/embedded/guiweb" || {
           log fatal "Failed to move build directory to embedded/guiweb." true
           exit 1
       }
