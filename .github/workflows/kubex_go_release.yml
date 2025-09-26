@@ -166,7 +166,7 @@ jobs:
 
           # Verify installation
           go version | grep -q "${GO_VERSION}" || {
-            echo "❌ Installed Go version does not match expected version: $GO_VERSION"
+            echo "❌ Installed Go version ($(go version)) does not match expected version: $GO_VERSION"
             exit 1
           }
 
