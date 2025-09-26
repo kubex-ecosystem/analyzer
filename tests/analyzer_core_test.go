@@ -382,10 +382,13 @@ func analyzeProjectContext(projectContext, analysisType string) (*ProjectAnalysi
 		AnalysisType: analysisType,
 		Summary:      generateSummary(projectContext, analysisType),
 		Strengths:    extractStrengths(projectContext),
+		Improvements: generateImprovements(projectContext, analysisType),
 		Viability: Viability{
 			Score:      calculateViabilityScore(projectContext),
 			Assessment: "Mock assessment based on project context",
 		},
+		NextSteps:   generateNextSteps(projectContext, analysisType),
+		ROIAnalysis: generateROIAnalysis(projectContext),
 		Maturity: ProjectMaturity{
 			Level:      "MVP",
 			Assessment: "Project appears to be in MVP stage",
@@ -441,18 +444,44 @@ func extractProjectName(context string) string {
 
 func generateSummary(context, analysisType string) string {
 	contextLower := strings.ToLower(context)
+	insights := []string{}
 
+	if strings.Contains(contextLower, "rest api") {
+		insights = append(insights, "REST API capabilities")
+	}
+	if strings.Contains(contextLower, "authentication") {
+		insights = append(insights, "authentication requirements")
+	}
+	if strings.Contains(contextLower, "postgresql") || strings.Contains(contextLower, "postgres") {
+		insights = append(insights, "PostgreSQL integration")
+	}
+	if strings.Contains(contextLower, "react") {
+		insights = append(insights, "React implementation")
+	}
+	if strings.Contains(contextLower, "typescript") {
+		insights = append(insights, "TypeScript usage")
+	}
+	if strings.Contains(contextLower, "test") {
+		insights = append(insights, "tests coverage needs")
+	}
+
+	var base string
 	switch analysisType {
 	case "SECURITY":
-		if strings.Contains(contextLower, "authentication") {
-			return "Security analysis reveals authentication concerns"
-		}
-		return "Basic security assessment completed"
+		base = "Security analysis"
 	case "SCALABILITY":
-		return "Scalability analysis shows areas for performance improvement"
+		base = "Scalability analysis"
+	case "CODE_QUALITY":
+		base = "Code quality review"
 	default:
-		return "General analysis of project structure and potential"
+		base = "General analysis"
 	}
+
+	if len(insights) > 0 {
+		return fmt.Sprintf("%s covering %s.", base, strings.Join(insights, ", "))
+	}
+
+	return fmt.Sprintf("%s of project structure and potential.", base)
 }
 
 func extractStrengths(context string) []string {
@@ -460,11 +489,16 @@ func extractStrengths(context string) []string {
 	contextLower := strings.ToLower(context)
 
 	strengthKeywords := map[string]string{
-		"docker":     "Containerization with Docker",
-		"typescript": "Strong typing with TypeScript",
-		"test":       "Testing infrastructure in place",
-		"api":        "Well-defined API structure",
-		"database":   "Database integration",
+		"docker":         "Containerization with Docker",
+		"typescript":     "TypeScript typings ensure reliability",
+		"test":           "Tests already part of the workflow",
+		"react":          "React components already structured",
+		"rest api":       "REST API endpoints available",
+		"authentication": "Authentication workflow implemented",
+		"postgresql":     "PostgreSQL integration configured",
+		"postgres":       "PostgreSQL integration configured",
+		"api":            "Well-defined API structure",
+		"database":       "Database integration",
 	}
 
 	for keyword, strength := range strengthKeywords {
@@ -478,6 +512,143 @@ func extractStrengths(context string) []string {
 	}
 
 	return strengths
+}
+
+func generateImprovements(context, analysisType string) []Improvement {
+	contextLower := strings.ToLower(context)
+	improvements := []Improvement{}
+
+	if strings.Contains(contextLower, "no tests") || strings.Contains(contextLower, "add tests") {
+		improvements = append(improvements, Improvement{
+			Title:          "Add tests",
+			Description:    "Add tests that cover core behaviours to protect against regressions.",
+			Priority:       "High",
+			Difficulty:     "Medium",
+			BusinessImpact: "Reliable tests accelerate releases and increase confidence.",
+		})
+	}
+
+	if strings.Contains(contextLower, "no authentication") {
+		improvements = append(improvements, Improvement{
+			Title:          "Implement authentication",
+			Description:    "Introduce authentication to lock down public endpoints and protect users.",
+			Priority:       "Critical",
+			Difficulty:     "Medium",
+			BusinessImpact: "Authentication prevents unauthorized access and safeguards data.",
+		})
+	}
+
+	if analysisType == "SECURITY" {
+		if strings.Contains(contextLower, "sql") {
+			improvements = append(improvements, Improvement{
+				Title:          "Harden SQL handling",
+				Description:    "Review SQL queries and adopt parameterized statements to avoid SQL injection and validation gaps.",
+				Priority:       "Critical",
+				Difficulty:     "Medium",
+				BusinessImpact: "Reducing SQL exposure mitigates risk of data breaches.",
+			})
+		}
+
+		if strings.Contains(contextLower, "validation") {
+			improvements = append(improvements, Improvement{
+				Title:          "Add input validation",
+				Description:    "Expand validation to sanitize payloads and enforce business rules before execution.",
+				Priority:       "High",
+				Difficulty:     "Medium",
+				BusinessImpact: "Improved validation blocks malicious inputs and protects downstream systems.",
+			})
+		}
+
+		if strings.Contains(contextLower, "password") {
+			improvements = append(improvements, Improvement{
+				Title:          "Secure passwords",
+				Description:    "Store passwords hashed and encrypted so passwords never remain in plain text.",
+				Priority:       "Critical",
+				Difficulty:     "Medium",
+				BusinessImpact: "Protecting passwords maintains compliance and customer trust.",
+			})
+		}
+	}
+
+	if len(improvements) == 0 {
+		improvements = append(improvements, Improvement{
+			Title:          "Refine roadmap",
+			Description:    "Clarify upcoming milestones and align the team on next iterations.",
+			Priority:       "Medium",
+			Difficulty:     "Low",
+			BusinessImpact: "Shared roadmap improves prioritization and predictability.",
+		})
+	}
+
+	return improvements
+}
+
+func generateNextSteps(context, analysisType string) NextSteps {
+	contextLower := strings.ToLower(context)
+	next := NextSteps{}
+
+	if strings.Contains(contextLower, "no tests") || strings.Contains(contextLower, "add tests") {
+		next.ShortTerm = append(next.ShortTerm, Step{
+			Title:       "Add tests",
+			Description: "Start with tests for the most critical user journeys.",
+			Difficulty:  "Medium",
+		})
+	}
+
+	if analysisType == "SECURITY" {
+		if strings.Contains(contextLower, "sql") {
+			next.ShortTerm = append(next.ShortTerm, Step{
+				Title:       "Audit SQL",
+				Description: "Review SQL statements, add validation, and adopt safe query builders.",
+				Difficulty:  "Medium",
+			})
+		}
+
+		if strings.Contains(contextLower, "password") {
+			next.ShortTerm = append(next.ShortTerm, Step{
+				Title:       "Harden passwords",
+				Description: "Migrate passwords to hashed storage immediately and rotate secrets.",
+				Difficulty:  "Medium",
+			})
+		}
+	}
+
+	if len(next.ShortTerm) == 0 {
+		next.ShortTerm = append(next.ShortTerm, Step{
+			Title:       "Review roadmap",
+			Description: "Validate priorities with stakeholders and capture new requirements.",
+			Difficulty:  "Low",
+		})
+	}
+
+	if len(next.LongTerm) == 0 {
+		next.LongTerm = append(next.LongTerm, Step{
+			Title:       "Iterate on architecture",
+			Description: "Assess architecture after quick wins to keep long-term evolution healthy.",
+			Difficulty:  "Medium",
+		})
+	}
+
+	return next
+}
+
+func generateROIAnalysis(context string) ROIAnalysis {
+	contextLower := strings.ToLower(context)
+	assessment := "Moderate ROI potential with quick wins available"
+	if strings.Contains(contextLower, "production") {
+		assessment = "High ROI potential thanks to production readiness"
+	}
+
+	potentialGains := []string{"Faster delivery cadence", "Better collaboration across teams"}
+	if strings.Contains(contextLower, "test") {
+		potentialGains = append(potentialGains, "Stronger tests reduce regressions and rework")
+	}
+
+	return ROIAnalysis{
+		Assessment:      assessment,
+		PotentialGains:  potentialGains,
+		EstimatedEffort: "1-2 sprints",
+	}
 }
 
 func calculateViabilityScore(context string) float64 {
