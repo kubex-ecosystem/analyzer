@@ -9,7 +9,7 @@ on:
       run_tests:
         description: "Run unit tests (race) before security/build"
         required: false
-        default: false
+        default: true
         type: boolean
       run_security:
         description: "Run security checks before build"
