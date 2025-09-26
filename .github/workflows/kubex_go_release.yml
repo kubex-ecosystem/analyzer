@@ -35,7 +35,7 @@ on:
         required: false
         default: false
         type: boolean
-      go_version:
+      go-version:
         description: "Override Go version (e.g., 1.25.1)"
         required: false
         default: ""
@@ -52,7 +52,7 @@ permissions:
   id-token: write
 
 env:
-  GO_VERSION: $GO_VERSION
+  GO_VERSION: "${{ github.event.inputs.go-version }}"
   NON_INTERACTIVE: true
   FORCE: y
   QUIET: true
@@ -91,7 +91,7 @@ jobs:
           fi
 
           # Extract module information
-          GO_VERSION="${{ github.event.inputs.go_version }}"
+          GO_VERSION="${{ github.event.inputs.go-version }}"
           if [[ -z "$GO_VERSION" ]]; then
             GO_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.go_version // ""')
           fi
