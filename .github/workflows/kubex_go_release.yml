@@ -150,9 +150,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
+            ~/.cache/go-build
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gomod-
 
       - name: Verify Go Modules
         run: |
@@ -258,9 +259,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ needs.tests.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
+            ~/.cache/go-build
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gomod-
 
       - name: Run Gosec Security Scanner
         run: |
@@ -313,11 +315,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
-          restore-keys: |
-            ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
+            ~/.cache/go-build
+          key: ${{ runner.os }}-gomod-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-gomod-
 
       - name: Cross-Platform Build
         if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
