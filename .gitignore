@@ -76,3 +76,5 @@ internal/services/server/build/*
 !internal/services/server/build/style.css
 
 tasks/
+.notes/indexeddb-gemx-db-1758350108906 copy.json
+.notes/indexeddb-gemx-db-1758350108906.json
