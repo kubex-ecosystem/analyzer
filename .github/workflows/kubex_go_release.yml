@@ -208,7 +208,7 @@ jobs:
 
       - name: Run Tests
         id: run-tests
-        if: ${{ github.event.inputs.run_tests }}
+        if: always() && ${{ github.event.inputs.run_tests }}
         run: |
           go test -v ./... || {
             echo "❌ Tests failed."
@@ -221,7 +221,7 @@ jobs:
           echo "continue=true" >> $GITHUB_OUTPUT
 
       - name: Mark continue when skipping tests
-        if: ${{ inputs.run_tests != true }}
+        if: always() && ${{ inputs.run_tests != true }}
         run: echo "continue=true" >> $GITHUB_OUTPUT
 
   # ==========================================
@@ -234,7 +234,7 @@ jobs:
       version-mismatch: ${{ steps.version-check.outputs.version-mismatch }}
       continue: ${{ steps.version-check.outputs.continue }}
     needs: tests
-    if: github.event_name != 'workflow_dispatch' && needs.tests.outputs.continue == 'true'
+    if: always() && github.event_name != 'workflow_dispatch' && needs.tests.outputs.continue == 'true'
 
     steps:
       - name: Checkout Repository
@@ -285,7 +285,7 @@ jobs:
           fi
 
       - name: Smart Go Setup
-        if: steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
+        if: always() && steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         run: |
           GO_VERSION=${{ needs.tests.outputs.go-version }}
 
@@ -296,7 +296,7 @@ jobs:
 
       - name: Restore Go Cache
         uses: actions/cache@v4
-        if: steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
+        if: always() && steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         with:
           path: |
             ~/go/pkg/mod
@@ -305,7 +305,7 @@ jobs:
           restore-keys: ${{ runner.os }}-gomod-
 
       - name: Run Gosec Security Scanner
-        if: steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
+        if: always() && steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         run: |
           go env -w GOTOOLCHAIN=go${{ needs.tests.outputs.go-version }}
           go install github.com/securego/gosec/v2/cmd/gosec@latest
@@ -322,7 +322,7 @@ jobs:
 
       # Mark continue if skipping security
       - name: Mark continue when skipping security
-        if: ${{ inputs.run_security != true }}
+        if: always() && ${{ inputs.run_security != true }}
         run: echo "continue=true" >> $GITHUB_OUTPUT
 
   # ==========================================
@@ -349,7 +349,6 @@ jobs:
       - name: Smart Go Setup
         shell: bash
         id: go-setup
-        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
           GO_VERSION="${{ needs.tests.outputs.go-version }}"
 
@@ -362,7 +361,6 @@ jobs:
           echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
 
       - name: Cache Go Modules
-        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -373,7 +371,6 @@ jobs:
 
       - name: Cross-Platform Build
         shell: bash
-        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
           MODULE_NAME="${{ needs.tests.outputs.module-name }}"
           export NON_INTERACTIVE=${NON_INTERACTIVE:-${{ github.env.NON_INTERACTIVE }}} &&\
@@ -391,7 +388,6 @@ jobs:
       - name: Verify Build Artifacts
         shell: bash
         id: verify
-        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
           MODULE_NAME="${{ needs.tests.outputs.module-name }}"
           PLATFORMS="${{ needs.tests.outputs.platforms }}"
@@ -403,8 +399,6 @@ jobs:
           echo "ARTIFACT_COUNT=${#ARTIFACT_LIST[@]}" >> $GITHUB_OUTPUT
           echo "ARTIFACTS_DIR=${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
           echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_OUTPUT
-          # mark the build as successful for downstream jobs
-          echo "continue=true" >> $GITHUB_OUTPUT
 
           # Generate SHA256SUMS files
           if [[ ! -f ${ARTIFACTS_DIR}/SHA256SUMS ]]; then
@@ -431,8 +425,10 @@ jobs:
             echo "✅ checksums.txt created."
           fi
 
+          # mark the build as successful for downstream jobs
+          echo "continue=true" >> $GITHUB_OUTPUT
+
       - name: Upload Build Artifacts
-        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ needs.tests.outputs.module-name }}-release-binaries
@@ -440,8 +436,12 @@ jobs:
             dist/${{ needs.tests.outputs.module-name }}_*
             # dist/SHA256SUMS
             dist/checksums.txt
-          # Retain artifacts for 30 days
-          retention-days: 30
+          # Retain artifacts for 7 days
+          retention-days: 7
+
+      - name: Continue if build successful
+        if: always() && steps.verify.outputs.continue == 'true'
+        run: echo "continue=true" >> $GITHUB_OUTPUT
 
   # ==========================================
   # JOB 4: Create GitHub Release
@@ -465,6 +465,7 @@ jobs:
           path: ./release-assets
 
       - name: Generate Release Notes
+        shell: bash
         run: |
           MODULE_NAME="${{ needs.build.outputs.module-name }}"
           VERSION="${{ needs.build.outputs.version }}"
@@ -540,7 +541,11 @@ jobs:
 
           **Full Changelog**: [${{ github.repository }}/compare/...](https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ github.sha }})
           EOF
+
+          echo "✅ Release notes generated."
+
       - name: Create GitHub Release
+        shell: bash
         run: |
           MODULE_NAME="${{ needs.build.outputs.module-name }}"
           VERSION="${{ needs.build.outputs.version }}"
@@ -556,6 +561,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Release Summary
+        shell: bash
         run: |
           MODULE_NAME="${{ needs.build.outputs.module-name }}"
           PLATFORMS="${{ needs.build.outputs.platforms }}"
