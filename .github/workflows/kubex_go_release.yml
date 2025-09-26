@@ -579,7 +579,7 @@ jobs:
           echo "### 📦 Assets Released:" >> $GITHUB_STEP_SUMMARY
 
           for platform in $PLATFORMS; do
-            case "$platform" ins
+            case "$platform" in
               "linux/amd64"|"linux-amd64") echo "- 🐧 Linux AMD64" >> $GITHUB_STEP_SUMMARY ;;
               "linux/arm64"|"linux-arm64") echo "- 🐧 Linux ARM64" >> $GITHUB_STEP_SUMMARY ;;
               "linux/386"|"linux-386") echo "- 🐧 Linux 386" >> $GITHUB_STEP_SUMMARY ;;
