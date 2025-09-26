@@ -1,6 +1,6 @@
 module github.com/kubex-ecosystem/analyzer
 
-go 1.25
+go 1.25.1
 
 require (
 	google.golang.org/api v0.250.0
