@@ -430,14 +430,18 @@ jobs:
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
+        if: always() && steps.verify.outputs.continue == 'true'
         with:
           name: ${{ needs.tests.outputs.module-name }}-release-binaries
           path: |
             dist/${{ needs.tests.outputs.module-name }}_*
-            # dist/SHA256SUMS
             dist/checksums.txt
           # Retain artifacts for 7 days
           retention-days: 7
+          if-no-files-found: error
+          compression-level: 6
+          overwrite: true
+          include-hidden-files: false
 
       - name: Continue if build successful
         if: always() && steps.verify.outputs.continue == 'true'
@@ -449,7 +453,7 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
-    needs: build
+    needs: [tests, build]
     if: always() && needs.build.result == 'success' && needs.build.outputs.continue == 'true'
 
     steps:
@@ -461,15 +465,15 @@ jobs:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build.outputs.module-name }}-release-binaries
+          name: ${{ needs.tests.outputs.module-name }}-release-binaries
           path: ./release-assets
 
       - name: Generate Release Notes
         shell: bash
         run: |
-          MODULE_NAME="${{ needs.build.outputs.module-name }}"
-          VERSION="${{ needs.build.outputs.version }}"
-          PLATFORMS="${{ needs.build.outputs.platforms }}"
+          MODULE_NAME="${{ needs.tests.outputs.module-name }}"
+          VERSION="${{ needs.tests.outputs.version }}"
+          PLATFORMS="${{ needs.tests.outputs.platforms }}"
           # Convert platforms to readable format
           PLATFORM_LIST=""
           for platform in $PLATFORMS; do
@@ -532,7 +536,7 @@ jobs:
 
           ### Build Information
 
-          - **Go Version**: ${{ needs.build.outputs.go-version }}
+          - **Go Version**: ${{ needs.tests.outputs.go-version }}
           - **Built on**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
           - **Commit**: ${{ github.sha }}
           - **Workflow**: ${{ github.run_id }}
@@ -547,14 +551,14 @@ jobs:
       - name: Create GitHub Release
         shell: bash
         run: |
-          MODULE_NAME="${{ needs.build.outputs.module-name }}"
-          VERSION="${{ needs.build.outputs.version }}"
+          MODULE_NAME="${{ needs.tests.outputs.module-name }}"
+          VERSION="${{ needs.tests.outputs.version }}"
 
           gh release create "${VERSION:-}" \
             ./release-assets/* \
             --title "${MODULE_NAME:-} ${VERSION:-}" \
             --notes-file RELEASE_NOTES.md \
-            ${{ contains(needs.build.outputs.version, '-') && '--prerelease' || '' }}
+            ${{ contains(needs.tests.outputs.version, '-') && '--prerelease' || '' }}
 
           echo "✅ Release created successfully!"
         env:
@@ -563,14 +567,14 @@ jobs:
       - name: Release Summary
         shell: bash
         run: |
-          MODULE_NAME="${{ needs.build.outputs.module-name }}"
-          PLATFORMS="${{ needs.build.outputs.platforms }}"
+          MODULE_NAME="${{ needs.tests.outputs.module-name }}"
+          PLATFORMS="${{ needs.tests.outputs.platforms }}"
 
           echo "## Release Created Successfully!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Module**: ${MODULE_NAME:-}" >> $GITHUB_STEP_SUMMARY
-          echo "**Version**: ${{ needs.build.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Go Version**: ${{ needs.build.outputs.go-version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Version**: ${{ needs.tests.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Go Version**: ${{ needs.tests.outputs.go-version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 📦 Assets Released:" >> $GITHUB_STEP_SUMMARY
 
