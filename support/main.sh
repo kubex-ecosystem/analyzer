@@ -24,6 +24,10 @@ __secure_logic_sourced_name() {
   _self="${_self//\.sh/}"
   _self="${_self//\-/_}"
   _self="${_self//\//_}"
+  _self="${_self//\./_}"
+  _self="${_self//__/_}"
+  _self="${_self//[^a-zA-Z0-9_]/}"
+  # Return a unique variable name based on the script name
   echo "_was_sourced_${_self//__/_}"
   return 0
 }
@@ -494,7 +498,7 @@ __secure_logic_main() {
   local _ws_name
   _ws_name="$(__secure_logic_sourced_name)"
   local _ws_name_val
-  _ws_name_val=$(eval "echo \${${_ws_name:-}}")
+  _ws_name_val=$(eval "echo \${_ws_name}")
   if test "${_ws_name_val:-}" != "true"; then
     __main "${_main_args[@]}"
     return $?

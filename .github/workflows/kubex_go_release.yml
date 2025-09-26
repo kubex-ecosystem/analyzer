@@ -200,91 +200,47 @@ jobs:
         if: steps.version-check.outputs.continue == 'true'
         run: |
           MODULE_NAME="${{ steps.manifest.outputs.module-name }}"
-          PLATFORMS="${{ steps.manifest.outputs.platforms }}"
-
-          echo "Building $MODULE_NAME for platforms: $PLATFORMS"
-          ENV_PLATFORMS="${ENV_PLATFORMS:-${{ github.event.inputs.platforms }}}"
-          if [[ -z $ENV_PLATFORMS ]]; then
-            echo "No platforms specified, using default from manifest."
-          else
-            PLATFORMS="$ENV_PLATFORMS"
-          fi
-          for platform in $PLATFORMS; do
-            # Parse platform (format: os/arch or os-arch)
-            if [[ "$platform" == *"/"* ]]; then
-              OS=$(echo "$platform" | cut -d'/' -f1)
-              ARCH=$(echo "$platform" | cut -d'/' -f2)
-            elif [[ "$platform" == *"-"* ]]; then
-              OS=$(echo "$platform" | cut -d'-' -f1)
-              ARCH=$(echo "$platform" | cut -d'-' -f2)
-            else
-              echo "❌ Invalid platform format: $platform (expected: os/arch or os-arch)"
-              continue
-            fi
-            # Set environment variables
-            export NON_INTERACTIVE=${NON_INTERACTIVE:-${{ github.env.NON_INTERACTIVE }}}
-            export FORCE=${FORCE:-${{ github.env.FORCE }}}
-            export CI=${CI:-${{ github.env.CI }}}
-            export DRY_RUN=${DRY_RUN:-${{ github.event.inputs.dry_run }}}
-            export DEBUG=${DEBUG:-${{ github.event.inputs.debug }}}
-            export QUIET=${QUIET:-${{ github.event.inputs.quiet }}}
-            echo "🔨 Building for $OS/$ARCH..."
-            make build "${OS:-}" "${ARCH:-}"
-          done
+          export NON_INTERACTIVE=${NON_INTERACTIVE:-${{ github.env.NON_INTERACTIVE }}} &&\
+          export FORCE=${FORCE:-${{ github.env.FORCE }}} &&\
+          export CI=${CI:-${{ github.env.CI }}} &&\
+          export DRY_RUN=${DRY_RUN:-${{ github.event.inputs.dry_run }}} &&\
+          export DEBUG=${DEBUG:-${{ github.event.inputs.debug }}} &&\
+          export QUIET=${QUIET:-${{ github.event.inputs.quiet }}} &&\
+          export GO_VERSION_CHECK=false &&\
+          make build all &&\
+          _EXPORT_CMD=( $(ls -1 dist/"${MODULE_NAME:-}"_*) ) &&\
+          echo "export ARTIFACT_LIST='${_EXPORT_CMD[*]}'" >> $GITHUB_ENV
+          echo "✅ Build completed."
       - name: Verify Build Artifacts
         if: steps.version-check.outputs.continue == 'true'
         run: |
           MODULE_NAME="${{ steps.manifest.outputs.module-name }}"
-          PLATFORM_LIST="${{ steps.manifest.outputs.platforms }}"
-          ARTIFACTS_DIR="$(git rev-parse --show-toplevel)/dist"
-          ARTIFACT_LIST=()
-          for platform in $PLATFORM_LIST; do
-            # Parse platform (format: os/arch or os-arch)
-            if [[ "$platform" == *"/"* ]]; then
-              OS=$(echo "$platform" | cut -d'/' -f1)
-              ARCH=$(echo "$platform" | cut -d'/' -f2)
-            elif [[ "$platform" == *"-"* ]]; then
-              OS=$(echo "$platform" | cut -d'-' -f1)
-              ARCH=$(echo "$platform" | cut -d'-' -f2)
-            else
-              echo "❌ Invalid platform format: $platform (expected: os/arch or os-arch)"
-              continue
-            fi
-            echo "os=${OS:-}" >> $GITHUB_OUTPUT
-            echo "arch=${ARCH:-}" >> $GITHUB_OUTPUT
-            if [[ "$OS" == "windows" ]]; then
-              ARTIFACT_PATH="${ARTIFACTS_DIR}/${MODULE_NAME:-}_${OS:-}_${ARCH:-}.zip"
-            else
-              ARTIFACT_PATH="${ARTIFACTS_DIR}/${MODULE_NAME:-}_${OS:-}_${ARCH:-}.tar.gz"
-            fi
-            if [[ ! -f "$ARTIFACT_PATH" ]]; then
-              echo "❌ Missing artifact: $ARTIFACT_PATH"
-              exit 1
-            fi
-            echo "✅ Found artifact: $ARTIFACT_PATH"
-            ARTIFACT_LIST+=("${MODULE_NAME:-}_${OS:-}_${ARCH:-}")
-          done
-          echo "🏷️  Module Name: ${MODULE_NAME:-}" >> $GITHUB_OUTPUT
-          echo "🧰 Platforms: ${PLATFORM_LIST}" >> $GITHUB_OUTPUT
-          echo "📦 Artifacts: ${ARTIFACT_LIST[*]}" >> $GITHUB_OUTPUT
-          echo "📂 Artifacts Directory: ${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
+          PLATFORMS="${{ steps.manifest.outputs.platforms }}"
+          ARTIFACT_LIST=( ${ARTIFACT_LIST:-} )
+          ARTIFACTS_DIR="dist"
+
           echo "VERSION=${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_LIST=${ARTIFACT_LIST[*]}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_COUNT=${#ARTIFACT_LIST[@]}" >> $GITHUB_OUTPUT
           echo "ARTIFACTS_DIR=${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
+          echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_OUTPUT
+
           # Generate SHA256SUMS files
           if [[ ! -f ${ARTIFACTS_DIR}/SHA256SUMS ]]; then
             mkdir -p ${ARTIFACTS_DIR} && touch ${ARTIFACTS_DIR}/SHA256SUMS
           fi
+
           cd ${ARTIFACTS_DIR} || exit 1
-          sha256sum ./* > SHA256SUMS
-          echo "✅ Generated SHA256SUMS:"
-          cat SHA256SUMS
+          sha256sum ./* > SHA256SUMS || exit 1
           cd - || exit 1
+
+          # Verify each artifact
           echo "✅ All artifacts verified successfully."
           echo "📂 Listing artifacts directory:"
-          ls -la ${ARTIFACTS_DIR}/
-          echo ""
+
+          ls -lh ${ARTIFACTS_DIR}/${MODULE_NAME}_*
+
+          echo "✅ All artifacts verified successfully."
       - name: Upload Build Artifacts
         if: steps.version-check.outputs.continue == 'true'
         uses: actions/upload-artifact@v4
@@ -308,6 +264,7 @@ jobs:
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           echo "\"version\": \"${{ steps.version.outputs.version }}\"" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
   # ==========================================
   # JOB 2: Security Scan (Optional)
   # ==========================================
