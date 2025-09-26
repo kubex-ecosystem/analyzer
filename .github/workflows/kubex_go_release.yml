@@ -6,6 +6,16 @@ on:
       - "v*.*.*"
   workflow_dispatch:
     inputs:
+      run_tests:
+        description: "Run unit tests (race) before security/build"
+        required: false
+        default: false
+        type: boolean
+      run_security:
+        description: "Run security checks before build"
+        required: false
+        default: false
+        type: boolean
       tag_name:
         description: "Tag name for manual release (e.g., v1.0.0)"
         required: false
@@ -42,6 +52,7 @@ permissions:
   id-token: write
 
 env:
+  GO_VERSION: $GO_VERSION
   NON_INTERACTIVE: true
   FORCE: y
   QUIET: true
@@ -65,8 +76,6 @@ jobs:
       module-path: ${{ steps.manifest.outputs.module-path }}
       continue: ${{ steps.run-tests.outputs.continue }}
 
-    if: github.event_name != 'workflow_dispatch'
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -82,22 +91,10 @@ jobs:
           fi
 
           # Extract module information
-          MODULE_NAME=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.bin // .name // "unknown"')
-          MODULE_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.version // "0.0.0"')
-          PLATFORMS=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.platforms[]?' | tr '\n' ' ' | sed 's/ $//')
-          # Validate required fields
-          if [[ "$MODULE_NAME" == "unknown" || "$MODULE_NAME" == "null" ]]; then
-            echo "❌ Module name not found in manifest (bin or name field required)"
-            exit 1
+          GO_VERSION="${{ github.event.inputs.go_version }}"
+          if [[ -z "$GO_VERSION" ]]; then
+            GO_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.go_version // ""')
           fi
-
-          if [[ -z "$PLATFORMS" ]]; then
-            echo "❌ No platforms specified in manifest"
-            exit 1
-          fi
-
-          GO_VERSION="${GO_VERSION:-${{ github.event.inputs.go_version }}}"
-          GO_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.go_version // ""')
           if [[ -z "$GO_VERSION" ]]; then
             GO_VERSION=$(grep '^go ' $(git rev-parse --show-toplevel)/go.mod | awk '{print $2}')
             # Check if go.mod extraction brings a version with minor version
@@ -112,6 +109,28 @@ jobs:
               fi
               GO_VERSION="${GO_VERSION%.*}.1"
             fi
+          fi
+
+          if [[ -z "$GO_VERSION" ]]; then
+            echo "❌ Go version not specified in inputs, manifest, or go.mod"
+            exit 1
+          fi
+
+          # Output for other jobs
+          echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
+
+          MODULE_NAME=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.bin // .name // "unknown"')
+          MODULE_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.version // "0.0.0"')
+          PLATFORMS=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.platforms[]?' | tr '\n' ' ' | sed 's/ $//')
+          # Validate required fields
+          if [[ "$MODULE_NAME" == "unknown" || "$MODULE_NAME" == "null" ]]; then
+            echo "❌ Module name not found in manifest (bin or name field required)"
+            exit 1
+          fi
+
+          if [[ -z "$PLATFORMS" ]]; then
+            echo "❌ No platforms specified in manifest"
+            exit 1
           fi
 
           echo "module-name=$MODULE_NAME" >> $GITHUB_OUTPUT
@@ -144,7 +163,12 @@ jobs:
           bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
 
           # Verify installation
-          go version
+          go version | grep -q "go${GO_VERSION}" || {
+            echo "❌ Installed Go version does not match expected version: $GO_VERSION"
+            exit 1
+          }
+
+          echo "✅ Go version $GO_VERSION installed successfully."
 
       - name: Restore Go Cache
         uses: actions/cache@v4
@@ -168,8 +192,8 @@ jobs:
 
       - name: Run Tests
         id: run-tests
+        if: ${{ github.event.inputs.run_tests }}
         run: |
-          go version &> /dev/null || exit 1
           go test -v ./... || {
             echo "❌ Tests failed."
             exit 1
@@ -180,6 +204,10 @@ jobs:
 
           echo "continue=true" >> $GITHUB_OUTPUT
 
+      - name: Mark continue when skipping tests
+        if: ${{ inputs.run_tests != true }}
+        run: echo "continue=true" >> $GITHUB_OUTPUT
+
   # ==========================================
   # JOB 2: Security Scan (Optional)
   # ==========================================
@@ -187,13 +215,7 @@ jobs:
     name: Security Scan
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ needs.tests.outputs.version }}
-      module-name: ${{ needs.tests.outputs.module-name }}
-      go-version: ${{ needs.tests.outputs.go-version }}
       version-mismatch: ${{ steps.version-check.outputs.version-mismatch }}
-      platforms: ${{ needs.tests.outputs.platforms }}
-      arch: ${{ needs.tests.outputs.arch }}
-      module-path: ${{ needs.tests.outputs.module-path }}
       continue: ${{ steps.version-check.outputs.continue }}
     needs: tests
     if: github.event_name != 'workflow_dispatch' && needs.tests.outputs.continue == 'true'
@@ -247,6 +269,7 @@ jobs:
           fi
 
       - name: Smart Go Setup
+        if: steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         run: |
           GO_VERSION=${{ needs.tests.outputs.go-version }}
 
@@ -257,6 +280,7 @@ jobs:
 
       - name: Restore Go Cache
         uses: actions/cache@v4
+        if: steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         with:
           path: |
             ~/go/pkg/mod
@@ -265,16 +289,25 @@ jobs:
           restore-keys: ${{ runner.os }}-gomod-
 
       - name: Run Gosec Security Scanner
+        if: steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         run: |
           go env -w GOTOOLCHAIN=go${{ needs.tests.outputs.go-version }}
           go install github.com/securego/gosec/v2/cmd/gosec@latest
           gosec -no-fail -fmt sarif -out "${{ github.workspace }}/dist/gosec.sarif" ./...
 
       - name: Upload SARIF file
-        if: always()
+        if: always() && steps.version-check.outputs.continue == 'true' && github.event.inputs.run_security == true
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: "${{ github.workspace }}/dist/gosec.sarif"
+          checkout_path: ${{ github.workspace }}
+          category: "gosec"
+          matrix: "go"
+
+      # Mark continue if skipping security
+      - name: Mark continue when skipping security
+        if: ${{ inputs.run_security != true }}
+        run: echo "continue=true" >> $GITHUB_OUTPUT
 
   # ==========================================
   # JOB 3: Build All Platforms
@@ -282,7 +315,8 @@ jobs:
   build:
     name: Cross-Platform Build
     runs-on: ubuntu-latest
-    needs: security
+    needs: [tests, security]
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.security.outputs.continue == 'true')
     outputs:
       version: ${{ steps.verify.outputs.VERSION }}
       module-name: ${{ steps.verify.outputs.MODULE_NAME }}
@@ -297,10 +331,11 @@ jobs:
           fetch-depth: 0
 
       - name: Smart Go Setup
+        shell: bash
         id: go-setup
         if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
-          GO_VERSION="${{ needs.security.outputs.go-version }}"
+          GO_VERSION="${{ needs.tests.outputs.go-version }}"
 
           bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
 
@@ -321,9 +356,10 @@ jobs:
           restore-keys: ${{ runner.os }}-gomod-
 
       - name: Cross-Platform Build
+        shell: bash
         if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
-          MODULE_NAME="${{ needs.security.outputs.module-name }}"
+          MODULE_NAME="${{ needs.tests.outputs.module-name }}"
           export NON_INTERACTIVE=${NON_INTERACTIVE:-${{ github.env.NON_INTERACTIVE }}} &&\
           export FORCE=${FORCE:-${{ github.env.FORCE }}} &&\
           export CI=${CI:-${{ github.env.CI }}} &&\
@@ -335,16 +371,18 @@ jobs:
           _EXPORT_CMD=( $(ls -1 dist/"${MODULE_NAME:-}"_*) ) &&\
           echo "export ARTIFACT_LIST='${_EXPORT_CMD[*]}'" >> $GITHUB_ENV
           echo "✅ Build completed."
+
       - name: Verify Build Artifacts
+        shell: bash
         id: verify
         if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
-          MODULE_NAME="${{ needs.security.outputs.module-name }}"
-          PLATFORMS="${{ needs.security.outputs.platforms }}"
+          MODULE_NAME="${{ needs.tests.outputs.module-name }}"
+          PLATFORMS="${{ needs.tests.outputs.platforms }}"
           ARTIFACT_LIST=( ${ARTIFACT_LIST:-} )
           ARTIFACTS_DIR="dist"
 
-          echo "VERSION=${{ needs.security.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "VERSION=${{ needs.tests.outputs.version }}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_LIST=${ARTIFACT_LIST[*]}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_COUNT=${#ARTIFACT_LIST[@]}" >> $GITHUB_OUTPUT
           echo "ARTIFACTS_DIR=${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
@@ -381,9 +419,9 @@ jobs:
         if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ needs.security.outputs.module-name }}-release-binaries
+          name: ${{ needs.tests.outputs.module-name }}-release-binaries
           path: |
-            dist/${{ needs.security.outputs.module-name }}_*
+            dist/${{ needs.tests.outputs.module-name }}_*
             # dist/SHA256SUMS
             dist/checksums.txt
           # Retain artifacts for 30 days
