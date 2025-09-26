@@ -252,28 +252,39 @@ jobs:
             fi
             echo "os=${OS:-}" >> $GITHUB_OUTPUT
             echo "arch=${ARCH:-}" >> $GITHUB_OUTPUT
-
-            if [[ ! $(basename $(pwd)) != "dist" ]]; then
-              ls -lA ${ARTIFACTS_DIR}/
-              cd "${ARTIFACTS_DIR}" || exit 1
+            if [[ "$OS" == "windows" ]]; then
+              ARTIFACT_PATH="${ARTIFACTS_DIR}/${MODULE_NAME:-}_${OS:-}_${ARCH:-}.zip"
+            else
+              ARTIFACT_PATH="${ARTIFACTS_DIR}/${MODULE_NAME:-}_${OS:-}_${ARCH:-}.tar.gz"
             fi
+            if [[ ! -f "$ARTIFACT_PATH" ]]; then
+              echo "❌ Missing artifact: $ARTIFACT_PATH"
+              exit 1
+            fi
+            echo "✅ Found artifact: $ARTIFACT_PATH"
             ARTIFACT_LIST+=("${MODULE_NAME:-}_${OS:-}_${ARCH:-}")
           done
-          cd "${ARTIFACTS_DIR}/" || exit 1
+          echo "🏷️  Module Name: ${MODULE_NAME:-}" >> $GITHUB_OUTPUT
+          echo "🧰 Platforms: ${PLATFORM_LIST}" >> $GITHUB_OUTPUT
+          echo "📦 Artifacts: ${ARTIFACT_LIST[*]}" >> $GITHUB_OUTPUT
+          echo "📂 Artifacts Directory: ${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
+          echo "VERSION=${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_LIST=${ARTIFACT_LIST[*]}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_COUNT=${#ARTIFACT_LIST[@]}" >> $GITHUB_OUTPUT
           echo "ARTIFACTS_DIR=${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
-          if [[ ${#ARTIFACT_LIST[@]} -eq 0 ]]; then
-            echo "❌ No build artifacts found!"
-            exit 1
-          else
-            echo "✅ Build artifacts verified: ${ARTIFACT_LIST[*]}"
-          fi
+          # Generate SHA256SUMS files
           if [[ ! -f ${ARTIFACTS_DIR}/SHA256SUMS ]]; then
-            touch ${ARTIFACTS_DIR}/SHA256SUMS
+            mkdir -p ${ARTIFACTS_DIR} && touch ${ARTIFACTS_DIR}/SHA256SUMS
           fi
-          sha256sum ${ARTIFACTS_DIR}/* > ${ARTIFACTS_DIR}/SHA256SUMS
+          cd ${ARTIFACTS_DIR} || exit 1
+          sha256sum ./* > SHA256SUMS
+          echo "✅ Generated SHA256SUMS:"
+          cat SHA256SUMS
+          cd - || exit 1
+          echo "✅ All artifacts verified successfully."
+          echo "📂 Listing artifacts directory:"
           ls -la ${ARTIFACTS_DIR}/
+          echo ""
       - name: Upload Build Artifacts
         if: steps.version-check.outputs.continue == 'true'
         uses: actions/upload-artifact@v4
