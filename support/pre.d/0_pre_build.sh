@@ -34,7 +34,7 @@ build_frontend() {
   local _ROOT_DIR="${_ROOT_DIR:-$(git rev-parse --show-toplevel)}"
 
   if [[ ! -d "${_ROOT_DIR}/frontend" ]]; then
-      echo "Frontend directory does not exist."
+      log fatal  "Frontend directory does not exist."
       exit 1
   fi
 
@@ -47,11 +47,11 @@ build_frontend() {
       log info "Building frontend..." true
 
       _frontend_install_output="$(npm i --no-audit --no-fund --legacy-peer-deps --prefer-offline --silent || {
-          echo "Failed to install frontend dependencies."
+          log fatal "Failed to install frontend dependencies."
       })"
 
       _frontend_build_output="$(npm run build --silent > /dev/null 2>&1 || {
-          echo "Failed to build frontend assets."
+          log fatal "Failed to build frontend assets."
       })"
 
       if [[ "${_frontend_build_output:-}" == "Failed to build frontend assets." ]] || [[ -n "${_frontend_build_output:-}" && "${_QUIET:-false}" != "true" ]]; then

@@ -10,24 +10,25 @@ get_required_go_version() {
   # If _VERSION_GO is set, use it directly
   if [[ -n "${_VERSION_GO:-}" ]]; then
     echo "${_VERSION_GO:-}"
-    return
+    return 0
   fi
 
   _VERSION_GO="$(jq -r '.go_version' "${_ROOT_DIR:-$(git rev-parse --show-toplevel)}/${_MANIFEST_SUBPATH:-"internal/module/info/manifest.json"}" 2>/dev/null || echo "")"
   if [[ -n "${_VERSION_GO:-}" && "${_VERSION_GO:-}" != "null" ]]; then
     echo "${_VERSION_GO:-}"
-    return
+    return 0
   fi
 
-  local go_mod_path="${1:-go.mod}"
+  local go_mod_path="${1:-}"
+  go_mod_path="${go_mod_path:-${_ROOT_DIR:-$(git rev-parse --show-toplevel)}/go.mod}"
 
   if [[ ! -f "${go_mod_path}" ]]; then
     echo "1.25.1" # fallback
-    return
+    return 0
   fi
 
   # Extract go version from go.mod
-  _VERSION_GO="$(awk '/^go / {print $2; exit}' "${go_mod_path}")"
+  _VERSION_GO="$(awk '/^go / {print $2; exit}' "${go_mod_path}" || echo "")"
   if [[ -z "${_VERSION_GO:-}" ]]; then
     echo "1.25.1" # fallback
   else
@@ -47,7 +48,7 @@ get_current_go_version() {
 check_go_version_compatibility() {
   local required_version current_version
 
-  required_version="${1:-$(get_required_go_version "go.mod")}"
+  required_version="${1:-$(get_required_go_version "${_ROOT_DIR}/go.mod")}"
   current_version="${2:-$(get_current_go_version)}"
 
   if [[ "${current_version}" == "not-installed" ]]; then
@@ -70,13 +71,13 @@ check_go_version_compatibility() {
 auto_install_go_with_gosetup() {
   local required_version go_setup_url
 
-  required_version="${1:-$(get_required_go_version "go.mod")}"
+  required_version="${1:-$(get_required_go_version "${_ROOT_DIR}/go.mod")}"
   go_setup_url='https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh'
 
   log info "Installing Go ${required_version} using GoSetup..."
 
   local go_installation_output
-  if [[ -t 0 ]]; then
+  if [[ ! -d /dev/stdin ]]; then
     # Interactive mode
     go_installation_output="$(bash -c "$(curl -sSfL "${go_setup_url}")" -s install "${required_version}" 2>&1)"
   else
