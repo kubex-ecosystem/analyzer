@@ -49,18 +49,23 @@ env:
 
 jobs:
   # ==========================================
-  # JOB 1: Build All Platforms
+  # JOB 1: Tests (Optional)
   # ==========================================
-  build:
-    name: Cross-Platform Build
+  tests:
+    name: Run Tests
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
       go-version: ${{ steps.go-setup.outputs.go-version }}
       module-name: ${{ steps.manifest.outputs.module-name }}
+      manifest-version: ${{ steps.manifest.outputs.manifest-version }}
+      module-version: ${{ steps.manifest.outputs.module-version }}
       platforms: ${{ steps.manifest.outputs.platforms }}
-      version-mismatch: ${{ steps.version-check.outputs.version-mismatch }}
-      continue: ${{ steps.version-check.outputs.continue }}
+      arch: ${{ steps.manifest.outputs.arch }}
+      module-path: ${{ steps.manifest.outputs.module-path }}
+      continue: ${{ steps.run-tests.outputs.continue }}
+
+    if: github.event_name != 'workflow_dispatch'
 
     steps:
       - name: Checkout Repository
@@ -113,11 +118,15 @@ jobs:
           echo "manifest-version=$MODULE_VERSION" >> $GITHUB_OUTPUT
           echo "platforms=$PLATFORMS" >> $GITHUB_OUTPUT
           echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
+          echo "module-version=${MODULE_VERSION#v}" >> $GITHUB_OUTPUT
+          echo "arch=$(echo $PLATFORMS | tr ' ' '\n' | cut -d'/' -f2 | sort -u | tr '\n' ' ' | sed 's/ $//')" >> $GITHUB_OUTPUT
+          echo "module-path=$(githubusercontent.com/${{ github.repository }})" >> $GITHUB_OUTPUT
 
           echo "✅ Module: $MODULE_NAME"
           echo "✅ Manifest Version: $MODULE_VERSION"
           echo "✅ Platforms: $PLATFORMS"
           echo "✅ Go Version: $GO_VERSION"
+
       - name: Extract Version
         id: version
         run: |
@@ -126,20 +135,90 @@ jobs:
           else
             echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
           fi
+
+      - name: Smart Go Setup
+        id: go-setup
+        run: |
+          GO_VERSION="${{ steps.manifest.outputs.go-version }}"
+
+          bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
+
+          # Verify installation
+          go version
+
+      - name: Restore Go Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
+
+      - name: Verify Go Modules
+        run: |
+          go mod tidy
+          echo "✅ go.mod tidied."
+
+          go mod verify
+          echo "✅ Go modules verified."
+
+          git diff --exit-code go.mod go.sum
+          echo "✅ go.mod and go.sum are clean."
+
+      - name: Run Tests
+        id: run-tests
+        run: |
+          go version &> /dev/null || exit 1
+          go test -v ./... || {
+            echo "❌ Tests failed."
+            exit 1
+          }
+          echo "✅ Tests completed."
+          echo "✅ Go version: $(go version)"
+          echo "✅ All checks passed."
+
+          echo "continue=true" >> $GITHUB_OUTPUT
+
+  # ==========================================
+  # JOB 2: Security Scan (Optional)
+  # ==========================================
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ needs.tests.outputs.version }}
+      module-name: ${{ needs.tests.outputs.module-name }}
+      go-version: ${{ needs.tests.outputs.go-version }}
+      version-mismatch: ${{ steps.version-check.outputs.version-mismatch }}
+      platforms: ${{ needs.tests.outputs.platforms }}
+      arch: ${{ needs.tests.outputs.arch }}
+      module-path: ${{ needs.tests.outputs.module-path }}
+      continue: ${{ steps.version-check.outputs.continue }}
+    needs: tests
+    if: github.event_name != 'workflow_dispatch' && needs.tests.outputs.continue == 'true'
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: 🔍 Validate Tag Format
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
+          VERSION="${{ needs.tests.outputs.version }}"
+          echo "🔍 Validating tag format: $VERSION"
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "❌ Invalid version format: $VERSION"
             echo "Expected format: vX.Y.Z (e.g., v1.2.3)"
             exit 1
           fi
           echo "✅ Valid version: $VERSION"
+
       - name: Version Compatibility Check
         id: version-check
         run: |
-          TAG_VERSION="${{ steps.version.outputs.version }}"
-          MANIFEST_VERSION="v${{ steps.manifest.outputs.manifest-version }}"
+          TAG_VERSION="${{ needs.tests.outputs.version }}"
+          MANIFEST_VERSION="v${{ needs.tests.outputs.manifest-version }}"
 
           # Remove 'v' prefix for comparison
           TAG_CLEAN="${TAG_VERSION#v}"
@@ -165,41 +244,84 @@ jobs:
             echo "version-mismatch=false" >> $GITHUB_OUTPUT
             echo "continue=true" >> $GITHUB_OUTPUT
           fi
+
+      - name: Smart Go Setup
+        run: |
+          GO_VERSION=${{ needs.tests.outputs.go-version }}
+
+          bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
+
+          # Verify installation
+          go version
+
+      - name: Restore Go Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ needs.tests.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
+
+      - name: Run Gosec Security Scanner
+        run: |
+          go install github.com/securego/gosec/v2/cmd/gosec@latest
+          gosec -no-fail -fmt sarif -out gosec.sarif ./...
+
+      - name: Upload SARIF file
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gosec.sarif
+
+  # ==========================================
+  # JOB 3: Build All Platforms
+  # ==========================================
+  build:
+    name: Cross-Platform Build
+    runs-on: ubuntu-latest
+    needs: security
+    outputs:
+      version: ${{ steps.verify.outputs.VERSION }}
+      module-name: ${{ steps.verify.outputs.MODULE_NAME }}
+      platforms: ${{ steps.verify.outputs.PLATFORMS }}
+      go-version: ${{ steps.go-setup.outputs.go-version }}
+      continue: ${{ steps.verify.outputs.continue }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Smart Go Setup
         id: go-setup
-        if: steps.version-check.outputs.continue == 'true'
+        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
-          GO_VERSION=""
-          echo "🔍 Setting up Go environment..."
-          # Determine Go version to install
-          if [[ -n "${{ github.event.inputs.go_version }}" ]]; then
-            GO_VERSION="${{ github.event.inputs.go_version }}"
-            echo "🔧 Overriding Go version from input: $GO_VERSION"
-          else
-            GO_VERSION="${{ steps.manifest.outputs.go-version }}"
-          fi
+          GO_VERSION="${{ needs.security.outputs.go-version }}"
 
-          bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "$GO_VERSION"
+          bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
 
           # Verify installation
           go version || exit 1
 
           # Output for other jobs
           echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
+
       - name: Cache Go Modules
-        if: steps.version-check.outputs.continue == 'true'
+        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}
+          key: ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
           restore-keys: |
-            ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-
+            ${{ runner.os }}-go-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}-cache
+
       - name: Cross-Platform Build
-        if: steps.version-check.outputs.continue == 'true'
+        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
-          MODULE_NAME="${{ steps.manifest.outputs.module-name }}"
+          MODULE_NAME="${{ needs.security.outputs.module-name }}"
           export NON_INTERACTIVE=${NON_INTERACTIVE:-${{ github.env.NON_INTERACTIVE }}} &&\
           export FORCE=${FORCE:-${{ github.env.FORCE }}} &&\
           export CI=${CI:-${{ github.env.CI }}} &&\
@@ -212,18 +334,21 @@ jobs:
           echo "export ARTIFACT_LIST='${_EXPORT_CMD[*]}'" >> $GITHUB_ENV
           echo "✅ Build completed."
       - name: Verify Build Artifacts
-        if: steps.version-check.outputs.continue == 'true'
+        id: verify
+        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         run: |
-          MODULE_NAME="${{ steps.manifest.outputs.module-name }}"
-          PLATFORMS="${{ steps.manifest.outputs.platforms }}"
+          MODULE_NAME="${{ needs.security.outputs.module-name }}"
+          PLATFORMS="${{ needs.security.outputs.platforms }}"
           ARTIFACT_LIST=( ${ARTIFACT_LIST:-} )
           ARTIFACTS_DIR="dist"
 
-          echo "VERSION=${{ steps.version.outputs.version }}" >> $GITHUB_OUTPUT
+          echo "VERSION=${{ needs.security.outputs.version }}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_LIST=${ARTIFACT_LIST[*]}" >> $GITHUB_OUTPUT
           echo "ARTIFACT_COUNT=${#ARTIFACT_LIST[@]}" >> $GITHUB_OUTPUT
           echo "ARTIFACTS_DIR=${ARTIFACTS_DIR}" >> $GITHUB_OUTPUT
           echo "PLATFORMS=${PLATFORMS}" >> $GITHUB_OUTPUT
+          # mark the build as successful for downstream jobs
+          echo "continue=true" >> $GITHUB_OUTPUT
 
           # Generate SHA256SUMS files
           if [[ ! -f ${ARTIFACTS_DIR}/SHA256SUMS ]]; then
@@ -236,75 +361,31 @@ jobs:
 
           # Verify each artifact
           echo "✅ All artifacts verified successfully."
-          echo "📂 Listing artifacts directory:"
 
+          echo "📂 Listing artifacts directory:"
           ls -lh ${ARTIFACTS_DIR}/${MODULE_NAME}_*
 
           echo "✅ All artifacts verified successfully."
+
+          # Create checksums.txt if not exists with all checksums and filenames
+          if [[ ! -f ${ARTIFACTS_DIR}/checksums.txt ]]; then
+            echo "Creating checksums.txt..."
+            touch ${ARTIFACTS_DIR}/checksums.txt
+            sha256sum ${ARTIFACTS_DIR}/${MODULE_NAME}_* > ${ARTIFACTS_DIR}/checksums.txt
+            echo "✅ checksums.txt created."
+          fi
+
       - name: Upload Build Artifacts
-        if: steps.version-check.outputs.continue == 'true'
+        if: github.event_name != 'workflow_dispatch' && needs.security.outputs.continue == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.manifest.outputs.module-name }}-release-binaries
+          name: ${{ needs.security.outputs.module-name }}-release-binaries
           path: |
-            dist/${{ steps.manifest.outputs.module-name }}_*
+            dist/${{ needs.security.outputs.module-name }}_*
+            # dist/SHA256SUMS
+            dist/checksums.txt
+          # Retain artifacts for 30 days
           retention-days: 30
-
-      - name: Version Mismatch Summary
-        if: steps.version-check.outputs.version-mismatch == 'true'
-        run: |
-          echo "## ⚠️ Workflow Skipped Due to Version Mismatch" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Git Tag**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Manifest**: v${{ steps.manifest.outputs.manifest-version }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Please update \`internal/module/info/manifest.json\` version to match the git tag before releasing." >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Expected change in manifest:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          echo "\"version\": \"${{ steps.version.outputs.version }}\"" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-  # ==========================================
-  # JOB 2: Security Scan (Optional)
-  # ==========================================
-  # security:
-  #   name: Security Scan
-  #   runs-on: ubuntu-latest
-  #   needs: build
-  #   if: github.event_name != 'workflow_dispatch' && needs.build.outputs.continue == 'true'
-
-  #   steps:
-  #     - name: Checkout Repository
-  #       uses: actions/checkout@v4
-
-  #     - name: Smart Go Setup
-  #       run: |
-  #         GO_VERSION=$(grep '^go ' $(git rev-parse --show-toplevel)/go.mod | awk '{print $2}')
-
-  #         bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-1.24.5}"
-
-  #         # Verify installation
-  #         go version
-
-  #     - name: Restore Go Cache
-  #       uses: actions/cache@v4
-  #       with:
-  #         path: |
-  #           ~/.cache/go-build
-  #           ~/go/pkg/mod
-  #         key: ${{ runner.os }}-go-${{ needs.build.outputs.go-version }}-${{ hashFiles('**/go.sum', '**/go.mod') }}
-
-  #     - name: Run Gosec Security Scanner
-  #       run: |
-  #         go install github.com/securego/gosec/v2/cmd/gosec@latest
-  #         gosec -no-fail -fmt sarif -out gosec.sarif ./...
-
-  #     - name: Upload SARIF file
-  #       if: always()
-  #       uses: github/codeql-action/upload-sarif@v3
-  #       with:
-  #         sarif_file: gosec.sarif
 
   # ==========================================
   # JOB 3: Create GitHub Release
@@ -432,7 +513,7 @@ jobs:
           echo "### 📦 Assets Released:" >> $GITHUB_STEP_SUMMARY
 
           for platform in $PLATFORMS; do
-            case "$platform" in
+            case "$platform" ins
               "linux/amd64"|"linux-amd64") echo "- 🐧 Linux AMD64" >> $GITHUB_STEP_SUMMARY ;;
               "linux/arm64"|"linux-arm64") echo "- 🐧 Linux ARM64" >> $GITHUB_STEP_SUMMARY ;;
               "linux/386"|"linux-386") echo "- 🐧 Linux 386" >> $GITHUB_STEP_SUMMARY ;;
