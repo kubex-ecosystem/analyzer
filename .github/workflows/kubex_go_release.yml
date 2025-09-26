@@ -163,7 +163,7 @@ jobs:
           bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
 
           # Verify installation
-          go version | grep -q "go${GO_VERSION}" || {
+          go version | grep -q "${GO_VERSION}" || {
             echo "❌ Installed Go version does not match expected version: $GO_VERSION"
             exit 1
           }
