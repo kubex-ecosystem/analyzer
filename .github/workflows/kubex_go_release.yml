@@ -6,6 +6,11 @@ on:
       - "v*.*.*"
   workflow_dispatch:
     inputs:
+      manifest_path:
+        description: "Path to the module manifest (e.g., internal/module/info/manifest.json)"
+        required: false
+        default: "internal/module/info/manifest.json"
+        type: string
       run_tests:
         description: "Run unit tests (race) before security/build"
         required: false
@@ -52,6 +57,7 @@ permissions:
   id-token: write
 
 env:
+  MANIFEST_PATH: "${{ github.event.inputs.manifest_path || 'internal/module/info/manifest.json' }}"
   GO_VERSION: "${{ github.event.inputs.go-version }}"
   NON_INTERACTIVE: true
   FORCE: y
@@ -85,15 +91,15 @@ jobs:
       - name: Load Module Manifest
         id: manifest
         run: |
-          if [[ ! -f "$(git rev-parse --show-toplevel)/internal/module/info/manifest.json" ]]; then
-            echo "❌ internal/module/info/manifest.json not found"
+          if [[ ! -f "$(git rev-parse --show-toplevel)/${MANIFEST_PATH:-}" ]]; then
+            echo "❌ ${MANIFEST_PATH:-} not found"
             exit 1
           fi
 
           # Extract module information
           GO_VERSION="${{ github.event.inputs.go-version }}"
           if [[ -z "$GO_VERSION" ]]; then
-            GO_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.go_version // ""')
+            GO_VERSION=$(cat $(git rev-parse --show-toplevel)/${MANIFEST_PATH:-} | jq -r '.go_version // ""')
           fi
           if [[ -z "$GO_VERSION" ]]; then
             GO_VERSION=$(grep '^go ' $(git rev-parse --show-toplevel)/go.mod | awk '{print $2}')
@@ -119,9 +125,9 @@ jobs:
           # Output for other jobs
           echo "go-version=$GO_VERSION" >> $GITHUB_OUTPUT
 
-          MODULE_NAME=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.bin // .name // "unknown"')
-          MODULE_VERSION=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.version // "0.0.0"')
-          PLATFORMS=$(cat $(git rev-parse --show-toplevel)/internal/module/info/manifest.json | jq -r '.platforms[]?' | tr '\n' ' ' | sed 's/ $//')
+          MODULE_NAME=$(cat $(git rev-parse --show-toplevel)/${MANIFEST_PATH:-} | jq -r '.bin // .name // "unknown"')
+          MODULE_VERSION=$(cat $(git rev-parse --show-toplevel)/${MANIFEST_PATH:-} | jq -r '.version // "0.0.0"')
+          PLATFORMS=$(cat $(git rev-parse --show-toplevel)/${MANIFEST_PATH:-} | jq -r '.platforms[]?' | tr '\n' ' ' | sed 's/ $//')
           # Validate required fields
           if [[ "$MODULE_NAME" == "unknown" || "$MODULE_NAME" == "null" ]]; then
             echo "❌ Module name not found in manifest (bin or name field required)"
@@ -162,7 +168,15 @@ jobs:
 
           bash -c "$(curl -sSfL 'https://raw.githubusercontent.com/kubex-ecosystem/gosetup/main/go.sh')" -s install "${GO_VERSION:-latest}"
 
-          . /home/runner/.bashrc
+          if [ -f /home/runner/.profile ]; then
+            source /home/runner/.profile
+          fi
+
+          if [ -f /home/runner/.bashrc ]; then
+            source /home/runner/.bashrc
+          elif [ -f /home/runner/.zshrc ]; then
+            source /home/runner/.zshrc
+          fi
 
           # Verify installation
           go version | grep -q "${GO_VERSION}" || {
@@ -258,7 +272,7 @@ jobs:
             echo "   Git Tag: $TAG_VERSION"
             echo "   Manifest: $MANIFEST_VERSION"
             echo ""
-            echo "Please update internal/module/info/manifest.json version to match the git tag."
+            echo "Please update ${MANIFEST_PATH:-} version to match the git tag."
             echo "Expected: \"version\": \"$TAG_CLEAN\""
             echo ""
             echo "🛑 Workflow will skip remaining steps for safety."
