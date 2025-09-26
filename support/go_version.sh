@@ -8,14 +8,14 @@ set -euo pipefail
 
 get_required_go_version() {
   # If _VERSION_GO is set, use it directly
-  if [[ -n "$_VERSION_GO" ]]; then
-    echo "$_VERSION_GO"
+  if [[ -n "${_VERSION_GO:-}" ]]; then
+    echo "${_VERSION_GO:-}"
     return
   fi
 
-  _VERSION_GO="$(jq -r '.go_version' "${_ROOT_DIR:-$(git rev-parse --show-toplevel)}/${_MANIFEST_SUBPATH:-internal/module/info/manifest.json}" 2>/dev/null || echo "")"
-  if [[ -n "$_VERSION_GO" && "$_VERSION_GO" != "null" ]]; then
-    echo "$_VERSION_GO"
+  _VERSION_GO="$(jq -r '.go_version' "${_ROOT_DIR:-$(git rev-parse --show-toplevel)}/${_MANIFEST_SUBPATH:-"internal/module/info/manifest.json"}" 2>/dev/null || echo "")"
+  if [[ -n "${_VERSION_GO:-}" && "${_VERSION_GO:-}" != "null" ]]; then
+    echo "${_VERSION_GO:-}"
     return
   fi
 
@@ -28,10 +28,10 @@ get_required_go_version() {
 
   # Extract go version from go.mod
   _VERSION_GO="$(awk '/^go / {print $2; exit}' "${go_mod_path}")"
-  if [[ -z "$_VERSION_GO" ]]; then
+  if [[ -z "${_VERSION_GO:-}" ]]; then
     echo "1.25.1" # fallback
   else
-    echo "$_VERSION_GO"
+    echo "${_VERSION_GO:-}"
   fi
 }
 
