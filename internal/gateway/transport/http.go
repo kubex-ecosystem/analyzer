@@ -15,7 +15,10 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/handlers/lookatni"
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
+
 	"github.com/kubex-ecosystem/analyzer/internal/web"
 	"github.com/kubex-ecosystem/analyzer/internal/webhook"
 )
@@ -61,7 +64,7 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 
 	// Start scheduler in background
 	if err := healthScheduler.Start(); err != nil {
-		log.Printf("⚠️  Failed to start health scheduler: %v", err)
+		gl.Log("error", "Failed to start health scheduler: %v", err)
 	}
 
 	h := &httpHandlers{
@@ -316,7 +319,7 @@ func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
 
 			// Log usage for monitoring
 			if chunk.Usage != nil {
-				log.Printf("Usage: provider=%s model=%s tokens=%d latency=%dms cost=$%.6f",
+				gl.Log("info", "Usage: provider=%s model=%s tokens=%d latency=%dms cost=$%.6f",
 					chunk.Usage.Provider, chunk.Usage.Model, chunk.Usage.Tokens,
 					chunk.Usage.Ms, chunk.Usage.CostUSD)
 			}

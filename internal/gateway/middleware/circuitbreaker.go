@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 )
 
 // CircuitState represents the state of a circuit breaker
@@ -77,7 +78,7 @@ func (cb *CircuitBreaker) Allow() error {
 			if cb.state == CircuitOpen {
 				cb.state = CircuitHalfOpen
 				cb.successes = 0
-				fmt.Printf("[CircuitBreaker] Moving to HALF-OPEN state\n")
+				gl.Log("info", "CircuitBreaker moving to HALF-OPEN state")
 			}
 			cb.mu.Unlock()
 			return nil
@@ -108,7 +109,7 @@ func (cb *CircuitBreaker) RecordSuccess() {
 			cb.state = CircuitClosed
 			cb.failures = 0
 			cb.successes = 0
-			fmt.Printf("[CircuitBreaker] Moving to CLOSED state after %d successes\n",
+			gl.Log("info", "CircuitBreaker moving to CLOSED state after %d successes",
 				cb.config.SuccessThreshold)
 		}
 	}
@@ -126,13 +127,13 @@ func (cb *CircuitBreaker) RecordFailure() {
 	case CircuitClosed:
 		if cb.failures >= cb.config.MaxFailures {
 			cb.state = CircuitOpen
-			fmt.Printf("[CircuitBreaker] Moving to OPEN state after %d failures\n", cb.failures)
+			gl.Log("info", "CircuitBreaker moving to OPEN state after %d failures", cb.failures)
 		}
 
 	case CircuitHalfOpen:
 		// Any failure in half-open state immediately opens the circuit
 		cb.state = CircuitOpen
-		fmt.Printf("[CircuitBreaker] Moving to OPEN state from HALF-OPEN after failure\n")
+		gl.Log("info", "CircuitBreaker moving to OPEN state from HALF-OPEN after failure")
 	}
 }
 
@@ -162,7 +163,7 @@ func (cbm *CircuitBreakerManager) SetCircuitBreaker(provider string, config Circ
 	defer cbm.mu.Unlock()
 
 	cbm.breakers[provider] = NewCircuitBreaker(config)
-	fmt.Printf("[CircuitBreaker] Configured %s: %d max failures, %v reset timeout\n",
+	gl.Log("info", "CircuitBreaker configured %s: %d max failures, %v reset timeout",
 		provider, config.MaxFailures, config.ResetTimeout)
 }
 

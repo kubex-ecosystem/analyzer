@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
@@ -301,7 +302,7 @@ func (p *groqProvider) Chat(ctx context.Context, req providers.ChatRequest) (<-c
 
 		// Log completion with speed info
 		tokensPerSecond := float64(totalTokens) / (float64(latencyMs) / 1000.0)
-		fmt.Printf("[Groq] ⚡ LIGHTNING FAST! Model: %s, Tokens: %d, Duration: %v, Speed: %.1f tok/s\n",
+		gl.Log("info", "⚡ Groq Model: %s, Tokens: %d, Duration: %v, Speed: %.1f tok/s",
 			model, totalTokens, time.Since(startTime), tokensPerSecond)
 	}()
 

@@ -1,3 +1,4 @@
+// Package health defines types and interfaces for health checking providers.
 package health
 
 import "time"

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 	"gopkg.in/yaml.v3"
 )
@@ -39,7 +40,7 @@ func Load(path string) (*Registry, error) {
 		case "openai":
 			key := os.Getenv(pc.KeyEnv)
 			if key == "" {
-				fmt.Printf("Warning: Skipping OpenAI provider '%s' - no API key found in %s\n", name, pc.KeyEnv)
+				gl.Log("warning", "Skipping OpenAI provider '%s' - no API key found in %s", name, pc.KeyEnv)
 				continue
 			}
 			p, err := NewOpenAIProvider(name, pc.BaseURL, key, pc.DefaultModel)
@@ -50,7 +51,7 @@ func Load(path string) (*Registry, error) {
 		case "gemini":
 			key := os.Getenv(pc.KeyEnv)
 			if key == "" {
-				fmt.Printf("Warning: Skipping Gemini provider '%s' - no API key found in %s\n", name, pc.KeyEnv)
+				gl.Log("warning", "Skipping Gemini provider '%s' - no API key found in %s", name, pc.KeyEnv)
 				continue
 			}
 			p, err := NewGeminiProvider(name, pc.BaseURL, key, pc.DefaultModel)
@@ -61,7 +62,7 @@ func Load(path string) (*Registry, error) {
 		case "anthropic":
 			key := os.Getenv(pc.KeyEnv)
 			if key == "" {
-				fmt.Printf("Warning: Skipping Anthropic provider '%s' - no API key found in %s\n", name, pc.KeyEnv)
+				gl.Log("warning", "Skipping Anthropic provider '%s' - no API key found in %s", name, pc.KeyEnv)
 				continue
 			}
 			p, err := NewAnthropicProvider(name, pc.BaseURL, key, pc.DefaultModel)
@@ -73,7 +74,7 @@ func Load(path string) (*Registry, error) {
 
 			key := os.Getenv(pc.KeyEnv)
 			if key == "" {
-				fmt.Printf("Warning: Skipping Groq provider '%s' - no API key found in %s\n", name, pc.KeyEnv)
+				gl.Log("warning", "Skipping Groq provider '%s' - no API key found in %s", name, pc.KeyEnv)
 				continue
 			}
 
