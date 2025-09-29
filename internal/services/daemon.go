@@ -5,12 +5,13 @@ package services
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 	"github.com/kubex-ecosystem/analyzer/internal/types"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 )
 
 // DaemonService provides autonomous background operations for repository analysis,
@@ -59,7 +60,7 @@ func (d *DaemonService) Start() error {
 		return fmt.Errorf("daemon service already running")
 	}
 
-	log.Println("🚀 Starting Analyzer Daemon Service...")
+	gl.Log("info", "🚀 Starting Analyzer Daemon Service...")
 
 	// Initialize sub-services
 	if err := d.initializeServices(); err != nil {
@@ -70,7 +71,7 @@ func (d *DaemonService) Start() error {
 	d.startWorkers()
 
 	d.running = true
-	log.Println("✅ Analyzer Daemon Service started successfully")
+	gl.Log("info", "✅ Analyzer Daemon Service started successfully")
 
 	return nil
 }
@@ -84,7 +85,7 @@ func (d *DaemonService) Stop() error {
 		return nil
 	}
 
-	log.Println("🛑 Stopping Analyzer Daemon Service...")
+	gl.Log("info", "🛑 Stopping Analyzer Daemon Service...")
 
 	// Signal all workers to stop
 	d.cancel()
@@ -98,13 +99,13 @@ func (d *DaemonService) Stop() error {
 
 	select {
 	case <-done:
-		log.Println("✅ All workers stopped gracefully")
+		gl.Log("info", "✅ All workers stopped gracefully")
 	case <-time.After(30 * time.Second):
-		log.Println("⚠️ Timeout waiting for workers to stop")
+		gl.Log("warn", "⚠️ Timeout waiting for workers to stop")
 	}
 
 	d.running = false
-	log.Println("✅ Analyzer Daemon Service stopped")
+	gl.Log("info", "✅ Analyzer Daemon Service stopped")
 
 	return nil
 }
@@ -125,7 +126,7 @@ func (d *DaemonService) ScheduleAnalysis(req types.AnalysisRequest) error {
 
 	select {
 	case d.analysisRequests <- req:
-		log.Printf("📊 Scheduled analysis: %s for project: %s", req.Type, req.ProjectPath)
+		gl.Log("info", fmt.Sprintf("📊 Scheduled analysis: %s for project: %s", req.Type, req.ProjectPath))
 		return nil
 	case <-d.ctx.Done():
 		return fmt.Errorf("daemon service is shutting down")
@@ -140,7 +141,7 @@ func (d *DaemonService) SendNotification(event types.NotificationEvent) error {
 
 	select {
 	case d.notificationQueue <- event:
-		log.Printf("🔔 Queued %s notification: %s", event.Type, event.Subject)
+		gl.Log("info", fmt.Sprintf("🔔 Queued %s notification: %s", event.Type, event.Subject))
 		return nil
 	case <-d.ctx.Done():
 		return fmt.Errorf("daemon service is shutting down")
@@ -158,7 +159,7 @@ func (d *DaemonService) OrchestrateTool(task types.OrchestrationTask) error {
 
 	select {
 	case d.orchestrateQueue <- task:
-		log.Printf("🎯 Queued orchestration: %s -> %s", task.Tool, task.Action)
+		gl.Log("info", fmt.Sprintf("🎯 Queued orchestration: %s -> %s", task.Tool, task.Action))
 		return nil
 	case <-d.ctx.Done():
 		return fmt.Errorf("daemon service is shutting down")
@@ -222,7 +223,7 @@ func (d *DaemonService) analysisWorker() {
 		case req := <-d.analysisRequests:
 			d.processAnalysisRequest(req)
 		case <-d.ctx.Done():
-			log.Println("📊 Analysis worker stopped")
+			gl.Log("info", "📊 Analysis worker stopped")
 			return
 		}
 	}
@@ -237,7 +238,7 @@ func (d *DaemonService) notificationWorker() {
 		case event := <-d.notificationQueue:
 			d.processNotificationEvent(event)
 		case <-d.ctx.Done():
-			log.Println("🔔 Notification worker stopped")
+			gl.Log("info", "🔔 Notification worker stopped")
 			return
 		}
 	}
@@ -252,7 +253,7 @@ func (d *DaemonService) orchestrationWorker() {
 		case task := <-d.orchestrateQueue:
 			d.processOrchestrationTask(task)
 		case <-d.ctx.Done():
-			log.Println("🎯 Orchestration worker stopped")
+			gl.Log("info", "🎯 Orchestration worker stopped")
 			return
 		}
 	}
@@ -270,7 +271,7 @@ func (d *DaemonService) healthCheckWorker() {
 		case <-ticker.C:
 			d.performHealthCheck()
 		case <-d.ctx.Done():
-			log.Println("❤️ Health check worker stopped")
+			gl.Log("info", "❤️ Health check worker stopped")
 			return
 		}
 	}
@@ -288,7 +289,7 @@ func (d *DaemonService) schedulerWorker() {
 		case <-ticker.C:
 			d.checkScheduledTasks()
 		case <-d.ctx.Done():
-			log.Println("⏰ Scheduler worker stopped")
+			gl.Log("info", "⏰ Scheduler worker stopped")
 			return
 		}
 	}
@@ -296,7 +297,7 @@ func (d *DaemonService) schedulerWorker() {
 
 // processAnalysisRequest handles individual analysis requests
 func (d *DaemonService) processAnalysisRequest(req types.AnalysisRequest) {
-	log.Printf("🔍 Processing analysis: %s for %s", req.Type, req.ProjectPath)
+	gl.Log("info", fmt.Sprintf("🔍 Processing analysis: %s for %s", req.Type, req.ProjectPath))
 
 	// TODO: Implement actual analysis logic
 	// This will use the scorecard engine to perform repository analysis
@@ -312,37 +313,37 @@ func (d *DaemonService) processAnalysisRequest(req types.AnalysisRequest) {
 		Priority: "medium",
 	})
 
-	log.Printf("✅ Analysis completed: %s", req.ID)
+	gl.Log("info", fmt.Sprintf("✅ Analysis completed: %s", req.ID))
 }
 
 // processNotificationEvent handles individual notification events
 func (d *DaemonService) processNotificationEvent(event types.NotificationEvent) {
-	log.Printf("📤 Sending %s notification: %s", event.Type, event.Subject)
+	gl.Log("info", fmt.Sprintf("📤 Sending %s notification: %s", event.Type, event.Subject))
 
 	// TODO: Implement actual notification sending
 	// This will use the notification service to send via Discord/WhatsApp/Email
 
-	log.Printf("✅ Notification sent: %s", event.Type)
+	gl.Log("info", fmt.Sprintf("✅ Notification sent: %s", event.Type))
 }
 
 // processOrchestrationTask handles individual orchestration tasks
 func (d *DaemonService) processOrchestrationTask(task types.OrchestrationTask) {
-	log.Printf("🚀 Orchestrating: %s -> %s", task.Tool, task.Action)
+	gl.Log("info", fmt.Sprintf("🚀 Orchestrating: %s -> %s", task.Tool, task.Action))
 
 	// TODO: Implement actual orchestration logic
 	// This will coordinate with lookatni, grompt, and other agents
 
-	log.Printf("✅ Orchestration completed: %s", task.ID)
+	gl.Log("info", fmt.Sprintf("✅ Orchestration completed: %s", task.ID))
 }
 
 // performHealthCheck performs system health checks
 func (d *DaemonService) performHealthCheck() {
-	log.Println("❤️ Performing health check...")
+	gl.Log("info", "❤️ Performing health check...")
 
 	// TODO: Implement health check logic
 	// Check system resources, external service connectivity, etc.
 
-	log.Println("✅ Health check completed")
+	gl.Log("info", "✅ Health check completed")
 }
 
 // checkScheduledTasks checks for and executes scheduled tasks

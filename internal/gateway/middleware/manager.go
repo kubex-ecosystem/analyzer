@@ -125,18 +125,18 @@ func NewProductionMiddleware(config ProductionConfig) *ProductionMiddleware {
 	// fmt.Println("[ProductionMiddleware] Initialized with enterprise features:")
 	gl.Log("info", "Initialized with enterprise features:")
 	if config.RateLimit.Enabled {
-		gl.Log("info", "  ✅ Rate Limiting: %d capacity, %d/sec refill",
-			config.RateLimit.Default.Capacity, config.RateLimit.Default.RefillRate)
+		gl.Log("info", fmt.Sprintf("  ✅ Rate Limiting: %d capacity, %d/sec refill",
+			config.RateLimit.Default.Capacity, config.RateLimit.Default.RefillRate))
 	}
 	if config.CircuitBreaker.Enabled {
-		gl.Log("info", "  ✅ Circuit Breaker: %d max failures, %ds reset timeout",
-			config.CircuitBreaker.Default.MaxFailures, config.CircuitBreaker.Default.ResetTimeoutSec)
+		gl.Log("info", fmt.Sprintf("  ✅ Circuit Breaker: %d max failures, %ds reset timeout",
+			config.CircuitBreaker.Default.MaxFailures, config.CircuitBreaker.Default.ResetTimeoutSec))
 	}
 	if config.HealthCheck.Enabled {
-		gl.Log("info", "  ✅ Health Checks: every %ds\n", config.HealthCheck.IntervalSec)
+		gl.Log("info", fmt.Sprintf("  ✅ Health Checks: every %ds", config.HealthCheck.IntervalSec))
 	}
 	if config.Retry.Enabled {
-		gl.Log("info", "  ✅ Retry Logic: %d max retries with exponential backoff\n", config.Retry.MaxRetries)
+		gl.Log("info", fmt.Sprintf("  ✅ Retry Logic: %d max retries with exponential backoff", config.Retry.MaxRetries))
 	}
 
 	return pm

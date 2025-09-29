@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -127,7 +128,7 @@ func (cb *CircuitBreaker) RecordFailure() {
 	case CircuitClosed:
 		if cb.failures >= cb.config.MaxFailures {
 			cb.state = CircuitOpen
-			gl.Log("info", "CircuitBreaker moving to OPEN state after %d failures", cb.failures)
+			gl.Log("info", fmt.Sprintf("CircuitBreaker moving to OPEN state after %d failures", cb.failures))
 		}
 
 	case CircuitHalfOpen:
@@ -163,8 +164,8 @@ func (cbm *CircuitBreakerManager) SetCircuitBreaker(provider string, config Circ
 	defer cbm.mu.Unlock()
 
 	cbm.breakers[provider] = NewCircuitBreaker(config)
-	gl.Log("info", "CircuitBreaker configured %s: %d max failures, %v reset timeout",
-		provider, config.MaxFailures, config.ResetTimeout)
+	gl.Log("info", fmt.Sprintf("CircuitBreaker configured %s: %d max failures, %v reset timeout",
+		provider, config.MaxFailures, config.ResetTimeout))
 }
 
 // Allow checks if a request to the provider should be allowed

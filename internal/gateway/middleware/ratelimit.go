@@ -2,6 +2,7 @@
 package middleware
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -78,8 +79,8 @@ func (rl *RateLimiter) SetLimit(provider string, capacity, refillRate int) {
 	defer rl.mu.Unlock()
 
 	rl.buckets[provider] = NewTokenBucket(capacity, refillRate)
-	gl.Log("info", "RateLimit configured %s: %d tokens, %d/sec refill",
-		provider, capacity, refillRate)
+	gl.Log("info", fmt.Sprintf("RateLimit configured %s: %d tokens, %d/sec refill",
+		provider, capacity, refillRate))
 }
 
 // Allow checks if a request to the given provider should be allowed
@@ -95,7 +96,7 @@ func (rl *RateLimiter) Allow(provider string) bool {
 
 	allowed := bucket.Allow()
 	if !allowed {
-		gl.Log("info", "RateLimit BLOCKED request to %s - rate limit exceeded", provider)
+		gl.Log("info", fmt.Sprintf("RateLimit BLOCKED request to %s - rate limit exceeded", provider))
 	}
 
 	return allowed

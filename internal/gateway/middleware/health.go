@@ -92,7 +92,7 @@ func (hm *HealthMonitor) RegisterProvider(provider string) {
 	hm.history[provider] = make([]bool, 0, 100) // Keep last 100 checks
 
 	// fmt.Printf("[HealthMonitor] Registered provider: %s\n", provider)
-	gl.Log("info", "Registered provider: %s", provider)
+	gl.Log("info", fmt.Sprintf("Registered provider: %s", provider))
 }
 
 // RecordCheck records the result of a health check
@@ -249,7 +249,7 @@ func RetryWithBackoff(ctx context.Context, config RetryConfig, operation func() 
 		}
 
 		// Log the retry attempt
-		gl.Log("warn", "Attempt %d failed: %v. Retrying in %v...", attempt+1, err, delay)
+		gl.Log("warn", fmt.Sprintf("Attempt %d failed: %v. Retrying in %v...", attempt+1, err, delay))
 
 		// Wait for the delay or context cancellation
 		select {

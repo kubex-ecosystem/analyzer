@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -81,8 +82,8 @@ func (s *Scheduler) Start() error {
 		go s.runTierScheduler(tier, interval)
 	}
 
-	gl.Log("info", "HealthScheduler started with intervals: T1=%v, T2=%v, T3=%v",
-		s.intervals[Tier1Key], s.intervals[Tier2Handshake], s.intervals[Tier3Real])
+	gl.Log("info", fmt.Sprintf("HealthScheduler started with intervals: T1=%v, T2=%v, T3=%v",
+		s.intervals[Tier1Key], s.intervals[Tier2Handshake], s.intervals[Tier3Real]))
 
 	return nil
 }
@@ -115,7 +116,7 @@ func (s *Scheduler) IsRunning() bool {
 func (s *Scheduler) runTierScheduler(tier Tier, interval time.Duration) {
 	defer s.wg.Done()
 
-	gl.Log("info", "HealthScheduler Tier %d started (interval: %v)", int(tier), interval)
+	gl.Log("info", fmt.Sprintf("HealthScheduler Tier %d started (interval: %v)", int(tier), interval))
 
 	// Primeira execução com stagger para espalhar carga
 	stagger := s.calculateStagger(tier)
@@ -136,7 +137,7 @@ func (s *Scheduler) runTierScheduler(tier Tier, interval time.Duration) {
 		case <-ticker.C:
 			s.runChecksForTier(tier)
 		case <-s.ctx.Done():
-			gl.Log("info", "HealthScheduler Tier %d stopped", int(tier))
+			gl.Log("info", fmt.Sprintf("HealthScheduler Tier %d stopped", int(tier)))
 			return
 		}
 	}
@@ -146,7 +147,7 @@ func (s *Scheduler) runTierScheduler(tier Tier, interval time.Duration) {
 func (s *Scheduler) runChecksForTier(tier Tier) {
 	providers := s.registry.List()
 
-	gl.Log("info", "HealthScheduler running Tier %d checks for %d providers", int(tier), len(providers))
+	gl.Log("info", fmt.Sprintf("HealthScheduler running Tier %d checks for %d providers", int(tier), len(providers)))
 
 	for _, provider := range providers {
 		// Executa check em background para não bloquear scheduler
@@ -154,14 +155,14 @@ func (s *Scheduler) runChecksForTier(tier Tier) {
 			result, err := s.engine.Check(providerName, tier, false) // usa cache se disponível
 
 			if err != nil {
-				gl.Log("error", "HealthScheduler Tier %d check failed for %s: %v", int(tier), providerName, err)
+				gl.Log("error", fmt.Sprintf("HealthScheduler Tier %d check failed for %s: %v", int(tier), providerName, err))
 				return
 			}
 
 			// Log apenas para problemas ou verbose mode
 			if result.Status != StatusOK {
-				gl.Log("error", "HealthScheduler Tier %d %s: %s - %s",
-					int(tier), providerName, result.Status, result.Details)
+				gl.Log("error", fmt.Sprintf("HealthScheduler Tier %d %s: %s - %s",
+					int(tier), providerName, result.Status, result.Details))
 			}
 		}(provider)
 	}
@@ -191,16 +192,16 @@ func (s *Scheduler) GetStats() map[string]interface{} {
 // ForceCheck força execução imediata de todos os tiers para todos os providers
 func (s *Scheduler) ForceCheck() {
 	providers := s.registry.List()
-	gl.Log("info", "HealthScheduler force check for %d providers", len(providers))
+	gl.Log("info", fmt.Sprintf("HealthScheduler force check for %d providers", len(providers)))
 
 	for _, provider := range providers {
 		for tier := Tier1Key; tier <= Tier3Real; tier++ {
 			go func(providerName string, t Tier) {
 				result, err := s.engine.Check(providerName, t, true) // força novo check
 				if err != nil {
-					gl.Log("error", "HealthScheduler Force check T%d %s failed: %v", int(t), providerName, err)
+					gl.Log("error", fmt.Sprintf("HealthScheduler Force check T%d %s failed: %v", int(t), providerName, err))
 				} else {
-					gl.Log("info", "HealthScheduler Force check T%d %s: %s", int(t), providerName, result.Status)
+					gl.Log("info", fmt.Sprintf("HealthScheduler Force check T%d %s: %s", int(t), providerName, result.Status))
 				}
 			}(provider, tier)
 		}
