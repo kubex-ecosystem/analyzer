@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 	"time"
 
-	genai "cloud.google.com/go/vertexai/genai"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
-	"google.golang.org/api/option"
+	genai "google.golang.org/genai"
 )
 
 // geminiProvider implements the Provider interface for Google Gemini
@@ -35,7 +35,11 @@ func NewGeminiProvider(name, baseURL, key, model string) (*geminiProvider, error
 	// Create a client for the entire provider instance
 	ctx := context.Background()
 
-	client, err := genai.NewClient(ctx, "587138832075", "southamerica-east1", option.WithAPIKey(key))
+	// "587138832075", "southamerica-east1"
+	client, err := genai.NewClient(ctx, &genai.ClientConfig{
+		APIKey: key,
+	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
@@ -64,101 +68,81 @@ func (g *geminiProvider) Available() error {
 
 // Chat performs a chat completion request using Gemini's streaming API with the SDK
 func (g *geminiProvider) Chat(ctx context.Context, req providers.ChatRequest) (<-chan providers.ChatChunk, error) {
-	model := req.Model
-	if model == "" {
-		model = g.defaultModel
+	modelName := req.Model
+	if modelName == "" {
+		modelName = g.defaultModel
 	}
 
-	// Create a new model instance for each request to set specific parameters
-	geminiModel := g.client.GenerativeModel(model)
+	var contents []*genai.Content // Conteúdo principal (mensagens/prompt)
+	// var systemInstruction *genai.Content // Instrução de sistema, se houver
 
-	// Set generation configurations
-	geminiModel.SetTemperature(float32(req.Temp))
-	geminiModel.SetMaxOutputTokens(int32(8192))
-	geminiModel.SetTopP(0.95)
+	// Configuração base de geração
+	config := &genai.GenerateContentConfig{
+		Temperature:     &req.Temp,
+		MaxOutputTokens: int32(8192),
+	}
 
-	var safetySettings []*genai.SafetySetting
-	var schema *genai.Schema
-	var candidateCount = func() *int32 { var i int32 = 1; return &i }()
-
-	// Set safety settings
-	// safetySettings = append(safetySettings, &genai.SafetySetting{
-	// 	Category: genai.HarmCategoryHarassment, Threshold: genai.HarmBlockMediumAndAbove,
-	// })
-	// safetySettings = append(safetySettings, &genai.SafetySetting{
-	// 	Category: genai.HarmCategoryHateSpeech, Threshold: genai.HarmBlockMediumAndAbove,
-	// })
-	// safetySettings = append(safetySettings, &genai.SafetySetting{
-	// 	Category: genai.HarmCategorySexual, Threshold: genai.HarmBlockMediumAndAbove,
-	// })
-	// safetySettings = append(safetySettings, &genai.SafetySetting{
-	// 	Category: genai.HarmCategoryToxicity, Threshold: genai.HarmBlockLowAndAbove,
-	// })
-	geminiModel.SafetySettings = safetySettings
-
-	// Convert messages to Gemini SDK format - CREATE PARTS FOR STREAMING!
-	var parts []genai.Part
-
-	// Handle special analysis requests (your genius feature!)
+	// 1. Handle special analysis requests
 	if analysisType, ok := req.Meta["analysisType"]; ok {
 		if projectContext, hasContext := req.Meta["projectContext"]; hasContext {
-			prompt := g.getAnalysisPrompt(projectContext.(string), analysisType.(string), req.Meta)
-			parts = append(parts, genai.Text(prompt))
-
-			// Configure for analysis
-			geminiModel.SetTemperature(0.3)
-
-			// Add response schema if structured output is requested
-			if req.Meta["useStructuredOutput"] == true {
-
-				schema = &genai.Schema{
-					Type:       genai.TypeObject,
-					Properties: make(map[string]*genai.Schema),
-					Required:   []string{"projectName", "summary", "strengths", "weaknesses", "recommendations"},
-				}
-
-				// Define properties based on analysis type
-				geminiModel.CandidateCount = candidateCount
-				geminiModel.ResponseMIMEType = "application/json"
-				geminiModel.ResponseSchema = schema
-			}
+			// Prepara o prompt de análise como SystemInstruction ou como Content
+			promptText := g.getAnalysisPrompt(projectContext.(string), analysisType.(string), req.Meta)
+			// Usamos o prompt de análise como o único Content da requisição.
+			// (A role é 'user' por ser o input do usuário/sistema)
+			contents = append(contents, genai.Text(promptText)...)
+			// // Mas neste caso, o 'promptText' já contém a instrução e o contexto.
+			// config.Temperature = config.Temperature // Já é definido na configuração base
 		}
 	} else {
-		// Normal chat - convert messages to parts
+		// 2. Normal chat - Convert messages to Gemini SDK format with Roles
 		for _, msg := range req.Messages {
+			role := "user"
+			if msg.Role == "assistant" || msg.Role == "model" {
+				role = "model" // O Gemini usa "model" para assistente
+			}
+			// Adiciona cada mensagem como um Content separado
+			// Ignora mensagens vazias
+			// Note: Cada msg vem com um Role e Content, então
+			// criamos um Content para cada msg.
 			if msg.Content != "" {
-				parts = append(parts, genai.Text(msg.Content))
+				contents = append(
+					contents,
+					//genai.Text(msg.Content)...,
+					&genai.Content{
+						Role: role,
+						Parts: []*genai.Part{
+							genai.NewPartFromText(msg.Content),
+						},
+					},
+				)
 			}
 		}
 	}
 
 	// Validation: ensure we have content to send
-	if len(parts) == 0 {
-		return nil, fmt.Errorf("no valid content to send to Gemini")
+	if len(contents) == 0 {
+		return nil, errors.New("no valid content to send to Gemini")
 	}
 
 	ch := make(chan providers.ChatChunk, 8)
 
+	// Inicia a goroutine para gerenciar o streaming
 	go func() {
 		defer close(ch)
 		startTime := time.Now()
 
-		// Call the SDK's streaming method with PARTS not CONTENTS!
-		iter := geminiModel.GenerateContentStream(ctx, parts...)
+		// Chamada CORRIGIDA: Usa o iterador do GenerateContentStream
+		iter := g.client.Models.GenerateContentStream(ctx, modelName, contents, config)
 
 		totalTokens := 0
 		var fullContent strings.Builder
 
-		// Iterate through streaming response
-		for {
-			resp, err := iter.Next()
+		// Itera sobre a resposta do streaming
+		for resp, err := range iter {
+			if errors.Is(err, io.EOF) {
+				break // Fim normal do stream
+			}
 			if err != nil {
-				// Check if iteration is complete - this is NORMAL end of stream
-				if strings.Contains(err.Error(), "done") ||
-					strings.Contains(err.Error(), "EOF") ||
-					strings.Contains(err.Error(), "no more items") {
-					break // Normal completion, not an error
-				}
 				ch <- providers.ChatChunk{Done: true, Error: fmt.Sprintf("streaming error: %v", err)}
 				return
 			}
@@ -167,38 +151,36 @@ func (g *geminiProvider) Chat(ctx context.Context, req providers.ChatRequest) (<
 				continue
 			}
 
-			// Extract content from response
+			// Extrair conteúdo (com tratamento de segurança para Text)
 			if len(resp.Candidates) > 0 && resp.Candidates[0].Content != nil {
 				for _, part := range resp.Candidates[0].Content.Parts {
-					if text, ok := part.(genai.Text); ok {
-						chunk := string(text)
+					if part != nil {
+						chunk := string(part.Text)
 						ch <- providers.ChatChunk{Content: chunk}
 						fullContent.WriteString(chunk)
 					}
 				}
 			}
 
-			// Extract usage metadata when available
+			// Extrair metadados de uso (podem vir em qualquer chunk)
 			if resp.UsageMetadata != nil {
 				totalTokens = int(resp.UsageMetadata.PromptTokenCount + resp.UsageMetadata.CandidatesTokenCount)
 			}
 		}
 
-		// If no usage metadata was provided, estimate tokens from the final text
+		// Enviar chunk final com métricas
 		if totalTokens == 0 {
 			totalTokens = g.estimateTokens(fullContent.String())
 		}
-
-		// Send final chunk with metrics
 		latencyMs := time.Since(startTime).Milliseconds()
 		ch <- providers.ChatChunk{
 			Done: true,
 			Usage: &providers.Usage{
 				Tokens:   totalTokens,
 				Ms:       latencyMs,
-				CostUSD:  g.estimateCost(model, totalTokens),
+				CostUSD:  g.estimateCost(modelName, totalTokens),
 				Provider: g.name,
-				Model:    model,
+				Model:    modelName,
 			},
 		}
 	}()
@@ -212,8 +194,8 @@ func (g *geminiProvider) Notify(ctx context.Context, event providers.Notificatio
 }
 
 // toGeminiContents converts generic messages to Gemini SDK format
-func (g *geminiProvider) toGeminiContents(messages []providers.Message) []genai.Part {
-	contents := make([]genai.Part, 0, len(messages))
+func (g *geminiProvider) toGeminiContents(messages []providers.Message) []*genai.Part {
+	contents := make([]*genai.Part, 0, len(messages))
 
 	for _, msg := range messages {
 		if msg.Content == "" {
@@ -224,8 +206,18 @@ func (g *geminiProvider) toGeminiContents(messages []providers.Message) []genai.
 		// if msg.Role == "assistant" || msg.Role == "model" {
 		// 	role = "model"
 		// }
+		// Já é criado no loop acima
+		// contents := make([]*genai.Content, 0)
 
-		contents = append(contents, genai.Text(msg.Content))
+		for _, msg := range messages {
+			// Normal chat - convert messages to parts
+			reqPart := genai.Text(msg.Content)
+			for _, part := range reqPart {
+				if part != nil {
+					contents = append(contents, part.Parts...)
+				}
+			}
+		}
 	}
 	return contents
 }
@@ -324,7 +316,11 @@ func (g *geminiProvider) Close() error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.client != nil {
-		return g.client.Close()
+		return g.client.Batches.Cancel(
+			context.Background(),
+			"",
+			&genai.CancelBatchJobConfig{},
+		)
 	}
 	return nil
 }
