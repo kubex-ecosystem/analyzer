@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
@@ -294,7 +295,7 @@ func (p *anthropicProvider) Chat(ctx context.Context, req providers.ChatRequest)
 		}
 
 		// Log completion
-		fmt.Printf("[Anthropic] Request completed - Model: %s, Tokens: %d, Duration: %v\n",
+		gl.Log("info", "Anthropic Request completed - Model: %s, Tokens: %d, Duration: %v",
 			model, totalTokens, time.Since(startTime))
 	}()
 

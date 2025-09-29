@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 )
 
 // TokenBucket implements the token bucket algorithm for rate limiting
@@ -77,8 +79,8 @@ func (rl *RateLimiter) SetLimit(provider string, capacity, refillRate int) {
 	defer rl.mu.Unlock()
 
 	rl.buckets[provider] = NewTokenBucket(capacity, refillRate)
-	fmt.Printf("[RateLimit] Configured %s: %d tokens, %d/sec refill\n",
-		provider, capacity, refillRate)
+	gl.Log("info", fmt.Sprintf("RateLimit configured %s: %d tokens, %d/sec refill",
+		provider, capacity, refillRate))
 }
 
 // Allow checks if a request to the given provider should be allowed
@@ -94,7 +96,7 @@ func (rl *RateLimiter) Allow(provider string) bool {
 
 	allowed := bucket.Allow()
 	if !allowed {
-		fmt.Printf("[RateLimit] BLOCKED request to %s - rate limit exceeded\n", provider)
+		gl.Log("info", fmt.Sprintf("RateLimit BLOCKED request to %s - rate limit exceeded", provider))
 	}
 
 	return allowed

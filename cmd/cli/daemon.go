@@ -3,13 +3,13 @@ package cli
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/daemon"
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	"github.com/spf13/cobra"
 )
 
@@ -103,55 +103,54 @@ func runDaemon(cmd *cobra.Command, args []string) error {
 
 	// Wait for shutdown signal
 	<-sigChan
-	log.Println("🔥 Received shutdown signal...")
+	gl.Log("info", "Received shutdown signal, stopping daemon...")
 
 	// Graceful shutdown
 	d.Stop()
-	log.Println("✅ Analyzer daemon stopped gracefully")
+	gl.Log("info", "Analyzer daemon stopped gracefully")
 
 	return nil
 }
 
 func printDaemonInfo(config daemon.DaemonConfig) {
-	fmt.Println()
-	fmt.Println("🚀 ============================================================")
-	fmt.Println("🤖   ANALYZER DAEMON - Repository Intelligence Platform")
-	fmt.Println("🚀 ============================================================")
-	fmt.Println()
-	fmt.Printf("🏗️  GoBE Integration: %s\n", config.GoBeURL)
-	fmt.Printf("📅 Auto Schedule: %v", config.AutoScheduleEnabled)
+	gl.Log("info", "")
+	gl.Log("info", "🚀 ========================== Daemon Startup ============================")
+	gl.Log("info", "🤖   ANALYZER DAEMON - Repository Intelligence Platform")
+	gl.Log("info", "🚀 ============================================================")
+	gl.Log("info", "")
+	gl.Log("info", fmt.Sprintf("🏗️  GoBE Integration: %s", config.GoBeURL))
+	gl.Log("info", fmt.Sprintf("📅 Auto Schedule: %v", config.AutoScheduleEnabled))
 	if config.AutoScheduleEnabled {
-		fmt.Printf(" (%s)", config.ScheduleCron)
+		gl.Log("info", fmt.Sprintf(" (%s)", config.ScheduleCron))
 	}
-	fmt.Println()
-	fmt.Printf("🔔 Notifications: %v\n", config.NotificationChannels)
-	fmt.Printf("🏥 Health Checks: every %v\n", config.HealthCheckInterval)
-	fmt.Println()
-	fmt.Println("📊 CAPABILITIES:")
-	fmt.Println("   • Repository Intelligence Analysis")
-	fmt.Println("   • DORA Metrics Collection")
-	fmt.Println("   • Code Health Index (CHI)")
-	fmt.Println("   • AI Impact Analysis")
-	fmt.Println("   • Automated Scheduling")
-	fmt.Println("   • Multi-channel Notifications")
-	fmt.Println("   • KubeX AI Squad Integration")
-	fmt.Println("   • Meta-recursivity Coordination")
-	fmt.Println()
-	fmt.Println("🎯 INTEGRATION POINTS:")
-	fmt.Println("   • GoBE Backend APIs")
-	fmt.Println("   • Discord Webhooks")
-	fmt.Println("   • Email Notifications")
-	fmt.Println("   • GitHub Events")
-	fmt.Println("   • Jira Workflows (planned)")
-	fmt.Println("   • WakaTime Analytics (planned)")
-	fmt.Println()
-	fmt.Println("🔄 META-RECURSIVITY:")
-	fmt.Println("   • Coordinates with lookatni (analysis)")
-	fmt.Println("   • Orchestrates grompt (improvement)")
-	fmt.Println("   • Manages continuous optimization")
-	fmt.Println()
-	fmt.Println("✅ Daemon running... Press Ctrl+C to stop")
-	fmt.Println()
+	gl.Log("info", "")
+	gl.Log("info", fmt.Sprintf("🔔 Notifications: %v", config.NotificationChannels))
+	gl.Log("info", fmt.Sprintf("🏥 Health Checks: every %v", config.HealthCheckInterval))
+	gl.Log("info", "")
+	gl.Log("info", "📊 CAPABILITIES:")
+	gl.Log("info", "   • Repository Intelligence Analysis")
+	gl.Log("info", "   • DORA Metrics Collection")
+	gl.Log("info", "   • Code Health Index (CHI)")
+	gl.Log("info", "   • AI Impact Analysis")
+	gl.Log("info", "   • Automated Scheduling")
+	gl.Log("info", "   • Multi-channel Notifications")
+	gl.Log("info", "   • KubeX AI Squad Integration")
+	gl.Log("info", "   • Meta-recursivity Coordination")
+	gl.Log("info", "")
+	gl.Log("info", "🎯 INTEGRATION POINTS:")
+	gl.Log("info", "   • GoBE Backend APIs")
+	gl.Log("info", "   • Discord Webhooks")
+	gl.Log("info", "   • Email Notifications")
+	gl.Log("info", "   • GitHub Events")
+	gl.Log("info", "   • Jira Workflows (planned)")
+	gl.Log("info", "   • WakaTime Analytics (planned)")
+	gl.Log("info", "")
+	gl.Log("info", "🔄 META-RECURSIVITY:")
+	gl.Log("info", "   • Coordinates with lookatni (analysis)")
+	gl.Log("info", "   • Orchestrates grompt (improvement)")
+	gl.Log("info", "   • Manages continuous optimization")
+	gl.Log("info", "✅ Daemon running... Press Ctrl+C to stop")
+	gl.Log("info", "")
 }
 
 func getEnvOrDefault(key, defaultValue string) string {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 )
 
 // ProductionConfig holds all production middleware configuration
@@ -120,20 +122,21 @@ func NewProductionMiddleware(config ProductionConfig) *ProductionMiddleware {
 		}
 	}
 
-	fmt.Println("[ProductionMiddleware] Initialized with enterprise features:")
+	// fmt.Println("[ProductionMiddleware] Initialized with enterprise features:")
+	gl.Log("info", "Initialized with enterprise features:")
 	if config.RateLimit.Enabled {
-		fmt.Printf("  ✅ Rate Limiting: %d capacity, %d/sec refill\n",
-			config.RateLimit.Default.Capacity, config.RateLimit.Default.RefillRate)
+		gl.Log("info", fmt.Sprintf("  ✅ Rate Limiting: %d capacity, %d/sec refill",
+			config.RateLimit.Default.Capacity, config.RateLimit.Default.RefillRate))
 	}
 	if config.CircuitBreaker.Enabled {
-		fmt.Printf("  ✅ Circuit Breaker: %d max failures, %ds reset timeout\n",
-			config.CircuitBreaker.Default.MaxFailures, config.CircuitBreaker.Default.ResetTimeoutSec)
+		gl.Log("info", fmt.Sprintf("  ✅ Circuit Breaker: %d max failures, %ds reset timeout",
+			config.CircuitBreaker.Default.MaxFailures, config.CircuitBreaker.Default.ResetTimeoutSec))
 	}
 	if config.HealthCheck.Enabled {
-		fmt.Printf("  ✅ Health Checks: every %ds\n", config.HealthCheck.IntervalSec)
+		gl.Log("info", fmt.Sprintf("  ✅ Health Checks: every %ds", config.HealthCheck.IntervalSec))
 	}
 	if config.Retry.Enabled {
-		fmt.Printf("  ✅ Retry Logic: %d max retries with exponential backoff\n", config.Retry.MaxRetries)
+		gl.Log("info", fmt.Sprintf("  ✅ Retry Logic: %d max retries with exponential backoff", config.Retry.MaxRetries))
 	}
 
 	return pm
@@ -272,5 +275,5 @@ func (pm *ProductionMiddleware) Stop() {
 	if pm.healthMonitor != nil {
 		pm.healthMonitor.Stop()
 	}
-	fmt.Println("[ProductionMiddleware] Stopped all components")
+	gl.Log("info", "ProductionMiddleware Stopped all components")
 }

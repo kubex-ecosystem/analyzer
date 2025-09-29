@@ -5,7 +5,6 @@ package transport
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -15,7 +14,10 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/handlers/lookatni"
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
+
 	"github.com/kubex-ecosystem/analyzer/internal/web"
 	"github.com/kubex-ecosystem/analyzer/internal/webhook"
 )
@@ -61,7 +63,7 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 
 	// Start scheduler in background
 	if err := healthScheduler.Start(); err != nil {
-		log.Printf("⚠️  Failed to start health scheduler: %v", err)
+		gl.Log("error", "Failed to start health scheduler: %v", err)
 	}
 
 	h := &httpHandlers{
@@ -78,13 +80,13 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	// Web Interface - Frontend embarcado! 🚀
 	webHandler, err := web.NewHandler()
 	if err != nil {
-		log.Printf("⚠️  Failed to initialize web interface: %v", err)
+		gl.Log("warn", "Failed to initialize web interface: %v", err)
 	} else {
 		// Register web interface on /app/* and root
 		mux.Handle("/app/", http.StripPrefix("/app", webHandler))
 		// Root path serves the frontend (but with lower priority than API endpoints)
 		mux.Handle("/", webHandler)
-		log.Println("✅ Web interface enabled at /app/ and /")
+		gl.Log("info", "✅ Web interface enabled at /app/ and /")
 	}
 
 	// API endpoints (higher priority routes)
@@ -116,9 +118,9 @@ func WireHTTP(mux *http.ServeMux, reg *registry.Registry, prodMiddleware *middle
 	mux.HandleFunc("/v1/webhooks", h.webhookHandler.HandleWebhook)
 	mux.HandleFunc("/v1/webhooks/health", h.webhookHandler.HealthCheck)
 
-	log.Println("✅ LookAtni integration enabled - Code extraction and navigation ready!")
-	log.Println("🔄 Meta-recursive webhook system enabled")
-	log.Println("🔥 AI Provider Health Monitoring enabled")
+	gl.Log("info", "✅ LookAtni integration enabled - Code extraction and navigation ready!")
+	gl.Log("info", "🔄 Meta-recursive webhook system enabled")
+	gl.Log("info", "🔥 AI Provider Health Monitoring enabled")
 }
 
 // healthCheck provides a simple health endpoint
@@ -316,7 +318,7 @@ func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
 
 			// Log usage for monitoring
 			if chunk.Usage != nil {
-				log.Printf("Usage: provider=%s model=%s tokens=%d latency=%dms cost=$%.6f",
+				gl.Log("info", "Usage: provider=%s model=%s tokens=%d latency=%dms cost=$%.6f",
 					chunk.Usage.Provider, chunk.Usage.Model, chunk.Usage.Tokens,
 					chunk.Usage.Ms, chunk.Usage.CostUSD)
 			}

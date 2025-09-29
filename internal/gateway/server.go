@@ -2,16 +2,18 @@
 package gateway
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"sync"
+	"syscall"
 
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/middleware"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/transport"
+
+	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 )
 
 // ServerConfig holds configuration for the gateway server
@@ -62,7 +64,7 @@ func (s *Server) Start() error {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		log.Println("🛑 Shutting down gracefully...")
+		gl.Log("info", "🛑 Shutting down gracefully...")
 		s.middleware.Stop()
 		os.Exit(0)
 	}()
@@ -72,7 +74,7 @@ func (s *Server) Start() error {
 		return err
 	}
 
-	log.Printf("🚀 analyzer-gw listening on %s with ENTERPRISE features!", s.config.Addr)
+	gl.Log("info", fmt.Sprintf("🚀 analyzer-gw listening on %s with ENTERPRISE features!", s.config.Addr))
 	return http.ListenAndServe(s.config.Addr, handler)
 }
 
