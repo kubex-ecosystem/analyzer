@@ -951,18 +951,16 @@ EXEMPLO DE ESTRUTURA MCP:
                     </ul>
                   </div>
                   <div>
-                    <h4 className="font-medium text-blue-700 dark:text-blue-300 mb-1">🎯 Inspirado em:</h4>
                     <ul className="text-blue-600 dark:text-blue-400 space-y-1">
                       <li>• Grompt CLI v2.0</li>
                       <li>• Kubex Ecosystem</li>
-                      <li>• Simplicidade Radical</li>
-                      <li>• No Lock-in Philosophy</li>
+                      <li>• No Lock-in</li>
                     </ul>
                   </div>
                 </div>
                 <div className="mt-3 p-3 bg-blue-100 dark:bg-blue-800/50 rounded-lg">
                   <p className="text-blue-700 dark:text-blue-300 text-sm">
-                    💡 <strong>Inspirado no Grompt:</strong> Esta interface web é uma evolução do Grompt CLI, mantendo a filosofia Kubex de simplicidade radical e anti-lock-in.
+                    💡 <strong>Inspirado no Grompt:</strong> Esta interface web é uma evolução do Grompt CLI.
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2 text-xs">
                     <span className="bg-blue-200 dark:bg-blue-700 px-2 py-1 rounded text-blue-800 dark:text-blue-200">
