@@ -78,3 +78,4 @@ internal/services/server/build/*
 tasks/
 .notes/indexeddb-gemx-db-1758350108906 copy.json
 .notes/indexeddb-gemx-db-1758350108906.json
+.venv-hooks
