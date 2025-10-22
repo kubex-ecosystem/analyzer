@@ -43,14 +43,14 @@ build_frontend() {
     exit 1
   }
 
-  if command -v npm &>/dev/null; then
+  if command -v pnpm &>/dev/null; then
       log info "Building frontend..." true
 
-      _frontend_install_output="$(npm i --no-audit --no-fund --prefer-offline --silent || {
+      _frontend_install_output="$(pnpm install --force || {
           echo "Failed to install frontend dependencies."
       })"
 
-      _frontend_build_output="$(npm run build --silent > /dev/null 2>&1 || {
+      _frontend_build_output="$(pnpm run build > /dev/null 2>&1 || {
           echo "Failed to build frontend assets."
       })"
 

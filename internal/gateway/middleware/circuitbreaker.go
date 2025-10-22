@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
+	gl "github.com/kubex-ecosystem/logz/logger"
 )
 
 // CircuitState represents the state of a circuit breaker

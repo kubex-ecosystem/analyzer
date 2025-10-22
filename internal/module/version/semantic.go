@@ -12,7 +12,7 @@ import (
 	"time"
 
 	manifest "github.com/kubex-ecosystem/analyzer/internal/module/info"
-	"github.com/kubex-ecosystem/analyzer/internal/module/logger"
+	"github.com/kubex-ecosystem/logz/logger"
 	"github.com/spf13/cobra"
 )
 

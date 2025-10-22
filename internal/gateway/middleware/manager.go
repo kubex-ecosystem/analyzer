@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
+	gl "github.com/kubex-ecosystem/logz/logger"
 )
 
 // ProductionConfig holds all production middleware configuration

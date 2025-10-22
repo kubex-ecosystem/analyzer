@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
+	gl "github.com/kubex-ecosystem/logz/logger"
 	"gopkg.in/yaml.v3"
 )
 

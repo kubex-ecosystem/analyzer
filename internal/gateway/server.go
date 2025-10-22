@@ -13,7 +13,7 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/transport"
 
-	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
+	gl "github.com/kubex-ecosystem/logz/logger"
 )
 
 // ServerConfig holds configuration for the gateway server

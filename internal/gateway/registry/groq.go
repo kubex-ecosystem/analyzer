@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	gl "github.com/kubex-ecosystem/analyzer/internal/module/logger"
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
+	gl "github.com/kubex-ecosystem/logz/logger"
 )
 
 // groqProvider implements the Provider interface for Groq's ultra-fast inference
