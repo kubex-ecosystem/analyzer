@@ -5,7 +5,7 @@ echo "================================="
 
 # Verifica se o gateway está rodando
 echo "1. Testando Gateway..."
-HEALTH=$(curl -s http://localhost:8080/healthz)
+HEALTH=$(curl -s http://localhost:8081/healthz)
 if [[ $HEALTH == *"healthy"* ]]; then
     echo "   ✅ Gateway: FUNCIONANDO"
 else
@@ -15,12 +15,12 @@ fi
 
 # Lista providers disponíveis
 echo "2. Testando Providers..."
-PROVIDERS=$(curl -s http://localhost:8080/v1/providers)
+PROVIDERS=$(curl -s http://localhost:8081/v1/providers)
 echo "   📋 Providers configurados: $PROVIDERS"
 
 # Testa chat endpoint básico (mesmo sem API key configurada)
 echo "3. Testando Chat Endpoint..."
-CHAT_RESPONSE=$(curl -s -X POST http://localhost:8080/v1/chat \
+CHAT_RESPONSE=$(curl -s -X POST http://localhost:8081/v1/chat \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "gemini",
@@ -48,7 +48,7 @@ fi
 # Resumo da arquitetura
 echo ""
 echo "🏗️  ARQUITETURA ATUAL:"
-echo "   📁 Gateway: dist/analyzer-gw (running on :8080)"
+echo "   📁 Gateway: dist/analyzer-gw (running on :8081)"
 echo "   📁 Frontend: frontend/dist/ (React SPA)"
 echo "   📁 Config: config/config.example.yml"
 echo "   📁 Services: frontend/services/unified-ai.ts"

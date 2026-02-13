@@ -24,19 +24,19 @@ providers:
 ```bash
 make run
 # health
-curl -I http://localhost:8080/healthz
+curl -I http://localhost:8081/healthz
 ```
 
 ## 3) Listar providers
 
 ```bash
-curl http://localhost:8080/v1/providers | jq
+curl http://localhost:8081/v1/providers | jq
 ```
 
 ## 4) Chat (SSE)
 
 ```bash
-curl -N -X POST http://localhost:8080/v1/chat \
+curl -N -X POST http://localhost:8081/v1/chat \
  -H 'Content-Type: application/json' \
  -H "x-external-api-key: $OPENAI_API_KEY" \
  -d '{"provider":"oai","model":"gpt-4o-mini","messages":[{"role":"user","content":"hello"}],"stream":true}'
@@ -55,4 +55,3 @@ Envie ferramentas/formatos via `meta` (pass-through):
 ```
 
 > Em produção, nunca exponha as keys no frontend; use sempre o gateway. SSE depende de proxy com `proxy_buffering off;` e keep-alive ajustado.
-

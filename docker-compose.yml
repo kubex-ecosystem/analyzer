@@ -8,7 +8,7 @@ services:
     image: gemx-analyzer:latest
     container_name: gemx-analyzer
     ports:
-      - "8080:8080"
+      - "8081:8081"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -21,7 +21,7 @@ services:
       - analyzer-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -29,7 +29,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.analyzer.rule=Host(`analyzer.local`)"
-      - "traefik.http.services.analyzer.loadbalancer.server.port=8080"
+      - "traefik.http.services.analyzer.loadbalancer.server.port=8081"
 
   # Optional: Redis for caching (future use)
   redis:

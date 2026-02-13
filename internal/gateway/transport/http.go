@@ -16,7 +16,7 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 
 	"github.com/kubex-ecosystem/analyzer/internal/web"
 	"github.com/kubex-ecosystem/analyzer/internal/webhook"

@@ -98,7 +98,7 @@ export GEMINI_API_KEY="..."
 export OLLAMA_ENDPOINT="http://localhost:11434"
 
 # Configurações do servidor (opcional)
-export PORT=8080
+export PORT=8081
 export DEBUG=false
 ```
 
@@ -113,7 +113,7 @@ analyzer gateway serve --config ./config/config.example.yml
 
 ### Configuração do Servidor
 
-Por padrão, o GemxAnalyzer roda na porta 8080. Para alterar:
+Por padrão, o GemxAnalyzer roda na porta 8081. Para alterar:
 
 ```bash
 export PORT=3000
@@ -174,7 +174,7 @@ which analyzer
 
 ```bash
 # Verificar qual processo usa a porta
-lsof -i :8080
+lsof -i :8081
 
 # Usar porta diferente
 analyzer gateway serve --port 8081
@@ -184,7 +184,7 @@ analyzer gateway serve --port 8081
 
 ```bash
 # Linux: permitir porta no firewall
-sudo ufw allow 8080
+sudo ufw allow 8081
 
 # macOS: permitir no firewall do sistema
 # Vá em System Preferences > Security & Privacy > Firewall
@@ -200,10 +200,10 @@ DEBUG=true analyzer gateway serve
 
 ```bash
 # Testar se o servidor está rodando
-curl http://localhost:8080/healthz
+curl http://localhost:8081/healthz
 
 # Testar providers/chat
-curl -s -X POST localhost:8080/v1/chat -H 'Content-Type: application/json' -d '{"provider":"oai","model":"gpt-4o-mini","messages":[{"role":"user","content":"teste"}],"stream":false}' | jq
+curl -s -X POST localhost:8081/v1/chat -H 'Content-Type: application/json' -d '{"provider":"oai","model":"gpt-4o-mini","messages":[{"role":"user","content":"teste"}],"stream":false}' | jq
 ```
 
 ## 📋 Requisitos do Sistema

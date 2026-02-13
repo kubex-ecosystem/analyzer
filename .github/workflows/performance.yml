@@ -31,7 +31,7 @@ jobs:
       - name: 🚀 Start test container
         run: |
           docker run -d --name analyzer-test \
-            -p 8080:8080 \
+            -p 8081:8081 \
             -e GEMINI_API_KEY=test \
             -e OPENAI_API_KEY=test \
             -e ANTHROPIC_API_KEY=test \
@@ -40,7 +40,7 @@ jobs:
 
       - name: ⏳ Wait for service to start
         run: |
-          timeout 60s bash -c 'until curl -f http://localhost:8080/v1/status; do sleep 2; done'
+          timeout 60s bash -c 'until curl -f http://localhost:8081/v1/status; do sleep 2; done'
 
       - name: 🧪 Install testing tools
         run: |
@@ -86,7 +86,7 @@ jobs:
               },
             };
 
-            let response = http.post('http://localhost:8080/v1/chat/completions', payload, params);
+            let response = http.post('http://localhost:8081/v1/chat/completions', payload, params);
 
             check(response, {
               'status is 200': (r) => r.status === 200,
@@ -190,7 +190,7 @@ jobs:
           docker run -d --name resource-test \
             --memory=256m \
             --cpus=1 \
-            -p 8080:8080 \
+            -p 8081:8081 \
             -e GEMINI_API_KEY=test \
             analyzer-gw:analysis
 
@@ -201,7 +201,7 @@ jobs:
           docker stats --no-stream resource-test >> resource-analysis.txt
 
           # Health check
-          curl -f http://localhost:8080/v1/status
+          curl -f http://localhost:8081/v1/status
 
           docker stop resource-test
           docker rm resource-test

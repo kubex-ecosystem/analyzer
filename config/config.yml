@@ -43,7 +43,7 @@ development:
 
   # Server Configuration
   server:
-    addr: ":8080"
+    addr: ":8081"
     read_timeout_sec: 15
     write_timeout_sec: 15
     idle_timeout_sec: 60

@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/daemon"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 	"github.com/spf13/cobra"
 )
 
 var (
-	gobeURL             string
-	gobeAPIKey          string
+	gnyxURL             string
+	gnyxAPIKey          string
 	autoScheduleEnabled bool
 	scheduleCron        string
 	notifyChannels      []string
@@ -26,8 +26,8 @@ var (
 func NewDaemonCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "daemon",
-		Short: "Start analyzer as background daemon with GoBE integration",
-		Long: `Start the analyzer as a background daemon service that integrates with GoBE backend.
+		Short: "Start analyzer as background daemon with GNyx integration",
+		Long: `Start the analyzer as a background daemon service that integrates with GNyx backend.
 
 The daemon provides:
 • Automatic repository analysis scheduling
@@ -37,19 +37,19 @@ The daemon provides:
 • Meta-recursivity coordination with lookatni/grompt
 
 Examples:
-  analyzer daemon --gobe-url=http://localhost:3000 --gobe-api-key=abc123
+  analyzer daemon --gnyx-url=http://localhost:3000 --gnyx-api-key=abc123
   analyzer daemon --auto-schedule --schedule-cron="0 2 * * *"
   analyzer daemon --notify-channels=discord,email`,
 		RunE: runDaemon,
 	}
 
-	// GoBE Integration flags
-	cmd.Flags().StringVar(&gobeURL, "gobe-url",
-		getEnvOrDefault("GOBE_URL", "http://localhost:3000"),
-		"GoBE backend URL")
-	cmd.Flags().StringVar(&gobeAPIKey, "gobe-api-key",
-		os.Getenv("GOBE_API_KEY"),
-		"GoBE API key for authentication")
+	// GNyx Integration flags
+	cmd.Flags().StringVar(&gnyxURL, "gnyx-url",
+		getEnvOrDefault("GNYX_URL", "http://localhost:3000"),
+		"GNyx backend URL")
+	cmd.Flags().StringVar(&gnyxAPIKey, "gnyx-api-key",
+		os.Getenv("GNYX_API_KEY"),
+		"GNyx API key for authentication")
 
 	// Scheduling flags
 	cmd.Flags().BoolVar(&autoScheduleEnabled, "auto-schedule", false,
@@ -72,14 +72,14 @@ Examples:
 
 func runDaemon(cmd *cobra.Command, args []string) error {
 	// Validate required flags
-	if gobeAPIKey == "" {
-		return fmt.Errorf("--gobe-api-key is required (or set GOBE_API_KEY env var)")
+	if gnyxAPIKey == "" {
+		return fmt.Errorf("--gnyx-api-key is required (or set GNYX_API_KEY env var)")
 	}
 
 	// Create daemon configuration
 	config := daemon.DaemonConfig{
-		GoBeURL:              gobeURL,
-		GoBeAPIKey:           gobeAPIKey,
+		GNyxURL:              gnyxURL,
+		GNyxAPIKey:           gnyxAPIKey,
 		AutoScheduleEnabled:  autoScheduleEnabled,
 		ScheduleCron:         scheduleCron,
 		NotificationChannels: notifyChannels,
@@ -118,7 +118,7 @@ func printDaemonInfo(config daemon.DaemonConfig) {
 	gl.Log("info", "🤖   ANALYZER DAEMON - Repository Intelligence Platform")
 	gl.Log("info", "🚀 ============================================================")
 	gl.Log("info", "")
-	gl.Log("info", fmt.Sprintf("🏗️  GoBE Integration: %s", config.GoBeURL))
+	gl.Log("info", fmt.Sprintf("🏗️  GNyx Integration: %s", config.GNyxURL))
 	gl.Log("info", fmt.Sprintf("📅 Auto Schedule: %v", config.AutoScheduleEnabled))
 	if config.AutoScheduleEnabled {
 		gl.Log("info", fmt.Sprintf(" (%s)", config.ScheduleCron))
@@ -138,7 +138,7 @@ func printDaemonInfo(config daemon.DaemonConfig) {
 	gl.Log("info", "   • Meta-recursivity Coordination")
 	gl.Log("info", "")
 	gl.Log("info", "🎯 INTEGRATION POINTS:")
-	gl.Log("info", "   • GoBE Backend APIs")
+	gl.Log("info", "   • GNyx Backend APIs")
 	gl.Log("info", "   • Discord Webhooks")
 	gl.Log("info", "   • Email Notifications")
 	gl.Log("info", "   • GitHub Events")

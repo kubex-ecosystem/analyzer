@@ -7,5 +7,4 @@ O gateway suporta multi-tenant e auditoria via headers:
 
 Combine com BYOK por requisição usando `x-external-api-key`.
 
-Quando configurado `GOBE_BASE_URL`, endpoints `/v1/auth/*` fazem passthrough para o GoBE.
-
+Quando configurado `GNYX_BASE_URL`, endpoints `/v1/auth/*` fazem passthrough para o GNyx.

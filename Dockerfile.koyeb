@@ -70,7 +70,7 @@ RUN chmod +x ./analyzer
 USER analyzer
 
 # Expose port (Koyeb will map this)
-EXPOSE 8080
+EXPOSE 8081
 
 # Add labels for better Docker management
 LABEL maintainer="Rafael Mori <faelmori@gmail.com>"
@@ -79,7 +79,7 @@ LABEL version="1.0.9"
 
 # Health check with retry logic
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=5 \
-    CMD curl -f http://localhost:8080/healthz || exit 1
+    CMD curl -f http://localhost:8081/healthz || exit 1
 
 # Command to run with better error handling
 CMD ["./analyzer", "gateway", "serve", "--config", "./config/koyeb.yml"]

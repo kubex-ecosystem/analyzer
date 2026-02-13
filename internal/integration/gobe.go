@@ -1,4 +1,4 @@
-// Package integration provides GoBE backend integration for Repository Intelligence
+// Package integration provides GNyx backend integration for Repository Intelligence
 package integration
 
 import (
@@ -12,16 +12,16 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/types"
 )
 
-// GoBeClient handles communication with GoBE backend services
-type GoBeClient struct {
+// GNyxClient handles communication with GNyx backend services
+type GNyxClient struct {
 	baseURL    string
 	httpClient *http.Client
 	apiKey     string
 }
 
-// NewGoBeClient creates a new GoBE client
-func NewGoBeClient(baseURL, apiKey string) *GoBeClient {
-	return &GoBeClient{
+// NewGNyxClient creates a new GNyx client
+func NewGNyxClient(baseURL, apiKey string) *GNyxClient {
+	return &GNyxClient{
 		baseURL: baseURL,
 		apiKey:  apiKey,
 		httpClient: &http.Client{
@@ -105,8 +105,8 @@ type AgentStatus struct {
 	CurrentJob    *types.AnalysisJob `json:"current_job,omitempty"`
 }
 
-// ScheduleAnalysis schedules a repository analysis in GoBE
-func (c *GoBeClient) ScheduleAnalysis(ctx context.Context, req RepositoryIntelligenceRequest) (*types.AnalysisJob, error) {
+// ScheduleAnalysis schedules a repository analysis in GNyx
+func (c *GNyxClient) ScheduleAnalysis(ctx context.Context, req RepositoryIntelligenceRequest) (*types.AnalysisJob, error) {
 	url := fmt.Sprintf("%s/api/v1/mcp/analyzer/schedule", c.baseURL)
 
 	jsonData, err := json.Marshal(req)
@@ -140,8 +140,8 @@ func (c *GoBeClient) ScheduleAnalysis(ctx context.Context, req RepositoryIntelli
 	return &job, nil
 }
 
-// SendNotification sends notification through GoBE notification system
-func (c *GoBeClient) SendNotification(ctx context.Context, notification NotificationRequest) error {
+// SendNotification sends notification through GNyx notification system
+func (c *GNyxClient) SendNotification(ctx context.Context, notification NotificationRequest) error {
 	url := fmt.Sprintf("%s/api/v1/notifications/send", c.baseURL)
 
 	jsonData, err := json.Marshal(notification)
@@ -170,8 +170,8 @@ func (c *GoBeClient) SendNotification(ctx context.Context, notification Notifica
 	return nil
 }
 
-// RegisterAgent registers analyzer as an AI agent in GoBE squad system
-func (c *GoBeClient) RegisterAgent(ctx context.Context, agent AgentRegistration) error {
+// RegisterAgent registers analyzer as an AI agent in GNyx squad system
+func (c *GNyxClient) RegisterAgent(ctx context.Context, agent AgentRegistration) error {
 	url := fmt.Sprintf("%s/api/v1/mcp/squad/register", c.baseURL)
 
 	jsonData, err := json.Marshal(agent)
@@ -200,8 +200,8 @@ func (c *GoBeClient) RegisterAgent(ctx context.Context, agent AgentRegistration)
 	return nil
 }
 
-// GetSquadStatus retrieves current AI squad status from GoBE
-func (c *GoBeClient) GetSquadStatus(ctx context.Context) (*SquadStatus, error) {
+// GetSquadStatus retrieves current AI squad status from GNyx
+func (c *GNyxClient) GetSquadStatus(ctx context.Context) (*SquadStatus, error) {
 	url := fmt.Sprintf("%s/api/v1/mcp/squad/status", c.baseURL)
 
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", url, nil)

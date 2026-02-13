@@ -4,7 +4,7 @@ package module
 import (
 	cc "github.com/kubex-ecosystem/analyzer/cmd/cli"
 	vs "github.com/kubex-ecosystem/analyzer/internal/module/version"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 	"github.com/spf13/cobra"
 
 	"os"
@@ -30,7 +30,7 @@ func (m *Analyzer) Usage() string {
 }
 func (m *Analyzer) Examples() []string {
 	return []string{
-		"analyzer gateway serve -p '8080' -b '127.0.0.1' -f './config.yaml'",
+		"analyzer gateway serve -p '8081' -b '127.0.0.1' -f './config.yaml'",
 		"analyzer gui web -f './config.yaml'",
 	}
 }

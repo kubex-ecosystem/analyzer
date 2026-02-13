@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // TokenBucket implements the token bucket algorithm for rate limiting

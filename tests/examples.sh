@@ -4,7 +4,7 @@ echo "🎮 DEMO - Arquitetura Analyzer"
 echo "====================================="
 
 # Start gateway se não estiver rodando
-if ! curl -s http://localhost:8080/healthz > /dev/null; then
+if ! curl -s http://localhost:8081/healthz > /dev/null; then
     echo "🚀 Iniciando gateway..."
     cd /srv/apps/LIFE/KUBEX/analyzer || exit
     ./dist/analyzer-gw &
@@ -13,17 +13,17 @@ fi
 
 # 1. Health Check
 echo "1️⃣  Health Check:"
-curl -s http://localhost:8080/healthz | jq -C . || curl -s http://localhost:8080/healthz
+curl -s http://localhost:8081/healthz | jq -C . || curl -s http://localhost:8081/healthz
 echo ""
 
 # 2. Providers List
 echo "2️⃣  Providers Disponíveis:"
-curl -s http://localhost:8080/v1/providers | jq -C .providers || curl -s http://localhost:8080/v1/providers
+curl -s http://localhost:8081/v1/providers | jq -C .providers || curl -s http://localhost:8081/v1/providers
 echo ""
 
 # 3. Provider Config
 echo "3️⃣  Configuração dos Providers:"
-curl -s http://localhost:8080/v1/providers | jq -C .config || curl -s http://localhost:8080/v1/providers
+curl -s http://localhost:8081/v1/providers | jq -C .config || curl -s http://localhost:8081/v1/providers
 echo ""
 
 # 4. Chat endpoint demo (fake response para demo)

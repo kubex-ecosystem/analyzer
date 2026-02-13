@@ -19,15 +19,15 @@ sleep 2
 
 # Test health endpoint
 echo "Testing health endpoint..."
-curl -s http://localhost:8080/healthz | jq
+curl -s http://localhost:8081/healthz | jq
 
 # Test providers endpoint
 echo "Testing providers endpoint..."
-curl -s http://localhost:8080/v1/providers | jq
+curl -s http://localhost:8081/v1/providers | jq
 
 # Test chat endpoint with SSE
 echo "Testing chat endpoint..."
-curl -X POST http://localhost:8080/v1/chat \
+curl -X POST http://localhost:8081/v1/chat \
   -H "Content-Type: application/json" \
   -d '{
     "provider": "openai",

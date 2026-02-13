@@ -10,7 +10,7 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/gateway"
 	"github.com/spf13/cobra"
 
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // GatewayCmds returns the gateway command with subcommands
@@ -40,7 +40,7 @@ Features:
   analyzer gateway serve
 
   # Start with custom config and address
-  analyzer gateway serve --addr :8080 --config ./config/config.example.yml
+  analyzer gateway serve --addr :8081 --config ./config/config.example.yml
 
   # Start with debug mode and CORS enabled
   analyzer gateway serve --debug --cors`,
@@ -71,7 +71,7 @@ Features:
 
 	// Add flags to serve command
 	serveCmd.Flags().StringVarP(&bindingAddress, "binding", "b", getEnv("ADDR", "0.0.0.0"), "Server address")
-	serveCmd.Flags().StringVarP(&port, "port", "p", getEnv("PORT", "8080"), "Server port")
+	serveCmd.Flags().StringVarP(&port, "port", "p", getEnv("PORT", "8081"), "Server port")
 	serveCmd.Flags().BoolVar(&enableCORS, "cors", true, "Enable CORS headers")
 	serveCmd.Flags().StringVarP(&configPath, "config", "c", getEnv("PROVIDERS_CFG", "config/config.example.yml"), "Providers config file")
 	serveCmd.Flags().BoolVarP(&debug, "debug", "d", false, "Enable debug mode")
@@ -112,7 +112,7 @@ func startGateway(config *gateway.ServerConfig) error {
 
 // statusCommand checks the gateway status
 func statusCommand(cmd *cobra.Command, args []string) error {
-	port := getEnv("PORT", "8080")
+	port := getEnv("PORT", "8081")
 	bindingAddress := getEnv("ADDR", "0.0.0.0")
 	targetAddress := ""
 	if bindingAddress == "0.0.0.0" {

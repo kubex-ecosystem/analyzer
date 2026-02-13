@@ -1,4 +1,4 @@
-# AI Coding Instructions for GoBE Backend
+# AI Coding Instructions for GNyx Backend
 
 ## Golang Craftsmanship Standards
 

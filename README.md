@@ -13,7 +13,7 @@
 [🇧🇷 Read in Portuguese](./README.pt-BR.md)
 
 **A continuous improvement platform for code and product — with a closed loop.**
-From `.lkt.txt` to applying diffs and PRs **hands-free**: grompt ↔ lookatni ↔ analyzer ↔ GoBE/gdbase/logz.
+From `.lkt.txt` to applying diffs and PRs **hands-free**: grompt ↔ lookatni ↔ analyzer ↔ GNyx/gdbase/logz.
 
 > _“Your quality SRE that opens safe PRs, measures impact (DORA/CHI/HIR), and self-adjusts based on policies — with no vendor lock-in.”_
 
@@ -24,7 +24,7 @@ AI tools help in the editor, but they stop before the PR, lacking governance. **
 1) **Grompt** generates the `.lkt.txt` (improvement spec)
 2) **Analyzer** plans (EXEC/CHI/DORA/Community)
 3) **Lookatni** validates/applies with a **deterministic diff**
-4) **GoBE** schedules/coordinates the operation
+4) **GNyx** schedules/coordinates the operation
 5) **gdbase/logz** handle versioning and auditing
 6) Feedback returns to **grompt** ⇒ new iteration
 
@@ -33,7 +33,7 @@ AI tools help in the editor, but they stop before the PR, lacking governance. **
 - **analyzer** (this repo): advanced reasoning, policies, cadence, cycle orchestration
 - **grompt**: AI hub/entrypoint (simple chat + `.lkt.txt` boot)
 - **lookatni**: deterministic parser/applier (CLI + Go/TS lib + VSCode ext)
-- **GoBE**: jobs/schedulers/locks (infra)
+- **GNyx**: jobs/schedulers/locks (infra)
 - **gdbase**: artifact/diff storage
 - **logz**: telemetry + auditing
 - **kortex**: event trail (pub/sub) _(optional in v0)_
@@ -70,8 +70,8 @@ go build -o dist/gw ./cmd/gw
 GEMX_ENV=development GEMX_META_CFG=config/meta.yml PROVIDERS_CFG=config/providers.yml ./dist/gw
 
 # 5) Smoke test
-curl -I http://localhost:8080/healthz
-curl -s http://localhost:8080/v1/providers | jq
-curl -s http://localhost:8080/metrics | head
+curl -I http://localhost:8081/healthz
+curl -s http://localhost:8081/v1/providers | jq
+curl -s http://localhost:8081/metrics | head
 
 ```

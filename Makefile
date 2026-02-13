@@ -202,7 +202,7 @@ help:
 	$(call log,   make help       - Display this help message)
 	$(call log_break)
 	$(call log, Documentation:)
-	$(call log,   make docs       - Starts beautiful API documentation at http://localhost:8080/docs)
+	$(call log,   make docs       - Starts beautiful API documentation at http://localhost:8081/docs)
 	$(call log,   ./start-docs.sh - Alternative way to start documentation server)
 	$(call log_break)
 	$(call log, Usage with arguments:)

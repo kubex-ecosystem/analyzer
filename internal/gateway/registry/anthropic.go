@@ -14,7 +14,7 @@ import (
 	"time"
 
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // anthropicProvider implements the Provider interface for Anthropic Claude

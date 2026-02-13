@@ -9,7 +9,7 @@ dockerfile = "Dockerfile.koyeb"
 type = "web"
 
 [[deploy.ports]]
-port = 8080
+port = 8081
 protocol = "http"
 
 [[deploy.env]]
@@ -18,7 +18,7 @@ value = "./config/koyeb.yml"
 
 [[deploy.env]]
 name = "PORT"
-value = "8080"
+value = "8081"
 
 # Health check configuration
 [deploy.health_check]
@@ -28,7 +28,7 @@ restart_limit = 3
 timeout = "5s"
 
 [deploy.health_check.http]
-port = 8080
+port = 8081
 path = "/healthz"
 
 # Instance configuration

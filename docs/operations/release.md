@@ -18,7 +18,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w -buildid=" -o /out/analyzer
 
 FROM scratch
 COPY --from=builder /out/analyzer /analyzer
-EXPOSE 8080
+EXPOSE 8081
 ENTRYPOINT ["/analyzer", "gateway", "serve"]
 ```
 

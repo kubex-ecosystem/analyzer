@@ -6,7 +6,7 @@ production:
 
   # Server Configuration
   server:
-    addr: ":8080" # Koyeb maps this port
+    addr: ":8081" # Koyeb maps this port
     read_timeout_sec: 30
     write_timeout_sec: 30
     idle_timeout_sec: 120

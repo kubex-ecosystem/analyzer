@@ -15,7 +15,7 @@ services:
       - hub-ass-priv-net
       - hub-ass-pub-net
     ports:
-      - "3000:8080"
+      - "3000:8081"
     extra_hosts:
       - host.docker.internal:host-gateway
     volumes:

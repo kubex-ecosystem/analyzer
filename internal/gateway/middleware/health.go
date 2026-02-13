@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // HealthStatus represents the health status of a provider

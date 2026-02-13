@@ -42,7 +42,7 @@ class UnifiedAIService {
 
   constructor() {
     // @ts-ignore - Vite env vars
-    this.baseURL = import.meta.env?.VITE_GATEWAY_URL || 'http://localhost:8080';
+    this.baseURL = import.meta.env?.VITE_GATEWAY_URL || 'http://localhost:8081';
   }
 
   // Lista providers disponíveis no gateway
