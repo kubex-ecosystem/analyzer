@@ -68,7 +68,7 @@ export default defineConfig(({ mode }: { mode: string }) => {
               name: 'configure-response-headers',
               configureServer(server: any) {
                 server.middlewares.use((req: any, res: any, next: any) => {
-                  res.setHeader('Access-Control-Allow-Origin', '*');
+                  res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
                   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
                   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -131,8 +131,7 @@ export default defineConfig(({ mode }: { mode: string }) => {
       include: ['react', 'react-dom', 'framer-motion', 'uuid',],
     },
     esbuild: {
-      drop: ['console', 'debugger'],
+      drop: ['console', 'debugger'] as Array<'console' | 'debugger'>,
     },
   };
 });
-

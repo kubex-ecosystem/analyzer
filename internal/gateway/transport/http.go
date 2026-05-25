@@ -264,7 +264,7 @@ func (h *httpHandlers) chatSSE(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -387,7 +387,7 @@ func (h *httpHandlers) handleAdvise(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 
 	// Generate mock response based on mode
 	if req.Mode == "exec" {

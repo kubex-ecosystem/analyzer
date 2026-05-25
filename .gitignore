@@ -79,7 +79,6 @@ tasks/
 .venv-hooks/
 .venv-*
 .venv-hooks
-.kubex/*.png
 .venv-hooks
-internal/analyzer/embedded/guiweb/assets/*.js
-pnpm-lock.yaml
+.env.sh
+frontend/pnpm-lock.yaml
