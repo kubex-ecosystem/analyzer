@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/kubex-ecosystem/analyzer/internal/daemon"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 	"github.com/spf13/cobra"
 )
 

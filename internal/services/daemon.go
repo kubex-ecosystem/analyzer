@@ -11,7 +11,7 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/scorecard"
 	"github.com/kubex-ecosystem/analyzer/internal/types"
 
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // DaemonService provides autonomous background operations for repository analysis,

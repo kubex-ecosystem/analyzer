@@ -1,7 +1,7 @@
 package main
 
 import (
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 
 	"github.com/kubex-ecosystem/analyzer/internal/module"
 )

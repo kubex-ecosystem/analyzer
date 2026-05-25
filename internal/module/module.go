@@ -4,7 +4,7 @@ package module
 import (
 	cc "github.com/kubex-ecosystem/analyzer/cmd/cli"
 	vs "github.com/kubex-ecosystem/analyzer/internal/module/version"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 	"github.com/spf13/cobra"
 
 	"os"

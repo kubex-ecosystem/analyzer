@@ -79,3 +79,4 @@ tasks/
 .venv-hooks/
 .venv-*
 .venv-hooks
+.venv-hooks

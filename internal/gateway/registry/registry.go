@@ -7,7 +7,7 @@ import (
 	"os"
 
 	providers "github.com/kubex-ecosystem/analyzer/internal/types"
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 	"gopkg.in/yaml.v3"
 )
 

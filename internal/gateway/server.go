@@ -13,7 +13,7 @@ import (
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/registry"
 	"github.com/kubex-ecosystem/analyzer/internal/gateway/transport"
 
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // ServerConfig holds configuration for the gateway server
@@ -98,7 +98,7 @@ func (s *Server) Handler() (http.Handler, error) {
 // withCORS adds CORS headers to responses
 func withCORS(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
 		w.Header().Set("Access-Control-Allow-Headers", "content-type, authorization, x-external-api-key, x-tenant-id, x-user-id")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		if r.Method == http.MethodOptions {

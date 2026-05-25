@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	gl "github.com/kubex-ecosystem/logz/logger"
+	gl "github.com/kubex-ecosystem/logz"
 )
 
 // Scheduler gerencia health checks automáticos em background
